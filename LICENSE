@@ -1,0 +1,73 @@
+Text Template Manager License
+Copyright (c) 2026 Marflow Software (Wolfram Halatschek)
+
+Summary (non-binding)
+---------------------
+You may use, run, copy and modify this software for free, for any purpose that
+complies with the restrictions below, including inside a company or other
+organization. You may NOT sell it, and you
+may NOT provide it to others as a service or as part of a service - not directly
+and not indirectly, and not by modifying it first. The exact terms below control.
+
+
+Terms and Conditions
+--------------------
+
+1. Definitions
+   "Software" means Text Template Manager, including its source code, compiled
+   binaries, documentation, and any other files distributed under this license,
+   together with any modified version of any of the foregoing.
+   "You" means any individual or legal entity exercising the permissions granted
+   by this license.
+
+2. Grant of permission
+   Subject to the conditions and restrictions below, You are granted a worldwide,
+   royalty-free, non-exclusive, non-transferable permission to use, install, run,
+   copy, and modify the Software for any purpose that complies with the
+   restrictions in Section 3, including internal use within a company or other
+   organization.
+
+3. Restrictions
+   You may NOT do any of the following, whether for a fee or free of charge, and
+   whether directly or indirectly (including through a third party, a reseller,
+   an intermediary, a bundle, or any other arrangement designed to achieve, or
+   having the effect of, the same result):
+
+   (a) sell, resell, license, sublicense, rent, lease, or otherwise distribute or
+       make available the Software in exchange for money or other consideration;
+
+   (b) provide the Software to any third party as a service or as part of a
+       service - including but not limited to any hosted, managed, cloud,
+       software-as-a-service, application-service-provider, or similar offering -
+       or otherwise operate or use the Software to deliver a service to others;
+
+   (c) modify the Software and then use, distribute, provide, or make it available
+       in any manner described in (a) or (b), or in any other manner that
+       circumvents or is intended to circumvent the restrictions in this Section 3.
+
+4. Notices
+   Every copy or modified version of the Software must retain this license text
+   and the copyright notice above.
+
+5. Reservation of rights
+   All rights not expressly granted by this license are reserved by Marflow
+   Software. For any permission beyond this license (for example, to sell the
+   Software or to offer it as or within a service), contact
+   contact@kmarflow.com.
+
+6. Termination
+   Any use of the Software in violation of this license immediately and
+   automatically terminates the permissions granted to You. Upon termination You
+   must cease all use of the Software and destroy all copies in Your possession
+   or control.
+
+7. Disclaimer of warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+8. Limitation of liability
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+   OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
