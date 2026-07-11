@@ -1,0 +1,88 @@
+name: Release
+
+# Push a version tag (e.g. v0.9.3) to build the installer and publish a GitHub release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # required to create the release
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}" -replace '^v', ''
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Building version $v"
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install editor dependencies
+        working-directory: editor
+        run: npm ci
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: ./package.ps1 -Version ${{ steps.ver.outputs.version }}
+
+      - name: Name the asset with the version
+        shell: pwsh
+        run: |
+          Copy-Item "installer/TextTemplateManager-Setup.exe" `
+                    "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
+
+      - name: Render release notes from release.md
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = "${{ steps.ver.outputs.version }}"
+
+          # Auto-generated "What's Changed" list (PRs/commits since the previous tag).
+          $changelog = ""
+          $json = gh api -X POST "repos/${{ github.repository }}/releases/generate-notes" -f tag_name="$tag" 2>$null
+          if ($LASTEXITCODE -eq 0 -and $json) { $changelog = ($json | ConvertFrom-Json).body }
+          if ([string]::IsNullOrWhiteSpace($changelog)) { $changelog = "Initial release." }
+
+          $notes = (Get-Content release.md -Raw).
+                     Replace('{{VERSION}}', $ver).
+                     Replace('{{TAG}}', $tag).
+                     Replace('{{CHANGELOG}}', $changelog)
+          Set-Content -Path release-notes.md -Value $notes
+          Write-Host "----- release notes -----"; Get-Content release-notes.md
+
+      - name: Create draft GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --draft: the release (and its installer) is uploaded but NOT published. Review it on
+          # the Releases page and click "Publish release" when ready. Auto-update only sees
+          # published releases, so clients won't be offered the update until you publish.
+          gh release create "${{ github.ref_name }}" `
+            "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe" `
+            --title "${{ github.ref_name }}" `
+            --notes-file release-notes.md `
+            --draft

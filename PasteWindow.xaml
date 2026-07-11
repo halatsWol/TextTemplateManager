@@ -1,0 +1,281 @@
+﻿<Window
+    x:Class="TextTemplateManager.PasteWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:TextTemplateManager.Models"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:helpers="using:TextTemplateManager.Helpers"
+    Title="Quick Paste">
+
+    <!-- NOTE: KeyDown is intentionally NOT wired here. The constructor attaches
+         OnKeyDown/OnKeyUp via AddHandler(..., handledEventsToo: true) so keys are
+         seen even after the SearchBox handles them. Adding KeyDown="OnKeyDown" here
+         too would fire the handler twice (each char recorded twice, e.g. "TTEESSTT"). -->
+    <Grid x:Name="RootGrid"
+          Background="Transparent"
+          IsTabStop="True">
+        <Grid.Resources>
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVis"/>
+            <MenuFlyout x:Key="TreeItemContextMenu">
+                <MenuFlyoutItem Text="Paste" Click="CtxPaste_Click" Icon="Paste"/>
+                <MenuFlyoutSubItem Text="Paste As">
+                    <MenuFlyoutItem Text="Plaintext" Tag="Plaintext" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="Markdown" Tag="Markdown" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="RTF" Tag="RTF" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="HTML" Tag="HTML" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="Auto" Tag="Auto" Click="CtxPasteAs_Click"/>
+                </MenuFlyoutSubItem>
+            </MenuFlyout>
+
+            <!-- Compact tree rows -->
+            <Style TargetType="TreeViewItem">
+                <Setter Property="MinHeight" Value="22"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+        </Grid.Resources>
+
+        <Grid.ColumnDefinitions>
+            <!-- Tree pane: opens at 260 (not persisted), user-resizable between 130 and 440. -->
+            <ColumnDefinition Width="260" MinWidth="130" MaxWidth="440"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Button x:Name="HelpButton"
+                Grid.Column="2"
+                Click="HelpButton_Click" 
+                VerticalAlignment="Top" 
+                HorizontalAlignment="Right" 
+                Canvas.ZIndex="100" 
+                Margin="0,10,15,0"
+                Style="{StaticResource SubtleButtonStyle}"
+                ToolTipService.ToolTip="Usage Help">
+            <SymbolIcon Symbol="Help"/>
+        </Button>
+
+        <Grid Grid.Column="0" Background="{ThemeResource LayerFillColorDefaultBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBox x:Name="SearchBox" 
+                     Margin="10" 
+                     PlaceholderText="Search..." 
+                     TextChanged="SearchBox_TextChanged" />
+
+            <TreeView x:Name="TemplateTree" 
+                      Grid.Row="1" 
+                      Margin="5"
+                      SelectionMode="Single"
+                      SelectionChanged="TemplateTree_SelectionChanged"
+                      CanDragItems="False"
+                      CanReorderItems="False"
+                      AllowDrop="False">
+                <TreeView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="4,2" ContextFlyout="{StaticResource TreeItemContextMenu}"
+                              DoubleTapped="Tree_DoubleTapped" RightTapped="Tree_RightTapped">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Grid VerticalAlignment="Center" Width="20" Height="20">
+                                    <SymbolIcon Symbol="{Binding Content.Icon}" />
+                                    <Border Visibility="{Binding Content.IsSyncRoot, Converter={StaticResource BoolToVis}}"
+                                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                            Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="5">
+                                        <FontIcon Glyph="&#xE895;" FontSize="9"
+                                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Text="{Binding Content.Title}" VerticalAlignment="Center" />
+                                <FontIcon Glyph="&#xE7BA;" FontSize="12" Foreground="#E6A700" VerticalAlignment="Center"
+                                          Visibility="{Binding Content.SyncFileMissing, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </Grid>
+
+        <controls:GridSplitter Grid.Column="1" 
+                                Width="8" 
+                                ResizeBehavior="BasedOnAlignment" 
+                                ResizeDirection="Columns"
+                                Background="Transparent"
+                                Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+        <Grid Grid.Column="2" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" MinHeight="100"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="1*" MinHeight="160"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Padding="15,40,15,15">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Content Preview" 
+                           Style="{StaticResource CaptionTextBlockStyle}" 
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Margin="0,0,0,8"/>
+                <Border Grid.Row="1"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Background="{ThemeResource ControlFillColorDefaultBrush}">
+                    <WebView2 x:Name="PreviewWebView" Loaded="PreviewWebView_Loaded"/>
+                </Border>
+            </Grid>
+
+            <controls:GridSplitter Grid.Row="1" 
+                                   Height="8" 
+                                   HorizontalAlignment="Stretch"
+                                   ResizeBehavior="PreviousAndNext"
+                                   ResizeDirection="Rows"
+                                   Background="Transparent"
+                                   Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+            <!-- Bottom group: the shortcut buffer bar is a FIXED height; the shortcut list below
+                 flexes. The splitter resizes this whole group vs. the preview, so dragging the
+                 preview never changes the buffer bar's height. -->
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" x:Name="BufferContainer" Height="50" Background="{ThemeResource SystemControlBackgroundChromeMediumBrush}">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                    <TextBlock Text="SHORTCUT:" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="BufferDisplay" Text="---" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <Border x:Name="PlaintextBadge" Visibility="Collapsed" Background="{ThemeResource SystemControlBackgroundBaseMediumLowBrush}" CornerRadius="4" Padding="8,2" VerticalAlignment="Center">
+                        <TextBlock Text="PLAINTEXT" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+                <Grid Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border BorderThickness="0,1,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Padding="6,0">
+                    <SelectorBar x:Name="ShortcutTabs" SelectionChanged="ShortcutTabs_SelectionChanged">
+                        <SelectorBarItem x:Name="TabSingle" Text="Single Key" IsSelected="True"/>
+                        <SelectorBarItem x:Name="TabMulti" Text="Multi Key"/>
+                    </SelectorBar>
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <ListView x:Name="SingleKeyList" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Template">
+                                <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind SingleKeyShortcut}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Title}" Margin="10,0,0,0"/>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SourceLabel, Mode=OneWay}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                               FontStyle="Italic" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding IsLocalSource, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SourceLabel, Mode=OneWay}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding IsLocalSource, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <ListView x:Name="MultiKeyList" SelectionMode="None" Visibility="Collapsed">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Template">
+                                <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind EffectiveMultiKey, Mode=OneWay}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Title}" Margin="10,0,0,0"/>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SourceLabel, Mode=OneWay}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                               FontStyle="Italic" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding IsLocalSource, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SourceLabel, Mode=OneWay}" Margin="10,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding IsLocalSource, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <TeachingTip x:Name="HelpTip" Title="Quick Paste Guide" Target="{Binding ElementName=HelpButton}"
+                     PreferredPlacement="BottomRight" IsLightDismissEnabled="True">
+            <TeachingTip.Content>
+                <Grid MaxWidth="330" Margin="0,4" ColumnSpacing="8" RowSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="⌨️" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Single key:"/><Run Text=" press a key to paste instantly (when Search is empty). If the same key exists in several areas, the local one wins, then sync folders in order."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="⌨️" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Multi-key:"/><Run Text=" hold ALT and type the shortcut (synced ones are prefixed, e.g. and-msg; separators - _ . allowed), release ALT to paste."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" FontSize="13" Margin="14,0,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                        <Run FontWeight="SemiBold" Text="Plaintext:"/><Run Text=" end with Shift+'-' ('_') to paste as plain text."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" FontSize="13" Margin="14,0,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                        <Run FontWeight="SemiBold" Text="Backspace:"/><Run Text=" fix a typo while holding ALT."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="🖱️" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Double-click:"/><Run Text=" paste a template from the tree or a list."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="🖱️" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Right-click:"/><Run Text=" Paste, or Paste As — Plaintext, Markdown, RTF, HTML or Auto."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="🔍" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Search:"/><Run Text=" folder-aware; matches show their parent path."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="⎋" VerticalAlignment="Top" FontWeight="SemiBold"/>
+                    <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Esc:"/><Run Text=" close the Quick Paste window."/>
+                    </TextBlock>
+                </Grid>
+            </TeachingTip.Content>
+        </TeachingTip>
+    </Grid>
+</Window>

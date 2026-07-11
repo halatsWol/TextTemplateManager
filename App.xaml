@@ -1,0 +1,20 @@
+<Application
+    x:Class="TextTemplateManager.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:TextTemplateManager.Helpers">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <helpers:EnumToCollectionConverter x:Key="EnumToCollectionConverter"/>
+            <helpers:ObjectToBoolConverter x:Key="ObjectToBoolConverter"/>
+            <helpers:ItemTypeToIconConverter x:Key="IconConverter"/>
+            <helpers:ObjectToVisibilityConverter x:Key="ObjectToVisibilityConverter"/>
+            <helpers:BoolToErrorBrush x:Key="BoolToErrorBrush"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

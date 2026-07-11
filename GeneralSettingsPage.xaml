@@ -1,0 +1,44 @@
+<Page
+    x:Class="TextTemplateManager.GeneralSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:common="using:TextTemplateManager.Common">
+
+    <StackPanel Spacing="25" Padding="20">
+        <TextBlock Text="General Settings" Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <ToggleSwitch Header="Run at Windows Login"
+                      IsOn="{x:Bind ViewModel.RunAtStartup, Mode=TwoWay}"
+                      Toggled="RunAtStartup_Toggled"/>
+
+        <ToggleSwitch Header="Automatically check for updates"
+                      IsOn="{x:Bind ViewModel.AutoCheckUpdates, Mode=TwoWay}"/>
+
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
+        <StackPanel Spacing="8">
+            <TextBlock Text="Default Paste Mode" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock Text="Sets the mode used when creating new templates." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <ComboBox x:Name="PasteModeCombo" 
+                      MinWidth="200"
+                      SelectedItem="{x:Bind ViewModel.DefaultPasteMode, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+            <TextBlock Text="Global Shortcut" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock Text="Hotkey to open the Quick Paste window from anywhere." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <Grid ColumnSpacing="10" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="HotkeyTextBox" 
+                         Text="{x:Bind ViewModel.PasteWindowHotkey, Mode=TwoWay}"
+                         IsReadOnly="True" 
+                         PlaceholderText="Click to set shortcut..."
+                         KeyDown="HotkeyTextBox_KeyDown"/>
+                <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
+            </Grid>
+        </StackPanel>
+    </StackPanel>
+</Page>

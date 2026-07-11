@@ -1,0 +1,17 @@
+<Window
+    x:Class="TextTemplateManager.PreferencesWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <NavigationView x:Name="SettingsNav" PaneDisplayMode="Left" 
+                        SelectionChanged="SettingsNav_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="General" Tag="General" Icon="Setting"/>
+                <NavigationViewItem Content="Sync" Tag="Sync" Icon="Sync"/>
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" Padding="20"/>
+        </NavigationView>
+    </Grid>
+</Window>

@@ -1,0 +1,30 @@
+{
+  "name": "ttm-editor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bundled TipTap rich-text editor hosted in the app's WebView2.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.6.6",
+    "@tiptap/extension-color": "^2.6.6",
+    "@tiptap/extension-highlight": "^2.6.6",
+    "@tiptap/extension-link": "^2.27.2",
+    "@tiptap/extension-list-item": "^2.6.6",
+    "@tiptap/extension-subscript": "^2.27.2",
+    "@tiptap/extension-superscript": "^2.27.2",
+    "@tiptap/extension-table": "^2.6.6",
+    "@tiptap/extension-table-cell": "^2.6.6",
+    "@tiptap/extension-table-header": "^2.6.6",
+    "@tiptap/extension-table-row": "^2.6.6",
+    "@tiptap/extension-text-align": "^2.27.2",
+    "@tiptap/extension-text-style": "^2.6.6",
+    "@tiptap/extension-underline": "^2.6.6",
+    "@tiptap/starter-kit": "^2.6.6"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  }
+}

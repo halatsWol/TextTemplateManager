@@ -1,0 +1,472 @@
+:root {
+    --bg: #ffffff;
+    --fg: #1b1b1b;
+    --muted: #6a6a6a;
+    --toolbar-bg: #f6f6f6;
+    --border: #d9d9d9;
+    --hover: #ececec;
+    --active: #cfe4ff;
+    --accent: #0067c0;
+    --popup-bg: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.18);
+}
+
+body.dark {
+    --bg: #1f1f1f;
+    --fg: #ececec;
+    --muted: #a0a0a0;
+    --toolbar-bg: #2b2b2b;
+    --border: #3a3a3a;
+    --hover: #383838;
+    --active: #234a72;
+    --accent: #4ca3ff;
+    --popup-bg: #2b2b2b;
+    --shadow: rgba(0, 0, 0, 0.5);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* the page itself never scrolls; the editor area below does */
+}
+
+/* ---- Toolbar ---- */
+#toolbar {
+    display: flex;
+    flex-wrap: wrap;              /* wrap onto more rows when the window is narrow */
+    flex: 0 0 auto;              /* keep full (wrapped) height; never compress the toolbar */
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    background: var(--toolbar-bg);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    user-select: none;
+}
+
+.tb-btn {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 7px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--fg);
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tb-btn:hover {
+    background: var(--hover);
+}
+
+.tb-btn svg {
+    display: block;
+}
+
+.tb-btn.active {
+    background: var(--active);
+}
+
+.tb-sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 4px 4px;
+    background: var(--border);
+}
+
+.tb-btn .caret {
+    font-size: 9px;
+    margin-left: 3px;
+    color: var(--muted);
+}
+
+/* Sub/superscript button glyph — a single inline wrapper so <sup>/<sub> vertical-align
+   works (a bare <sup> would be a flex child of .tb-btn and render flat). */
+.tb-btn .sx {
+    font-weight: 600;
+    line-height: 1;
+}
+
+.tb-btn .sx sup,
+.tb-btn .sx sub {
+    font-size: 0.7em;
+}
+
+
+/* ---- Popups (color grid, table grid, format menu) ---- */
+.popup {
+    position: absolute;
+    top: 38px;
+    z-index: 50;
+    background: var(--popup-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px var(--shadow);
+    padding: 8px;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+.menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.menu-item:hover {
+    background: var(--hover);
+}
+
+/* Divider between groups of menu items (e.g. Normal | Headings | Preformat). */
+.menu-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 5px 6px;
+}
+
+/* Bordered, centered action button inside a popup (color reset, etc.) — matches the
+   table and link action buttons. */
+.popup-action {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    text-align: center;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.popup-action:hover {
+    background: var(--hover);
+}
+
+.swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 24px);
+    gap: 5px;
+}
+
+.swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.swatch:hover {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.table-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 18px);
+    gap: 2px;
+}
+
+.table-cell {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--bg);
+}
+
+.table-cell.on {
+    background: var(--active);
+    border-color: var(--accent);
+}
+
+.table-label {
+    text-align: center;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+    max-width: 160px;
+}
+
+.table-actions .menu-item {
+    flex: 1 1 46%;
+    text-align: center;
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    font-size: 12px;
+}
+
+/* ---- Link popup ---- */
+.link-input {
+    width: 220px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 13px;
+    outline: none;
+}
+
+.link-input:focus {
+    border-color: var(--accent);
+}
+
+.link-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.link-actions .menu-item {
+    flex: 1;
+    text-align: center;
+    border: 1px solid var(--border);
+    padding: 5px 6px;
+    font-size: 13px;
+}
+
+/* ---- Alignment popup ---- */
+.align-row {
+    display: flex;
+    gap: 2px;
+}
+
+/* ---- Symbol picker ---- */
+.symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 28px);
+    gap: 2px;
+    max-width: 240px;
+}
+
+.symbol {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+}
+
+.symbol:hover {
+    background: var(--hover);
+}
+
+/* ---- Editor surface ---- */
+#editor-scroll {
+    flex: 1 1 auto;
+    min-height: 0;   /* allow the flex item to shrink so it (not the page) owns the scroll */
+    min-width: 0;
+    overflow: auto;  /* wide content (tables, code, long tokens) scrolls horizontally here */
+    padding: 12px 14px;
+}
+
+.ProseMirror {
+    outline: none;
+    min-height: 120px;
+    line-height: 1.5;
+}
+
+.ProseMirror p {
+    margin: 0 0 8px 0;
+}
+
+.ProseMirror h1 { font-size: 1.9em; margin: 0.4em 0 0.3em; }
+.ProseMirror h2 { font-size: 1.6em; margin: 0.4em 0 0.3em; }
+.ProseMirror h3 { font-size: 1.35em; margin: 0.4em 0 0.3em; }
+.ProseMirror h4 { font-size: 1.18em; margin: 0.4em 0 0.3em; }
+.ProseMirror h5 { font-size: 1.05em; margin: 0.4em 0 0.3em; }
+.ProseMirror h6 { font-size: 0.95em; margin: 0.4em 0 0.3em; }
+
+.ProseMirror ul,
+.ProseMirror ol {
+    padding-left: 1.6em;
+    margin: 0 0 8px 0;
+}
+
+.ProseMirror li {
+    margin: 2px 0;
+}
+
+.ProseMirror ol { list-style: decimal; }
+.ProseMirror ol ol { list-style: lower-alpha; }
+.ProseMirror ol ol ol { list-style: lower-roman; }
+.ProseMirror ul { list-style: disc; }
+.ProseMirror ul ul { list-style: circle; }
+.ProseMirror ul ul ul { list-style: square; }
+
+/* When a list item's content is a heading, remove the heading's own top/bottom margin
+   so it sits on the list line, and size/weight the marker to match the heading. */
+.ProseMirror li > h1,
+.ProseMirror li > h2,
+.ProseMirror li > h3,
+.ProseMirror li > h4,
+.ProseMirror li > h5,
+.ProseMirror li > h6 { margin: 0; }
+
+.ProseMirror li:has(> h1)::marker { font-size: 1.9em; font-weight: 700; }
+.ProseMirror li:has(> h2)::marker { font-size: 1.6em; font-weight: 700; }
+.ProseMirror li:has(> h3)::marker { font-size: 1.35em; font-weight: 700; }
+.ProseMirror li:has(> h4)::marker { font-size: 1.18em; font-weight: 700; }
+.ProseMirror li:has(> h5)::marker { font-size: 1.05em; font-weight: 700; }
+.ProseMirror li:has(> h6)::marker { font-size: 0.95em; font-weight: 700; }
+
+/* Bold text in a list item also bolds its marker. */
+.ProseMirror li:has(strong)::marker { font-weight: 700; }
+
+.ProseMirror pre {
+    background: var(--hover);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    white-space: pre-wrap;
+}
+
+.ProseMirror code {
+    font-family: Consolas, "Cascadia Mono", monospace;
+    background: var(--hover);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 0.92em;
+}
+
+/* Inside a code block, <code> should not re-apply the inline pill styling. */
+.ProseMirror pre code {
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    font-size: inherit;
+}
+
+/* Code block line-number gutter (hidden for plain "Preformat" blocks). */
+.ProseMirror pre .code-gutter {
+    display: none;
+}
+
+.ProseMirror pre.with-line-numbers {
+    display: flex;
+    gap: 10px;
+}
+
+.ProseMirror pre.with-line-numbers .code-gutter {
+    display: block;
+    flex: 0 0 auto;
+    text-align: right;
+    color: var(--muted);
+    user-select: none;
+    white-space: pre;
+    border-right: 1px solid var(--border);
+    padding-right: 8px;
+    font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+.ProseMirror pre.with-line-numbers code {
+    flex: 1 1 auto;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+/* Preformat block: preformatted text, lighter than a code block and with no line numbers —
+   a dashed outline with no fill, to clearly distinguish it from the solid code block. */
+.ProseMirror pre:not(.with-line-numbers):not([data-line-numbers]) {
+    background: transparent;
+    border: 1px dashed var(--border);
+}
+
+.ProseMirror a {
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ProseMirror blockquote {
+    margin: 8px 0;
+    padding: 2px 0 2px 12px;
+    border-left: 3px solid var(--border);
+    color: var(--muted);
+}
+
+.ProseMirror hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+}
+
+.ProseMirror hr.ProseMirror-selectednode {
+    border-top-color: var(--accent);
+}
+
+/* Tables */
+.ProseMirror table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 8px 0;
+    overflow: hidden;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    min-width: 40px;
+    vertical-align: top;
+}
+
+.ProseMirror th {
+    background: var(--hover);
+    font-weight: 600;
+}
+
+.ProseMirror .selectedCell:after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--active);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.ProseMirror td, .ProseMirror th { position: relative; }

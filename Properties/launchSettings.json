@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Marflow Software - TextTemplateManager (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Marflow Software - TextTemplateManager (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
