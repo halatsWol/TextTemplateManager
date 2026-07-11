@@ -418,31 +418,50 @@ public partial class MainViewModel : ObservableObject
 
     public void ClearDragOrigins() => _dragOrigins.Clear();
 
-    /// <summary>Enforce drop rules on the reconciled tree: revert bad drops, hand off SyncIds
-    /// across boundaries. Returns true if anything was reverted.</summary>
+    /// <summary>Enforce drop rules on the reconciled tree: templates can't be parents (a drop onto
+    /// one becomes a sibling), read-only drops are reverted, and SyncIds are handed off across
+    /// boundaries. Returns true if the tree was changed (so it must be rebuilt).</summary>
     private bool ApplyDropRules()
     {
-        bool reverted = false;
+        bool changed = false;
         foreach (var (item, origin) in _dragOrigins)
         {
-            var newParent = FindParent(AllItems, item);
+            // Templates can never have children: a drop onto a template lands as a sibling below it.
+            if (FindParent(AllItems, item) is Template target)
+            {
+                ReparentAsSibling(item, target);
+                changed = true;
+            }
+
             var dest = _dataNode.GetSyncSourceForItem(item);
 
-            // No template-as-parent; no drop into a read-only sync folder.
-            if (newParent is Template || (dest != null && !dest.AllowSave))
+            // Nothing may land in a read-only (save-off) sync folder — revert entirely.
+            if (dest != null && !dest.AllowSave)
             {
                 RevertToOrigin(item, origin);
-                reverted = true;
+                changed = true;
+                continue;
             }
-            else if (!ReferenceEquals(origin.Source, dest))
+
+            // Crossed a sync-folder boundary: drop the old SyncId (write-through reassigns) and
+            // de-conflict shortcuts against the new area.
+            if (!ReferenceEquals(origin.Source, dest))
             {
-                // Boundary crossed: drop the old SyncId (write-through reassigns) and
-                // de-conflict shortcuts against the new area.
                 ClearSyncIdRecursive(item);
                 EnforceAreaShortcutsOnMove(item);
             }
         }
-        return reverted;
+        return changed;
+    }
+
+    /// <summary>Moves <paramref name="item"/> to sit directly below <paramref name="target"/> in the
+    /// target's parent — used when something is dropped onto a (leaf) template.</summary>
+    private void ReparentAsSibling(BaseItem item, Template target)
+    {
+        var siblings = (FindParent(AllItems, target) as Folder)?.Children ?? AllItems;
+        RemoveFromTree(item);
+        int idx = siblings.IndexOf(target);
+        siblings.Insert(idx < 0 ? siblings.Count : idx + 1, item);
     }
 
     /// <summary>On a move into a new area, fix shortcut clashes with templates already there: a
@@ -516,6 +535,33 @@ public partial class MainViewModel : ObservableObject
         foreach (var c in item.Children) ClearSyncIdRecursive(c);
     }
 
+    /// <summary>Moves an item out to the root level (as a local item, after the pinned sync
+    /// folders). A reliable alternative to dragging an item out of a folder.</summary>
+    public void MoveToRoot(BaseItem item)
+    {
+        if (FindParent(AllItems, item) is null) return;   // already at root
+
+        var origin = _dataNode.GetSyncSourceForItem(item);
+
+        _dataNode.BeginDrag();   // suppress the transient auto-saves
+        try
+        {
+            RemoveFromTree(item);
+            AllItems.Add(item);            // append after the pinned sync folders / existing locals
+            item.ParentId = Guid.Empty;
+
+            if (origin != null)            // left a sync source -> now local
+            {
+                ClearSyncIdRecursive(item);
+                EnforceAreaShortcutsOnMove(item);
+            }
+        }
+        finally { _dataNode.EndDrag(); }
+
+        ReloadTree();
+        _ = SaveCurrentStateAsync();
+    }
+
     public Task SyncMasterAfterDragAsync()
     {
         DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
@@ -537,8 +583,9 @@ public partial class MainViewModel : ObservableObject
 
                 NormalizeParentIds(AllItems, Guid.Empty);
 
-                bool reverted = ApplyDropRules();
-                if (reverted) ApplyFilter();
+                // A rule (template-sibling, revert, ...) changed the data — rebuild the tree so the
+                // visual result matches (TreeView doesn't reflect in-place moves reliably).
+                if (ApplyDropRules()) ReloadTree();
                 ClearDragOrigins();
             }
             finally
@@ -565,16 +612,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>Rebuild real Children from ViewChildren (what the drag mutated).</summary>
+    /// <summary>Rebuild real Children from ViewChildren (what the drag mutated). Reconciles ALL
+    /// items, not just folders: a drag can drop an item into a template's ViewChildren, and this
+    /// captures it into Children so ApplyDropRules can re-parent it as a sibling.</summary>
     private void ReconcileChildrenFromView(BaseItem item)
     {
-        if (item is Folder folder)
-        {
-            var ordered = folder.ViewChildren.ToList();
-            folder.Children.Clear();
-            foreach (var child in ordered)
-                folder.Children.Add(child);
-        }
+        var ordered = item.ViewChildren.ToList();
+        item.Children.Clear();
+        foreach (var child in ordered)
+            item.Children.Add(child);
 
         foreach (var child in item.ViewChildren)
             ReconcileChildrenFromView(child);

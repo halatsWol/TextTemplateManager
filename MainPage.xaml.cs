@@ -71,6 +71,12 @@ namespace TextTemplateManager
                         TemplatePanel.Opacity = editable ? 1.0 : 0.6;
                         FolderPanel.IsHitTestVisible = editable;
                         FolderPanel.Opacity = editable ? 1.0 : 0.6;
+
+                        // A sync-root folder's name is owned by Settings ▸ Sync — never editable here.
+                        bool isSyncRoot = ViewModel.SelectedItem is Folder folder && folder.IsSyncRoot;
+                        FolderTitleBox.IsReadOnly = isSyncRoot || !editable;
+                        ToolTipService.SetToolTip(FolderTitleBox,
+                            isSyncRoot ? "The sync folder name is set in Settings ▸ Sync" : null);
                     });
                 }
             };
@@ -903,6 +909,15 @@ namespace TextTemplateManager
                 flyout.Items.Add(export);
             }
 
+            // Move to Root — for a nested, editable item (a reliable alternative to dragging it out).
+            if (!item.IsSyncRoot && !ViewModel.IsReadOnly(item)
+                && ViewModel.FindParent(ViewModel.AllItems, item) != null)
+            {
+                var toRoot = new MenuFlyoutItem { Text = "Move to Root" };
+                toRoot.Click += (_, _) => ViewModel.MoveToRoot(item);
+                flyout.Items.Add(toRoot);
+            }
+
             if (flyout.Items.Count > 0) flyout.Items.Add(new MenuFlyoutSeparator());
             var del = new MenuFlyoutItem { Text = "Delete", Icon = new SymbolIcon(Symbol.Delete) };
             del.Click += async (_, _) => await ConfirmAndDeleteAsync();
@@ -1239,8 +1254,23 @@ namespace TextTemplateManager
             }
         }
 
+        // Click in empty tree space -> clear the selection (so new items go to the root).
+        private void ItemTreeView_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (FindItemFromSource(e.OriginalSource) == null)
+                ViewModel.SelectedItem = null;
+        }
+
         private async void ItemTreeView_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            // ESC: clear the selection (so new items go to the root).
+            if (e.Key == VirtualKey.Escape && ViewModel.SelectedItem != null)
+            {
+                e.Handled = true;
+                ViewModel.SelectedItem = null;
+                return;
+            }
+
             // DEL: delete selected (same confirm as the button).
             if (e.Key == VirtualKey.Delete && ViewModel.SelectedItem != null)
             {

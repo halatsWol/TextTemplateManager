@@ -14,9 +14,10 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-- **In-window settings.** Settings now open as a view inside the main window (with a back arrow) instead of a separate window. Leaving settings reloads the tree, so changes such as sync-folder ordering take effect immediately.
-- **Tray icon.** Double-click the notification-area icon to open the app (the right-click Open / Exit menu still works too).
-- **Handbook PDF.** The built-in handbook was reworked — a cover page showing the version, table headers that repeat when a table spans a page break, headings that are no longer left orphaned at the bottom of a page, and correct spacing between soft-wrapped lines.
+- **Sync folder names are read-only in the tree.** A pinned sync folder's name is set only in **Settings ▸ Sync** and can no longer be changed (or accidentally edited) from the tree.
+- **Clear the selection easily.** Click an empty area of the tree, or press **Esc**, to deselect — so new templates and folders are created at the root instead of inside the selected folder.
+- **Move to Root.** Right-click any nested item and choose **Move to Root** to move it out to the top level — a reliable alternative to dragging.
+- **Drop rules.** Dropping a template onto another template now places it as a sibling directly below it; templates never contain other items.
 
 {{CHANGELOG}}
 

@@ -308,6 +308,7 @@
                               ItemsSource="{x:Bind ViewModel.RootNodes, Mode=OneWay}"
                               ItemInvoked="ItemTreeView_ItemInvoked"
                               KeyDown="ItemTreeView_KeyDown"
+                              Tapped="ItemTreeView_Tapped"
                               DragOver="ItemTreeView_DragOver"
                               DragItemsStarting="ItemTreeView_DragItemsStarting"
                               DragItemsCompleted="ItemTreeView_DragItemsCompleted"
@@ -421,7 +422,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBox Header="Folder Title"
+                        <TextBox x:Name="FolderTitleBox" Header="Folder Title"
                                  Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                         <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.5">
                             <FontIcon Glyph="&#xE8B7;" FontSize="80"/>
@@ -515,7 +516,7 @@
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="🗂️" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="0" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Organize:"/><Run Text=" add templates and folders with the toolbar; drag to reorder or nest. A template can't hold other items."/>
+                        <Run FontWeight="SemiBold" Text="Organize:"/><Run Text=" add with the toolbar; drag to reorder or nest. Click empty space or press Esc to deselect (new items then go to the root). A template can't hold others — dropping onto one places a sibling below."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="🔄" VerticalAlignment="Top"/>
@@ -535,7 +536,7 @@
 
                     <TextBlock Grid.Row="4" Grid.Column="0" Text="🖱️" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Right-click:"/><Run Text=" a template to Duplicate / Copy; a folder to Export it to a file."/>
+                        <Run FontWeight="SemiBold" Text="Right-click:"/><Run Text=" a template to Duplicate / Copy; a folder to Export; any nested item to Move to Root."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="5" Grid.Column="0" Text="🔍" VerticalAlignment="Top"/>

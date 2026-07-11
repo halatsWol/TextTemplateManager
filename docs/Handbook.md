@@ -37,8 +37,13 @@ nothing is selected. New items are given a unique default name, which you can ch
 ### Organizing the tree
 
 Drag items to reorder them or to move them between folders. Folders may contain both templates 
-and other folders; a template is always a leaf and can never contain other items. Expansion and 
+and other folders; a template is always a leaf and can never contain other items — dropping an
+item onto a template places it as a sibling directly below. Expansion and 
 selection are preserved as you work.
+
+To move an item out to the top level, drag it there or right-click it and choose **Move to Root**.
+Click an empty area of the tree, or press **Esc**, to clear the selection — with nothing selected,
+new templates and folders are created at the root.
 
 ### The template editor
 
@@ -143,7 +148,8 @@ create a new one, and each source offers the following options:
 - **Save** — when enabled, the folder is editable and your changes are written back to the shared 
   file. When disabled, the folder is read-only and the shared file always takes precedence on 
   reload.
-- **Name** — the folder's title as shown on this computer.
+- **Name** — the folder's title as shown on this computer. It is set here only; the pinned sync
+  folder's name is read-only in the tree.
 - **Prefix** — the text that namespaces the folder's multi-key shortcuts (for example, a prefix 
   of `and` turns the shortcut `msg` into `and-msg`). The character joining the prefix and the 
   shortcut is set by the separator field; the permitted separators are `-`, `_`, and `.`.
@@ -203,13 +209,14 @@ the application, applies the update silently, and reopens it.
 | --- | --- | --- |
 | Main window | **Delete** | Delete the selected item (with confirmation). |
 | Main window | **Ctrl + C** | Copy the selected template in its default paste mode. |
+| Main window | **Esc** | Clear the current selection. |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
 | Quick Paste | **Alt** + *keys* | Paste by multi-key shortcut; release **Alt** to insert. |
 | Quick Paste | **Alt** + **Backspace** | Correct the current multi-key entry. |
 | Quick Paste | **Esc** | Close the Quick Paste window. |
 
 Additional actions are available from the right-click menu, including **Duplicate**, **Copy**,
-and **Copy As** for templates, and **Export** for folders.
+and **Copy As** for templates, **Export** for folders, and **Move to Root** for nested items.
 
 ---
 
