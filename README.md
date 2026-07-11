@@ -105,6 +105,11 @@ The tag (without the leading `v`) becomes the **single source of the version** â
 the assembly (shown in **Help â–¸ About**), the file version, and the installer. Local builds without
 a tag report `0.0.0-dev`.
 
+The workflow creates the release as a **draft** with the installer attached and notes rendered from
+[`release.md`](release.md); review it on the Releases page and click **Publish release** when ready.
+The in-app auto-update only sees *published* releases, so users are not offered the update until you
+publish.
+
 ---
 
 ## Tech stack
