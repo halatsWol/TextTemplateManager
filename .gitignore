@@ -8,6 +8,9 @@ x86/
 [Aa][Rr][Mm]64/
 *.binlog
 
+# ---- Temp Files ----
+*.backup
+
 # ---- Publish / packaging output ----
 /publish/
 /installer/
