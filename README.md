@@ -7,6 +7,21 @@ give them shortcuts, and paste them into any application from a global Quick Pas
 
 ---
 
+## Background
+
+I started this project because I was never quite happy with the text-template tools I could
+find. Most had only minimalistic feature sets, felt outdated overall, or had dated, bare-bones
+designs — and the ones that came close usually only covered *some* of what I wanted. The biggest
+deal breaker was always the lack of **sync** and Separation, so a team could share the same templates file but only use those they need.
+
+This is my **first C#/WinU 3/.NET project**. It has been in the works for about a year (started 2025-07-15)
+and was thrown away and rebuilt from scratch several times along the way. I'm not a professional
+software developer and don't aim to be — I work in IT but got frustrated sufficiently by available tools that I took it on me to solve this issue. AI was used occasionally (mainly for
+debugging complex issues, planning some structures, and the like); any code written with or by AI
+was always reviewed and double-checked by me.
+
+---
+
 ## Features
 
 - **Rich templates** — formatted text (bold, colors, lists, tables, headings) with automatic save.
@@ -19,6 +34,7 @@ give them shortcuts, and paste them into any application from a global Quick Pas
   (local first, then sync folders in order).
 - **Paste modes** — Auto, Plaintext, Markdown, RTF, HTML.
 - **Backup / export** — export the whole tree or a single folder.
+- **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
 - **Run at login**, configurable global hotkey, and an in-app **Handbook** (PDF).
 
 ---
@@ -26,7 +42,7 @@ give them shortcuts, and paste them into any application from a global Quick Pas
 ## Install
 
 Download the latest `TextTemplateManager-Setup-<version>.exe` from the
-[Releases](https://github.com/marflow-software/text-template-manager/releases) page and run it.
+[Releases](https://github.com/halatsWol/TextTemplateManager/releases) page and run it.
 
 It is a **per-user** install (no administrator rights) and **self-contained** — the .NET 8 runtime
 and the Windows App SDK ship inside the app, so nothing else needs to be installed.
@@ -103,4 +119,9 @@ a tag report `0.0.0-dev`.
 
 ## License
 
-Copyright © Marflow Software. All rights reserved.
+Source-available under a custom license — see [LICENSE](LICENSE). In short: free to use, run,
+copy, and modify for any purpose that complies with the terms (including inside a company), but
+**not** for sale and **not** to be provided as, or as part of, a service — directly or indirectly,
+and not by modifying it first.
+
+Copyright © 2026 Marflow Software.
