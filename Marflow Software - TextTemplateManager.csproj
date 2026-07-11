@@ -313,11 +313,6 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="PreferencesWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="PasteWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

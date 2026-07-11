@@ -108,6 +108,15 @@ public partial class MainViewModel : ObservableObject
     partial void OnIncludeContentSearchChanged(bool value) => ApplyFilter();
     partial void OnStrictSearchChanged(bool value) => ApplyFilter();
 
+    /// <summary>Full tree rebuild with a fresh RootNodes instance. TreeView does not reliably
+    /// reflect a Move on its bound collection (e.g. reordered sync folders), so a reload re-binds
+    /// the whole collection instead of moving items in place.</summary>
+    public void ReloadTree()
+    {
+        RootNodes = new ObservableCollection<BaseItem>();
+        ApplyFilter();
+    }
+
     public void ApplyFilter()
     {
         var source = _dataNode.LocalItems;

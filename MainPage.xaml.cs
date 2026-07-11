@@ -951,10 +951,47 @@ namespace TextTemplateManager
         private void LoadBackup_Click(object sender, RoutedEventArgs e) => ViewModel.LoadBackupCommand.Execute(null);
         private void SaveBackup_Click(object sender, RoutedEventArgs e) => ViewModel.SaveBackupCommand.Execute(null);
 
-        private void OpenPreferences_Click(object sender, RoutedEventArgs e)
+        private void OpenPreferences_Click(object sender, RoutedEventArgs e) => ShowSettings();
+
+        // ---- In-window settings view ----
+
+        private void ShowSettings()
         {
-            var prefWindow = new PreferencesWindow();
-            prefWindow.Activate();
+            SettingsOverlay.Visibility = Visibility.Visible;
+            var general = SettingsNav.MenuItems[0];
+            if (ReferenceEquals(SettingsNav.SelectedItem, general))
+                NavigateSettings("General");                 // already selected -> navigate manually
+            else
+                SettingsNav.SelectedItem = general;          // fires SelectionChanged -> navigate
+        }
+
+        private void SettingsNav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            if (args.SelectedItem is NavigationViewItem item)
+                NavigateSettings(item.Tag?.ToString());
+        }
+
+        private void NavigateSettings(string? tag)
+        {
+            if (tag == "General")
+                SettingsFrame.Navigate(typeof(GeneralSettingsPage), DataNode.Instance.CurrentSettings);
+            else if (tag == "Sync")
+            {
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+                SettingsFrame.Navigate(typeof(SyncSettingsPage), hwnd.ToInt64());
+            }
+        }
+
+        private void SettingsNav_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args) => CloseSettings();
+
+        private async void CloseSettings()
+        {
+            // Persist app settings + reconcile the OS autostart entry (the old window's Save step).
+            await StorageService.SaveSettingsAsync(DataNode.Instance.CurrentSettings);
+            Services.System.StartupManager.SetEnabled(DataNode.Instance.CurrentSettings.RunAtStartup);
+
+            SettingsOverlay.Visibility = Visibility.Collapsed;
+            ViewModel.ReloadTree();   // full rebuild so sync-folder order changes are reflected
         }
 
         private const string GitHubUrl = "https://github.com/halatsWol/TextTemplateManager";
