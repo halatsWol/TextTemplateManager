@@ -1,0 +1,58 @@
+# ---- Build output ----
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]64/
+*.binlog
+
+# ---- Publish / packaging output ----
+/publish/
+/installer/
+AppPackages/
+BundleArtifacts/
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.appxupload
+_pkginfo.txt
+
+# ---- Visual Studio ----
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# ---- Rider / VS Code ----
+.idea/
+.vscode/
+
+# ---- NuGet ----
+*.nupkg
+.nuget/
+packages/
+
+# ---- Node (bundled TipTap editor build) ----
+editor/node_modules/
+editor/npm-debug.log*
+
+# ---- Secrets ----
+# Self-signed MSIX signing key — regenerate locally; don't publish it.
+*.pfx
+
+# ---- OS cruft ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# NOTE: these are intentionally NOT ignored (committed as build inputs/fallbacks):
+#   Assets/editor/**          - prebuilt editor bundle the app inlines at build
+#   Assets/Handbook.pdf       - fallback handbook (regenerated from docs/Handbook.md at build)
