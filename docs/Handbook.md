@@ -49,7 +49,7 @@ step.
 
 ### Template properties
 
-Beneath the editor, each template exposes the following properties:
+Each template exposes the following properties:
 
 - **Title** — the display name, shown in the tree and searchable.
 - **Tags** — optional, comma-separated keywords that are also included in search.
