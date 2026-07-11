@@ -918,12 +918,17 @@ namespace TextTemplateManager
                 flyout.Items.Add(toRoot);
             }
 
-            if (flyout.Items.Count > 0) flyout.Items.Add(new MenuFlyoutSeparator());
-            var del = new MenuFlyoutItem { Text = "Delete", Icon = new SymbolIcon(Symbol.Delete) };
-            del.Click += async (_, _) => await ConfirmAndDeleteAsync();
-            flyout.Items.Add(del);
+            // Sync-folder roots are managed in Settings ▸ Sync — no Delete here.
+            if (!item.IsSyncRoot)
+            {
+                if (flyout.Items.Count > 0) flyout.Items.Add(new MenuFlyoutSeparator());
+                var del = new MenuFlyoutItem { Text = "Delete", Icon = new SymbolIcon(Symbol.Delete) };
+                del.Click += async (_, _) => await ConfirmAndDeleteAsync();
+                flyout.Items.Add(del);
+            }
 
-            flyout.ShowAt(fe, new FlyoutShowOptions { Position = e.GetPosition(fe) });
+            if (flyout.Items.Count > 0)
+                flyout.ShowAt(fe, new FlyoutShowOptions { Position = e.GetPosition(fe) });
         }
 
         /// <summary>Delete the selected item; confirm for templates and non-empty folders, but not
@@ -931,6 +936,7 @@ namespace TextTemplateManager
         private async Task ConfirmAndDeleteAsync()
         {
             if (ViewModel.SelectedItem is not BaseItem item) return;
+            if (item.IsSyncRoot) return;   // sync folders are removed via Settings ▸ Sync
 
             string? message = null;
 
