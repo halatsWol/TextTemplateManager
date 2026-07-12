@@ -466,9 +466,17 @@
             </Border.Shadow>
 
             <StackPanel>
-                <TextBlock Text="⚠ Shortcut Conflicts"
-                       FontWeight="Bold"
-                       Margin="0,0,0,6"/>
+                <Grid Margin="0,0,0,6">
+                    <TextBlock Text="⚠ Shortcut Conflicts" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <!-- Dismiss: only shown for purely cross-area (sync↔local) notes; same-area
+                         conflicts must be resolved, so the panel stays put for those. -->
+                    <Button x:Name="ConflictDismissButton" Visibility="Collapsed"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Padding="4" MinWidth="0" Background="Transparent" BorderThickness="0"
+                            Click="ConflictDismiss_Click" ToolTipService.ToolTip="Dismiss">
+                        <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </Button>
+                </Grid>
 
                 <ScrollViewer MaxHeight="200">
                     <StackPanel x:Name="ConflictStack"/>
@@ -532,7 +540,7 @@
 
                     <TextBlock Grid.Row="3" Grid.Column="0" Text="⚠" VerticalAlignment="Top" FontWeight="SemiBold"/>
                     <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Conflicts:"/><Run Text=" a duplicate shortcut inside the same area is blocked (the panel lists it); across areas it's just a note."/>
+                        <Run FontWeight="SemiBold" Text="Conflicts:"/><Run Text=" a duplicate shortcut inside the same area is blocked (a panel top-right lists it); across areas it's just a note you can dismiss."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="4" Grid.Column="0" Text="🖱️" VerticalAlignment="Top"/>

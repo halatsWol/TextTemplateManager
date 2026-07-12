@@ -8,6 +8,9 @@
         /* Read-only preview: reuse the editor content styles (.ProseMirror), no toolbar. */
         .ProseMirror { min-height: auto; }
         #editor-scroll { cursor: default; }
+        /* Empty paragraphs (blank lines between content) collapse here because there is no
+           ProseMirror trailing <br>; give them a line box so blank lines are preserved. */
+        #preview p:empty::after { content: "\00a0"; }
     </style>
 </head>
 <body>

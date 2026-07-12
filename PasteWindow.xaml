@@ -28,10 +28,12 @@
                 </MenuFlyoutSubItem>
             </MenuFlyout>
 
-            <!-- Compact tree rows -->
+            <!-- Compact tree rows; stretch content so the whole row (not just the text) is a
+                 right-click / context-menu target. -->
             <Style TargetType="TreeViewItem">
                 <Setter Property="MinHeight" Value="22"/>
                 <Setter Property="FontSize" Value="12"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             </Style>
         </Grid.Resources>
 
@@ -75,7 +77,10 @@
                       AllowDrop="False">
                 <TreeView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Padding="4,2" ContextFlyout="{StaticResource TreeItemContextMenu}"
+                        <!-- Background=Transparent so empty areas of the row are hit-testable
+                             (a null background is not), making the whole row right-clickable. -->
+                        <Grid Padding="4,2" Background="Transparent"
+                              ContextFlyout="{StaticResource TreeItemContextMenu}"
                               DoubleTapped="Tree_DoubleTapped" RightTapped="Tree_RightTapped">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Grid VerticalAlignment="Center" Width="20" Height="20">

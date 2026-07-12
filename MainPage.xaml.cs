@@ -37,9 +37,11 @@ namespace TextTemplateManager
         // References to the controls inside the DataTemplate
         private RichEditBox _richEditor;
         private Pivot _editorPivot;
-        private bool _conflictPanelPositioned = false;
+        private bool _conflictUserMoved = false;   // user dragged the panel; stop auto-anchoring it
         private bool _conflictVisible = false;
         private Storyboard _conflictStoryboard;
+        private string _dismissedNotesSignature;   // cross-area note set the user dismissed
+        private string _currentNotesSignature;
 
         // Auto-update
         private readonly UpdateService _updater = new();
@@ -55,6 +57,15 @@ namespace TextTemplateManager
         {
             this.InitializeComponent();
 
+            // Keep the conflict panel anchored to the top-right as the window sizes/resizes, until
+            // the user drags it. This also corrects the very first show, which can happen before
+            // the canvas has a real width.
+            RootCanvas.SizeChanged += (s, e) =>
+            {
+                if (!_conflictUserMoved && ConflictPanel.Visibility == Visibility.Visible)
+                    PositionConflictTopRight();
+            };
+
             ViewModel = new MainViewModel();
             this.DataContext = this;
 
@@ -62,6 +73,15 @@ namespace TextTemplateManager
             {
                 if (e.PropertyName == nameof(ViewModel.SelectedItem))
                 {
+                    // Ensure the template being edited fires live shortcut validation. The one-time
+                    // subscription below only covers items present at startup; sync-folder templates
+                    // (and any added later) load afterward, so subscribe the selection here too.
+                    if (ViewModel.SelectedItem is TextTemplateManager.Models.Template selectedTemplate)
+                    {
+                        selectedTemplate.PropertyChanged -= Template_PropertyChanged;
+                        selectedTemplate.PropertyChanged += Template_PropertyChanged;
+                    }
+
                     DispatcherQueue.TryEnqueue(() =>
                     {
                         PushTemplateToEditor();
@@ -78,6 +98,11 @@ namespace TextTemplateManager
                         FolderTitleBox.IsReadOnly = isSyncRoot || !editable;
                         ToolTipService.SetToolTip(FolderTitleBox,
                             isSyncRoot ? "The sync folder name is set in Settings ▸ Sync" : null);
+
+                        // Surface conflicts for the newly selected item — including sync-folder ones
+                        // that loaded after startup, which the initial validation pass never saw.
+                        ViewModel.ValidateAllShortcuts();
+                        ShowShortcutConflicts();
                     });
                 }
             };
@@ -1402,9 +1427,29 @@ namespace TextTemplateManager
 
         private void ConflictPanel_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
+            // Pressing the dismiss button must not start a drag.
+            if (ConflictDismissButton != null && IsWithin(e.OriginalSource as DependencyObject, ConflictDismissButton))
+                return;
             _isDragging = true;
             _dragStartPoint = e.GetCurrentPoint(RootCanvas).Position;
             ConflictPanel.CapturePointer(e.Pointer);
+        }
+
+        private void ConflictDismiss_Click(object sender, RoutedEventArgs e)
+        {
+            _dismissedNotesSignature = _currentNotesSignature;   // keep hidden until the note set changes
+            ConflictPanel.Visibility = Visibility.Collapsed;
+            _conflictVisible = false;
+        }
+
+        private static bool IsWithin(DependencyObject node, DependencyObject ancestor)
+        {
+            while (node != null)
+            {
+                if (node == ancestor) return true;
+                node = VisualTreeHelper.GetParent(node);
+            }
+            return false;
         }
 
         private void ConflictPanel_PointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -1416,6 +1461,7 @@ namespace TextTemplateManager
         private void ConflictPanel_PointerMoved(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             if (!_isDragging) return;
+            _conflictUserMoved = true;   // once dragged, stop auto-anchoring to the top-right
 
             var currentPoint = e.GetCurrentPoint(RootCanvas).Position;
             double offsetX = currentPoint.X - _dragStartPoint.X;
@@ -1436,6 +1482,22 @@ namespace TextTemplateManager
 
 
 
+
+        // Places the conflict panel in the top-right of the canvas. Skips when the layout isn't
+        // ready yet (width 0) — RootCanvas.SizeChanged re-runs this once it is.
+        private void PositionConflictTopRight()
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                RootCanvas.UpdateLayout();
+                ConflictPanel.UpdateLayout();
+                double avail = RootCanvas.ActualWidth;
+                double panelW = ConflictPanel.ActualWidth;
+                if (avail <= 0 || panelW <= 0) return;
+                Canvas.SetLeft(ConflictPanel, Math.Max(0, avail - panelW - 16));
+                Canvas.SetTop(ConflictPanel, 52);   // clear the menu bar / top-right buttons
+            });
+        }
 
         private void ShowShortcutConflicts()
         {
@@ -1461,32 +1523,39 @@ namespace TextTemplateManager
                 .GroupBy(t => t.SingleKeyShortcut)
                 .ToList();
 
-            if (!singleConflicts.Any() && !multiConflicts.Any() && !crossAreaNotes.Any())
+            bool hasErrors = singleConflicts.Any() || multiConflicts.Any();
+            bool hasNotes = crossAreaNotes.Any();
+
+            if (!hasErrors && !hasNotes)
+            {
+                _dismissedNotesSignature = null;
+                ConflictPanel.Visibility = Visibility.Collapsed;
+                _conflictVisible = false;
+                return;
+            }
+
+            // Same-area conflicts (local↔local or within one sync folder) must be resolved, so
+            // they reset any prior dismissal and the panel is non-dismissable. Only when the panel
+            // holds nothing but cross-area (sync↔local) notes may it be dismissed.
+            if (hasErrors) _dismissedNotesSignature = null;
+            bool onlyNotes = !hasErrors && hasNotes;
+            _currentNotesSignature = string.Join("|",
+                crossAreaNotes.SelectMany(g => g.Select(t => g.Key + "~" + t.Title))
+                              .OrderBy(s => s, StringComparer.Ordinal));
+
+            // A dismissed note set stays hidden until it changes (or an error appears).
+            if (onlyNotes && _dismissedNotesSignature == _currentNotesSignature)
             {
                 ConflictPanel.Visibility = Visibility.Collapsed;
                 _conflictVisible = false;
                 return;
             }
 
+            ConflictDismissButton.Visibility = onlyNotes ? Visibility.Visible : Visibility.Collapsed;
             ConflictPanel.Visibility = Visibility.Visible;
 
-            // Center once when first shown
-            if (!_conflictPanelPositioned)
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    RootCanvas.UpdateLayout();
-                    ConflictPanel.UpdateLayout();
-
-                    double left = (RootCanvas.ActualWidth - ConflictPanel.ActualWidth) / 2;
-                    double top = (RootCanvas.ActualHeight - ConflictPanel.ActualHeight) / 2;
-
-                    Canvas.SetLeft(ConflictPanel, Math.Max(0, left));
-                    Canvas.SetTop(ConflictPanel, Math.Max(0, top));
-
-                    _conflictPanelPositioned = true;
-                });
-            }
+            // Anchor to the top-right whenever shown, unless the user has dragged it elsewhere.
+            if (!_conflictUserMoved) PositionConflictTopRight();
 
             // Fade in safely
             if (!_conflictVisible)

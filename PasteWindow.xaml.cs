@@ -27,10 +27,12 @@ namespace TextTemplateManager
         private bool _isAltPressed = false;
         private bool _isProcessing = false;
         private IntPtr _inputSiteHwnd = IntPtr.Zero;   // WinUI content-input child, subclassed for the Alt-beep
+        private IntPtr _hwnd = IntPtr.Zero;
 
         public PasteWindow()
         {
             this.InitializeComponent();
+            _hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
             this.Activated += (s, e) =>
             {
@@ -38,21 +40,27 @@ namespace TextTemplateManager
                 {
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
-                        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                        WindowHelper.ForceWindowToFront(hWnd);
+                        WindowHelper.ForceWindowToFront(_hwnd);
 
                         // Subclass the input child so the Alt-key WM_SYSCHAR ding is swallowed
                         // there. Retries on later activations if not yet realized.
                         if (_inputSiteHwnd == IntPtr.Zero)
-                            _inputSiteHwnd = WindowHelper.SuppressAltMenuBeepOnChild(hWnd);
+                            _inputSiteHwnd = WindowHelper.SuppressAltMenuBeepOnChild(_hwnd);
 
                         SearchBox.Focus(FocusState.Programmatic);
                     });
+                }
+                else if (!_hasExecuted)
+                {
+                    // Lost focus mid-entry (e.g. clicked another window): abandon the multi-key
+                    // entry so returning doesn't resume with a stale buffer or a stuck ALT.
+                    CancelMultiKeyEntry();
                 }
             };
 
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(780, 500));
             ConfigureWindow();
+            InstallAltEscHook();
 
             this.DispatcherQueue.TryEnqueue(() => LoadInitialData());
 
@@ -86,6 +94,7 @@ namespace TextTemplateManager
             {
                 WindowHelper.RemoveWindowHook(hWnd);
                 if (_inputSiteHwnd != IntPtr.Zero) WindowHelper.RemoveWindowHook(_inputSiteHwnd);
+                RemoveAltEscHook();
             };
         }
 
@@ -224,7 +233,7 @@ namespace TextTemplateManager
                     return;
                 }
 
-                if (altIsDown || _isAltPressed) return;   // Alt+Esc: let the OS handle it
+                if (altIsDown || _isAltPressed) return;   // Alt+Esc handled by the low-level hook
 
                 var escFocus = FocusManager.GetFocusedElement(this.Content.XamlRoot);
                 bool searching = ReferenceEquals(escFocus, SearchBox) && !string.IsNullOrEmpty(SearchBox.Text);
@@ -429,6 +438,90 @@ namespace TextTemplateManager
             this.Close();   // return focus to the target app first
             _ = PasteService.HandlePaste(item.Content, mode);
         }
+
+        // Clears the in-progress multi-key entry. On a full reset (window lost focus) the held-ALT
+        // state is cleared and the tab restored too, since the ALT key-up will never arrive.
+        private void CancelMultiKeyEntry(bool fullReset = true)
+        {
+            if (fullReset)
+            {
+                _isAltPressed = false;
+                if (_savedTab != null) { ShortcutTabs.SelectedItem = _savedTab; _savedTab = null; }
+            }
+            if (string.IsNullOrEmpty(_multiKeyBuffer)) return;
+            _multiKeyBuffer = "";
+            UpdateBufferUI();
+            RefreshMultiKeyList(SearchBox.Text);
+        }
+        #endregion
+
+        #region Alt+Esc hook
+        // Alt+Esc is an OS window-switch shortcut, so it never reaches WinUI's KeyDown. A low-level
+        // keyboard hook lets us swallow it while Quick Paste is foreground and cancel the entry
+        // instead of letting Windows send the window to the back (which left ALT / the buffer stuck).
+        private IntPtr _keyboardHook = IntPtr.Zero;
+        private LowLevelKeyboardProc? _keyboardProc;
+
+        private void InstallAltEscHook()
+        {
+            if (_keyboardHook != IntPtr.Zero) return;
+            _keyboardProc = KeyboardHookProc;   // keep the delegate alive against GC
+            _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, _keyboardProc, GetModuleHandle(null), 0);
+        }
+
+        private void RemoveAltEscHook()
+        {
+            if (_keyboardHook == IntPtr.Zero) return;
+            UnhookWindowsHookEx(_keyboardHook);
+            _keyboardHook = IntPtr.Zero;
+            _keyboardProc = null;
+        }
+
+        private IntPtr KeyboardHookProc(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && ((int)wParam == WM_KEYDOWN || (int)wParam == WM_SYSKEYDOWN))
+            {
+                var data = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+                bool altDown = (data.flags & LLKHF_ALTDOWN) != 0 || (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+                if (data.vkCode == VK_ESCAPE && altDown && GetForegroundWindow() == _hwnd)
+                {
+                    // ALT is still physically held, so keep the ALT state and just drop the buffer.
+                    DispatcherQueue.TryEnqueue(() => CancelMultiKeyEntry(fullReset: false));
+                    return (IntPtr)1;   // swallow Alt+Esc
+                }
+            }
+            return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+        }
+
+        private const int WH_KEYBOARD_LL = 13;
+        private const int WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104;
+        private const int VK_ESCAPE = 0x1B, VK_MENU = 0x12;
+        private const uint LLKHF_ALTDOWN = 0x20;
+
+        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct KBDLLHOOKSTRUCT
+        {
+            public uint vkCode;
+            public uint scanCode;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr GetModuleHandle(string? lpModuleName);
         #endregion
 
         #region UI Updates & Preview
@@ -535,7 +628,11 @@ namespace TextTemplateManager
                 BufferDisplay.Text = displayPart;
                 BufferDisplay.Opacity = 1.0;
 
-                bool exists = DataNode.Instance.AllItems.Any(t => t.MultiKeyShortcut?.StartsWith(displayPart, StringComparison.OrdinalIgnoreCase) == true);
+                // Compare against the EFFECTIVE (sync-prefixed) shortcut, not the raw one, so a
+                // valid prefix like "AND-MSG" isn't flagged red just because the raw shortcut is "MSG".
+                bool exists = DataNode.Instance.AllItems.Any(t =>
+                    !string.IsNullOrEmpty(t.MultiKeyShortcut) &&
+                    EffectiveMulti(t).StartsWith(displayPart, StringComparison.OrdinalIgnoreCase));
                 BufferDisplay.Foreground = exists ? GetThemeBrush("AccentTextFillColorPrimaryBrush", Colors.DeepSkyBlue) : new SolidColorBrush(Colors.Crimson);
                 PlaintextBadge.Visibility = _multiKeyBuffer.EndsWith("_") ? Visibility.Visible : Visibility.Collapsed;
             }

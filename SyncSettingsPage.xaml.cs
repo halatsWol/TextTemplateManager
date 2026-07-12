@@ -98,6 +98,18 @@ namespace TextTemplateManager
             await SaveAsync();
         }
 
+        // Prefixes are always uppercase (matches how the multi-key buffer is shown). The x:Bind
+        // carries the uppercased text into ShortcutPrefix.
+        private void Prefix_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_loading || sender is not TextBox tb) return;
+            string upper = tb.Text.ToUpperInvariant();
+            if (tb.Text == upper) return;
+            int caret = tb.SelectionStart;
+            tb.Text = upper;                                    // re-enters, but now equal -> no loop
+            tb.SelectionStart = Math.Min(caret, tb.Text.Length);
+        }
+
         // ---- Add / create ----
         private async void AddExisting_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {

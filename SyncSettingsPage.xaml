@@ -148,7 +148,7 @@
                         <TextBox Grid.Column="2" Text="{x:Bind Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  PlaceholderText="Folder name"/>
                         <TextBox Grid.Column="3" Text="{x:Bind ShortcutPrefix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 PlaceholderText="prefix"/>
+                                 TextChanged="Prefix_TextChanged" PlaceholderText="PREFIX"/>
 
                         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Button Padding="4" Background="Transparent" BorderThickness="0"
