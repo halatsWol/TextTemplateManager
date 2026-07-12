@@ -30,6 +30,9 @@ string raw = File.ReadAllText(input).Replace("▸", ">");
 var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 var document = Markdown.Parse(raw, pipeline);
 
+// Image paths in the markdown are resolved relative to the markdown file.
+HandbookContext.ImageBaseDir = Path.GetDirectoryName(Path.GetFullPath(input)) ?? "";
+
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
 
 Document.Create(container =>
@@ -89,7 +92,7 @@ static void RenderBlock(ColumnDescriptor col, Block block)
             break;
 
         case ParagraphBlock p:
-            col.Item().PaddingTop(6).Text(t => RenderInline(t, p.Inline, default));
+            RenderParagraph(col, p);
             break;
 
         case ListBlock list:
@@ -104,7 +107,11 @@ static void RenderBlock(ColumnDescriptor col, Block block)
                     row.RelativeItem().Column(inner =>
                     {
                         foreach (var b in item)
-                            if (b is ParagraphBlock pb) inner.Item().Text(t => RenderInline(t, pb.Inline, default));
+                            if (b is ParagraphBlock pb)
+                            {
+                                if (HasImage(pb.Inline)) RenderParagraphWithImages(inner, pb.Inline);
+                                else inner.Item().Text(t => RenderInline(t, pb.Inline, default));
+                            }
                             else RenderBlock(inner, b);
                     });
                 });
@@ -226,6 +233,140 @@ static void AddSpan(TextDescriptor text, string s, InlineStyle style)
     if (style.Italic) span.Italic();
     if (style.Mono) span.FontFamily("Consolas").FontSize(10);
     if (style.Link) span.FontColor(Colors.Blue.Medium);
+}
+
+// ---- Images ------------------------------------------------------------------
+
+static void RenderParagraph(ColumnDescriptor col, ParagraphBlock p)
+{
+    if (HasImage(p.Inline)) RenderParagraphWithImages(col, p.Inline);
+    else col.Item().PaddingTop(6).Text(t => RenderInline(t, p.Inline, default));
+}
+
+static bool HasImage(ContainerInline? inline)
+{
+    if (inline == null) return false;
+    foreach (var node in inline)
+    {
+        if (node is LinkInline { IsImage: true }) return true;
+        if (node is ContainerInline c && HasImage(c)) return true;
+    }
+    return false;
+}
+
+// Renders a paragraph that mixes text and images: text runs become text items and each image a
+// block image, in document order. Handbook images normally sit alone in their own paragraph.
+static void RenderParagraphWithImages(ColumnDescriptor col, ContainerInline? inline)
+{
+    if (inline == null) return;
+    var pending = new List<Inline>();
+    void Flush()
+    {
+        if (pending.Count == 0 || pending.All(n => n is LineBreakInline)) { pending.Clear(); return; }
+        var nodes = pending.ToList();
+        col.Item().PaddingTop(6).Text(t => { foreach (var n in nodes) RenderInlineNode(t, n, default); });
+        pending.Clear();
+    }
+    foreach (var node in inline)
+    {
+        if (node is LinkInline { IsImage: true } img) { Flush(); RenderImage(col, img); }
+        else pending.Add(node);
+    }
+    Flush();
+}
+
+static void RenderImage(ColumnDescriptor col, LinkInline img)
+{
+    string? url = img.Url;
+    if (string.IsNullOrWhiteSpace(url)) return;
+
+    if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+        url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+    {
+        col.Item().PaddingTop(6).Text($"[remote image not embedded: {url}]").Italic().FontColor(Colors.Grey.Darken1);
+        Console.Error.WriteLine($"HandbookGen: skipping remote image {url}");
+        return;
+    }
+
+    string path = Path.IsPathRooted(url) ? url : Path.GetFullPath(Path.Combine(HandbookContext.ImageBaseDir, url));
+    if (!File.Exists(path))
+    {
+        col.Item().PaddingTop(6).Text($"[missing image: {url}]").Italic().FontColor(Colors.Red.Medium);
+        Console.Error.WriteLine($"HandbookGen: image not found: {path}");
+        return;
+    }
+
+    // Cap at the image's natural size (px @ 96 DPI -> points) so small screenshots are not
+    // upscaled; the column already caps the width to the page, so large images scale down.
+    var item = col.Item().PaddingTop(8);
+    var size = ImageSize(path);
+    if (size is { } sz && sz.Width > 0) item = item.MaxWidth(sz.Width * 0.75f);
+    item.Image(path).FitWidth();
+
+    string alt = ImageAltText(img);
+    if (!string.IsNullOrWhiteSpace(alt))
+        col.Item().PaddingTop(2).Text(alt).FontSize(9).Italic().FontColor(Colors.Grey.Darken1);
+}
+
+static string ImageAltText(LinkInline img)
+{
+    var sb = new System.Text.StringBuilder();
+    foreach (var child in img)
+        if (child is LiteralInline lit) sb.Append(lit.Content.ToString());
+    return sb.ToString().Trim();
+}
+
+// Reads pixel dimensions from a PNG / GIF / JPEG header without decoding the pixels.
+static (int Width, int Height)? ImageSize(string path)
+{
+    try
+    {
+        using var fs = File.OpenRead(path);
+        var h = new byte[24];
+        if (fs.Read(h, 0, 24) < 24) return null;
+
+        if (h[0] == 0x89 && h[1] == 0x50 && h[2] == 0x4E && h[3] == 0x47)   // PNG (IHDR)
+            return ((h[16] << 24) | (h[17] << 16) | (h[18] << 8) | h[19],
+                    (h[20] << 24) | (h[21] << 16) | (h[22] << 8) | h[23]);
+
+        if (h[0] == (byte)'G' && h[1] == (byte)'I' && h[2] == (byte)'F')    // GIF
+            return (h[6] | (h[7] << 8), h[8] | (h[9] << 8));
+
+        if (h[0] == 0xFF && h[1] == 0xD8)                                   // JPEG
+        {
+            fs.Position = 2;
+            return JpegSize(fs);
+        }
+    }
+    catch { /* unknown / unreadable header -> fall back to fit-width */ }
+    return null;
+}
+
+static (int Width, int Height)? JpegSize(Stream s)
+{
+    var b = new byte[5];
+    while (s.Position < s.Length)
+    {
+        if (s.ReadByte() != 0xFF) continue;
+        int marker = s.ReadByte();
+        while (marker == 0xFF) marker = s.ReadByte();                       // skip fill bytes
+        if (marker is 0xD8 or 0xD9 || marker is >= 0xD0 and <= 0xD7) continue;  // markers with no payload
+        if (s.Read(b, 0, 2) < 2) return null;
+        int len = (b[0] << 8) | b[1];
+        // Start-of-frame markers (except DHT/JPG/DAC) carry the frame dimensions.
+        if (marker is >= 0xC0 and <= 0xCF && marker != 0xC4 && marker != 0xC8 && marker != 0xCC)
+        {
+            if (s.Read(b, 0, 5) < 5) return null;
+            return ((b[3] << 8) | b[4], (b[1] << 8) | b[2]);
+        }
+        s.Position += len - 2;                                             // skip this segment
+    }
+    return null;
+}
+
+static class HandbookContext
+{
+    public static string ImageBaseDir = "";
 }
 
 readonly record struct InlineStyle(bool Bold, bool Italic, bool Mono, bool Link);
