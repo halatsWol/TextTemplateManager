@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using TextTemplateManager.Common;
 using TextTemplateManager.Data;
+using TextTemplateManager.Helpers;
 using TextTemplateManager.Models;
 using TextTemplateManager.Services.Pasting;
 using TextTemplateManager.ViewModels;
@@ -888,7 +889,7 @@ namespace TextTemplateManager
                 dup.Click += (_, _) => ViewModel.CloneItemCommand.Execute(null);
                 flyout.Items.Add(dup);
 
-                var copy = new MenuFlyoutItem { Text = $"Copy ({t.DefaultPasteMode})" };
+                var copy = new MenuFlyoutItem { Text = $"Copy ({PasteModeLabel.For(t.DefaultPasteMode)})" };
                 copy.Click += (_, _) => _ = PasteService.CopyToClipboardAsync(t.Content, t.DefaultPasteMode);
                 flyout.Items.Add(copy);
 
@@ -896,7 +897,7 @@ namespace TextTemplateManager
                 foreach (PasteMode mode in ViewModel.PasteModes)
                 {
                     var captured = mode;
-                    var mi = new MenuFlyoutItem { Text = mode.ToString() };
+                    var mi = new MenuFlyoutItem { Text = PasteModeLabel.For(mode) };
                     mi.Click += (_, _) => _ = PasteService.CopyToClipboardAsync(t.Content, captured);
                     copyAs.Items.Add(mi);
                 }

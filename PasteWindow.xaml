@@ -19,11 +19,12 @@
             <MenuFlyout x:Key="TreeItemContextMenu">
                 <MenuFlyoutItem Text="Paste" Click="CtxPaste_Click" Icon="Paste"/>
                 <MenuFlyoutSubItem Text="Paste As">
-                    <MenuFlyoutItem Text="Plaintext" Tag="Plaintext" Click="CtxPasteAs_Click"/>
-                    <MenuFlyoutItem Text="Markdown" Tag="Markdown" Click="CtxPasteAs_Click"/>
-                    <MenuFlyoutItem Text="RTF" Tag="RTF" Click="CtxPasteAs_Click"/>
-                    <MenuFlyoutItem Text="HTML" Tag="HTML" Click="CtxPasteAs_Click"/>
                     <MenuFlyoutItem Text="Auto" Tag="Auto" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="HTML/Jira" Tag="Jira" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="HTML" Tag="HTML" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="RTF" Tag="RTF" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="Markdown" Tag="Markdown" Click="CtxPasteAs_Click"/>
+                    <MenuFlyoutItem Text="Plaintext" Tag="Plaintext" Click="CtxPasteAs_Click"/>
                 </MenuFlyoutSubItem>
             </MenuFlyout>
 
@@ -262,7 +263,7 @@
 
                     <TextBlock Grid.Row="5" Grid.Column="0" Text="🖱️" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Right-click:"/><Run Text=" Paste, or Paste As — Plaintext, Markdown, RTF, HTML or Auto."/>
+                        <Run FontWeight="SemiBold" Text="Right-click:"/><Run Text=" Paste, or Paste As — Plaintext, Markdown, RTF, HTML, HTML/Jira or Auto."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="🔍" VerticalAlignment="Top"/>

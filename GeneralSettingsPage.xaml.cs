@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Linq;
 using TextTemplateManager.Common;
+using TextTemplateManager.Helpers;
 using TextTemplateManager.Models;
 using Windows.System;
 using Windows.UI.Core;
@@ -18,7 +19,7 @@ public sealed partial class GeneralSettingsPage : Page
     public GeneralSettingsPage()
     {
         this.InitializeComponent();
-        PasteModeCombo.ItemsSource = Enum.GetValues(typeof(PasteMode)).Cast<PasteMode>();
+        PasteModeCombo.ItemsSource = PasteModeLabel.DisplayOrder;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

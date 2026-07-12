@@ -470,3 +470,52 @@ body {
 }
 
 .ProseMirror td, .ProseMirror th { position: relative; }
+
+/* Callout panels (info / note / success / warning / error). Background + leading icon are
+   CSS-only; the stored/pasted HTML is just <div data-panel-type="TYPE">. */
+.ProseMirror .ttm-panel {
+    position: relative;
+    margin: 8px 0;
+    padding: 10px 12px 10px 40px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+}
+.ProseMirror .ttm-panel > :first-child { margin-top: 0; }
+.ProseMirror .ttm-panel > :last-child { margin-bottom: 0; }
+.ProseMirror .ttm-panel::before {
+    position: absolute;
+    left: 11px;
+    top: 9px;
+    font-size: 16px;
+    line-height: 1.4;
+}
+.ProseMirror .ttm-panel[data-panel-type="info"]    { background: #deebff; border-left-color: #2684ff; }
+.ProseMirror .ttm-panel[data-panel-type="note"]    { background: #eae6ff; border-left-color: #6554c0; }
+.ProseMirror .ttm-panel[data-panel-type="success"] { background: #e3fcef; border-left-color: #36b37e; }
+.ProseMirror .ttm-panel[data-panel-type="warning"] { background: #fffae6; border-left-color: #ffab00; }
+.ProseMirror .ttm-panel[data-panel-type="error"]   { background: #ffebe6; border-left-color: #ff5630; }
+.ProseMirror .ttm-panel[data-panel-type="info"]::before    { content: "ℹ️"; }
+.ProseMirror .ttm-panel[data-panel-type="note"]::before    { content: "🗒️"; }
+.ProseMirror .ttm-panel[data-panel-type="success"]::before { content: "✅"; }
+.ProseMirror .ttm-panel[data-panel-type="warning"]::before { content: "⚠️"; }
+.ProseMirror .ttm-panel[data-panel-type="error"]::before   { content: "⛔"; }
+
+body.dark .ProseMirror .ttm-panel[data-panel-type="info"]    { background: #1c2b41; }
+body.dark .ProseMirror .ttm-panel[data-panel-type="note"]    { background: #282442; }
+body.dark .ProseMirror .ttm-panel[data-panel-type="success"] { background: #163a2b; }
+body.dark .ProseMirror .ttm-panel[data-panel-type="warning"] { background: #3d3413; }
+body.dark .ProseMirror .ttm-panel[data-panel-type="error"]   { background: #3d1f1b; }
+
+/* Panel type picker: a colored dot before each label */
+.panel-item { display: flex; align-items: center; gap: 8px; }
+.panel-item .panel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+.panel-item-info    .panel-dot { background: #2684ff; }
+.panel-item-note    .panel-dot { background: #6554c0; }
+.panel-item-success .panel-dot { background: #36b37e; }
+.panel-item-warning .panel-dot { background: #ffab00; }
+.panel-item-error   .panel-dot { background: #ff5630; }

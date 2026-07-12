@@ -1,4 +1,4 @@
-import { Editor } from '@tiptap/core'
+import { Editor, Node, mergeAttributes } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
@@ -64,6 +64,44 @@ const LineNumberCodeBlock = CodeBlock.extend({
                     return true
                 },
             }
+        }
+    },
+})
+
+// Jira-style callout panel (info / note / success / warning / error). Serialized as
+// <div class="ttm-panel ak-editor-panel" data-panel-type="TYPE"> so Atlassian's editor
+// reconstructs it on paste — its panel node parses div[data-panel-type]. The colored
+// background and leading icon are CSS-only, never part of the stored/pasted HTML.
+const PANEL_TYPES = ['info', 'note', 'success', 'warning', 'error']
+const Panel = Node.create({
+    name: 'panel',
+    group: 'block',
+    content: 'block+',
+    defining: true,
+    addAttributes() {
+        return {
+            panelType: {
+                default: 'info',
+                parseHTML: el => {
+                    const t = el.getAttribute('data-panel-type')
+                    return PANEL_TYPES.includes(t) ? t : 'info'
+                },
+                renderHTML: attrs => ({ 'data-panel-type': attrs.panelType }),
+            },
+        }
+    },
+    parseHTML() { return [{ tag: 'div[data-panel-type]' }] },
+    renderHTML({ HTMLAttributes }) {
+        return ['div', mergeAttributes(HTMLAttributes, { class: 'ttm-panel ak-editor-panel' }), 0]
+    },
+    addCommands() {
+        return {
+            // Wrap the current block(s) in a panel, or unwrap/retype an existing one.
+            togglePanel: (panelType) => ({ commands, editor }) => {
+                if (editor.isActive('panel', { panelType })) return commands.lift('panel')
+                if (editor.isActive('panel')) return commands.updateAttributes('panel', { panelType })
+                return commands.wrapIn('panel', { panelType })
+            },
         }
     },
 })
@@ -139,6 +177,7 @@ const editor = new Editor({
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Subscript,
         Superscript,
+        Panel,
     ],
     content: '',
     editorProps: {
@@ -286,6 +325,8 @@ const ICONS = {
     dateTime: svg('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="12 13 12 16 14 16"/>'),
     // Filled quote glyph (Material "format_quote"), vertically centered in the 24x24 box.
     quote: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>',
+    // Callout panel: a box with a filled left rail (evokes the colored bar of a panel).
+    panel: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="3" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><line x1="10" y1="9" x2="18" y2="9"/><line x1="10" y1="13" x2="18" y2="13"/>'),
 }
 
 function button(html, title, onClick, isActive) {
@@ -545,6 +586,23 @@ toolbar.appendChild(sep())
 toolbar.appendChild(addActive(button(ICONS.quote, 'Quote', () => run(c => c.toggleBlockquote())), () => editor.isActive('blockquote')))
 toolbar.appendChild(addActive(button(ICONS.codeBlock, 'Code block', () => run(c => c.toggleCodeBlock({ lineNumbers: true }))), () => editor.isActive('codeBlock')))
 toolbar.appendChild(button(ICONS.hr, 'Divider', () => run(c => c.setHorizontalRule())))
+
+// Callout panels (info / note / success / warning / error). Choosing the active type again
+// removes the panel. Pastes into Jira as a matching panel via the HTML/Jira paste mode.
+popupButton(ICONS.panel, 'Panel', (pop, close) => {
+    const item = (label, type) => {
+        const el = document.createElement('button')
+        el.className = 'menu-item panel-item panel-item-' + type
+        el.innerHTML = '<span class="panel-dot"></span>' + label
+        el.onclick = (e) => { e.preventDefault(); run(c => c.togglePanel(type)); close() }
+        pop.appendChild(el)
+    }
+    item('Info', 'info')
+    item('Note', 'note')
+    item('Success', 'success')
+    item('Warning', 'warning')
+    item('Error', 'error')
+})
 toolbar.appendChild(sep())
 
 // Text alignment

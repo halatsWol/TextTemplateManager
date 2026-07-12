@@ -32,7 +32,7 @@ was always reviewed and double-checked by me.
   pinned folder, with per-source read-only and shortcut-prefix options.
 - **Area-aware shortcuts** — the same key can be reused across sync folders; it resolves by priority
   (local first, then sync folders in order).
-- **Paste modes** — Auto, Plaintext, Markdown, RTF, HTML.
+- **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.
 - **Backup / export** — export the whole tree or a single folder.
 - **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
 - **Run at login**, configurable global hotkey, and an in-app **Handbook** (PDF).

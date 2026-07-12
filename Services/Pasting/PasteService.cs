@@ -16,7 +16,7 @@ namespace TextTemplateManager.Services.Pasting
 {
     /// <summary>
     /// Orchestrates the clipboard swap, paste simulation, and original data restoration.
-    /// Templates are stored as HTML; paste modes are Plaintext, Markdown, RTF, HTML and Auto.
+    /// Templates are stored as HTML; paste modes are Plaintext, Markdown, RTF, HTML, Jira and Auto.
     /// </summary>
     public static class PasteService
     {
@@ -134,13 +134,28 @@ namespace TextTemplateManager.Services.Pasting
                     break;
 
                 case PasteMode.HTML:
-                    if (!string.IsNullOrEmpty(html)) formats[CfHtml] = Utf8Bytes(BuildCfHtml(html));
+                    // Styled tables (not data-panel-type) — broadest rendering in email/web clients.
+                    string htmlOut = PanelHtml.ToStyledHtml(html);
+                    if (!string.IsNullOrEmpty(htmlOut)) formats[CfHtml] = Utf8Bytes(BuildCfHtml(htmlOut));
+                    formats[CF_UNICODETEXT] = UnicodeBytes(plainText);
+                    break;
+
+                case PasteMode.Jira:
+                    // HTML only (no RTF) so Jira's editor takes the HTML clipboard path and parses
+                    // our data-panel-type divs back into native panels. Plain text is the fallback
+                    // for targets that ignore HTML.
+                    string jira = PanelHtml.Prepare(html);
+                    if (!string.IsNullOrEmpty(jira)) formats[CfHtml] = Utf8Bytes(BuildCfHtml(jira));
                     formats[CF_UNICODETEXT] = UnicodeBytes(plainText);
                     break;
 
                 case PasteMode.Auto:
                 default:
-                    if (!string.IsNullOrEmpty(html)) formats[CfHtml] = Utf8Bytes(BuildCfHtml(html));
+                    // Most-compatible payload: panels as styled boxes (render in every target,
+                    // including Jira as a table) plus RTF and plain text. For native Jira panels
+                    // use the HTML/Jira mode.
+                    string autoHtml = PanelHtml.ToStyledHtml(html);
+                    if (!string.IsNullOrEmpty(autoHtml)) formats[CfHtml] = Utf8Bytes(BuildCfHtml(autoHtml));
                     string autoRtf = SafeHtmlToRtf(html);
                     if (!string.IsNullOrEmpty(autoRtf)) formats[CfRtf] = RtfBytes(autoRtf);
                     formats[CF_UNICODETEXT] = UnicodeBytes(plainText);

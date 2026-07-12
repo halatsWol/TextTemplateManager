@@ -17,6 +17,13 @@ namespace TextTemplateManager.Helpers
 
             var rtf = new StringBuilder();
             rtf.Append(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}}");
+            // Colour table for callout panels: pairs of (background, accent) per type, indices 1..10.
+            rtf.Append(@"{\colortbl;")
+               .Append(@"\red222\green235\blue255;\red38\green132\blue255;")   // 1,2  info
+               .Append(@"\red234\green230\blue255;\red101\green84\blue192;")   // 3,4  note
+               .Append(@"\red227\green252\blue239;\red54\green179\blue126;")   // 5,6  success
+               .Append(@"\red255\green250\blue230;\red255\green171\blue0;")    // 7,8  warning
+               .Append(@"\red255\green235\blue230;\red255\green86\blue48;}");  // 9,10 error
             rtf.Append(@"\f0\fs22 ");
 
             var doc = new HtmlDocument();
@@ -32,6 +39,13 @@ namespace TextTemplateManager.Helpers
         private static void ProcessNode(HtmlNode node, StringBuilder rtf)
         {
             string name = node.Name.ToLowerInvariant();
+
+            // Callout panel -> a shaded single-cell table with a left accent border.
+            if (name == "div" && node.GetAttributeValue("data-panel-type", null) != null)
+            {
+                WritePanel(node, rtf);
+                return;
+            }
 
             // Opening tags.
             switch (name)
@@ -84,6 +98,66 @@ namespace TextTemplateManager.Helpers
                     rtf.Append(@"\b0\fs22 \par "); break;
             }
         }
+
+        /// <summary>Renders a callout panel as a one-row, one-cell table: cell background = the
+        /// panel tint, a thick left border in the accent colour, and a bold accent-coloured label.
+        /// A single cell keeps all the panel's text in one box (Word/WordPad/Outlook render this).</summary>
+        private static void WritePanel(HtmlNode node, StringBuilder rtf)
+        {
+            var (bg, accent, label) = PanelColors(node.GetAttributeValue("data-panel-type", "info"));
+
+            rtf.Append(@"\par ");
+            rtf.Append(@"\trowd\trgaph108\trleft0");
+            rtf.Append(@"\clcbpat").Append(bg);                          // cell background
+            rtf.Append(@"\clbrdrl\brdrs\brdrw60\brdrcf").Append(accent); // left accent rail
+            rtf.Append(@"\clbrdrt\brdrs\brdrw10\brdrcf").Append(bg);
+            rtf.Append(@"\clbrdrb\brdrs\brdrw10\brdrcf").Append(bg);
+            rtf.Append(@"\clbrdrr\brdrs\brdrw10\brdrcf").Append(bg);
+            rtf.Append(@"\cellx9360");
+            rtf.Append(@"\pard\intbl\sb40\sa40 ");
+            rtf.Append(@"{\b\cf").Append(accent).Append(' ').Append(label).Append(@"}\line ");
+            WriteCellContent(node, rtf);
+            rtf.Append(@"\cell\row\pard ");
+        }
+
+        /// <summary>Writes a panel's block content into a table cell, joining paragraphs and list
+        /// items with soft line breaks so it all stays inside the one cell.</summary>
+        private static void WriteCellContent(HtmlNode panel, StringBuilder rtf)
+        {
+            foreach (var child in panel.ChildNodes)
+            {
+                string cn = child.Name.ToLowerInvariant();
+                if (cn == "ul" || cn == "ol")
+                {
+                    int n = 0;
+                    foreach (var li in child.ChildNodes)
+                    {
+                        if (li.Name.ToLowerInvariant() != "li") continue;
+                        n++;
+                        rtf.Append(@"\line ").Append(cn == "ol" ? n + @".\tab " : @"\bullet\tab ");
+                        foreach (var gc in li.ChildNodes) ProcessNode(gc, rtf);
+                    }
+                }
+                else if (cn == "p")
+                {
+                    rtf.Append(@"\line ");
+                    foreach (var gc in child.ChildNodes) ProcessNode(gc, rtf);
+                }
+                else
+                {
+                    ProcessNode(child, rtf);
+                }
+            }
+        }
+
+        private static (int Bg, int Accent, string Label) PanelColors(string type) => type.ToLowerInvariant() switch
+        {
+            "note" => (3, 4, "Note"),
+            "success" => (5, 6, "Success"),
+            "warning" => (7, 8, "Warning"),
+            "error" => (9, 10, "Error"),
+            _ => (1, 2, "Info"),
+        };
 
         private static int ListIndex(HtmlNode li)
         {

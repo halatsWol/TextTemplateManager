@@ -19,9 +19,15 @@
         <StackPanel Spacing="8">
             <TextBlock Text="Default Paste Mode" Style="{StaticResource BodyStrongTextBlockStyle}"/>
             <TextBlock Text="Sets the mode used when creating new templates." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-            <ComboBox x:Name="PasteModeCombo" 
+            <ComboBox x:Name="PasteModeCombo"
                       MinWidth="200"
-                      SelectedItem="{x:Bind ViewModel.DefaultPasteMode, Mode=TwoWay}"/>
+                      SelectedItem="{x:Bind ViewModel.DefaultPasteMode, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource PasteModeLabelConverter}}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </StackPanel>
 
         <StackPanel Spacing="8">

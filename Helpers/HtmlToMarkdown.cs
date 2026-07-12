@@ -137,10 +137,31 @@ namespace TextTemplateManager.Helpers
                     WriteTable(node, sb);
                     break;
 
+                case "div":
+                    string panelType = node.GetAttributeValue("data-panel-type", null);
+                    if (panelType != null) WritePanel(node, sb, panelType, depth);
+                    else WriteChildren(node, sb, listOrdered, depth);
+                    break;
+
                 default:
                     WriteChildren(node, sb, listOrdered, depth);
                     break;
             }
+        }
+
+        /// <summary>Writes a callout panel as a blockquote with an emoji + bold label first line —
+        /// the most broadly-rendered way to convey a callout in Markdown (GitHub, GitLab, Obsidian,
+        /// and plain renderers all show it as a labeled quote).</summary>
+        private static void WritePanel(HtmlNode node, StringBuilder sb, string panelType, int depth)
+        {
+            var (_, _, emoji, label) = PanelHtml.StyleFor(panelType);
+            var inner = new StringBuilder();
+            WriteChildren(node, inner, listOrdered: false, depth);
+
+            sb.Append('\n').Append("> ").Append(emoji).Append(" **").Append(label).Append("**\n>\n");
+            foreach (var line in inner.ToString().Replace("\r\n", "\n").TrimEnd().Split('\n'))
+                sb.Append(line.Length == 0 ? ">" : "> " + line).Append('\n');
+            sb.Append('\n');
         }
 
         /// <summary>Writes a table as a GitHub-flavored Markdown table. Since the editor's tables

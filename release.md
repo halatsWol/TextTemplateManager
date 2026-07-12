@@ -14,6 +14,9 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
+- **Callout panels in the editor.** A new **Panel** toolbar button wraps text in a colored **Info**, **Note**, **Success**, **Warning**, or **Error** callout — the same styles Atlassian Jira uses.
+- **Panels paste everywhere.** Panels adapt to each paste mode: native panels in Jira with **HTML/Jira**, colored boxes with **Auto**, **HTML**, and **RTF** for email and word processors, and a labeled quote with **Markdown**.
+- **Paste-mode menus reordered** to most-used first: Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext.
 - **Sync folder names are read-only in the tree.** A pinned sync folder's name is set only in **Settings ▸ Sync** and can no longer be changed (or accidentally edited) from the tree.
 - **Clear the selection easily.** Click an empty area of the tree, or press **Esc**, to deselect — so new templates and folders are created at the root instead of inside the selected folder.
 - **Move to Root.** Right-click any nested item and choose **Move to Root** to move it out to the top level — a reliable alternative to dragging.

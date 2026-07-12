@@ -48,9 +48,18 @@ new templates and folders are created at the root.
 ### The template editor
 
 Selecting a template opens it in the rich-text editor, which supports bold, italic, underline, 
-strikethrough, text and highlight colors, headings, bulleted and numbered lists, and tables.
-Changes are saved automatically a short time after you stop typing, so there is no separate save 
-step.
+strikethrough, text and highlight colors, headings, bulleted and numbered lists, tables, and 
+callout panels. Changes are saved automatically a short time after you stop typing, so there is 
+no separate save step.
+
+### Callout panels
+
+The **Panel** button on the editor toolbar wraps the current block in a colored callout, in one 
+of five styles: **Info**, **Note**, **Success**, **Warning**, or **Error**. Choosing the panel's 
+current style again removes the panel; choosing a different style changes it.
+
+Panels adapt to whichever paste mode you use (see *Paste modes*): they become native panels in 
+Atlassian Jira, colored boxes in email and word processors, and a labeled quote in Markdown.
 
 ### Template properties
 
@@ -67,13 +76,16 @@ Each template exposes the following properties:
 The paste mode determines how a template is placed on the clipboard and inserted into the target 
 application:
 
+The modes are listed below in the order they appear in the app.
+
 | Mode | Description |
 | --- | --- |
-| Auto | Chooses the most suitable format for the target application. |
+| Auto | Chooses the most suitable format for the target application — the most broadly compatible choice. Callout panels render as colored boxes. |
+| HTML/Jira | HTML tuned for Atlassian Jira: callout panels are preserved so Jira's comment editor rebuilds them as native panels. |
+| HTML | HTML markup. Callout panels are rendered as colored boxes, for broad compatibility with email clients, word processors, and web apps. |
+| RTF | Rich Text Format. Callout panels are rendered as shaded, bordered boxes. |
+| Markdown | Markdown source text. Callout panels become a labeled blockquote. |
 | Plaintext | Unformatted text only. |
-| Markdown | Markdown source text. |
-| RTF | Rich Text Format. |
-| HTML | HTML markup. |
 
 ---
 

@@ -166,7 +166,7 @@
                               SelectedItem="{Binding DefaultPasteMode, Mode=TwoWay}">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}"/>
+                                <TextBlock Text="{Binding Converter={StaticResource PasteModeLabelConverter}}"/>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
@@ -406,7 +406,7 @@
                                       SelectedItem="{Binding DefaultPasteMode, Mode=TwoWay}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}"/>
+                                        <TextBlock Text="{Binding Converter={StaticResource PasteModeLabelConverter}}"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
@@ -512,6 +512,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="🗂️" VerticalAlignment="Top"/>
@@ -544,8 +545,13 @@
                         <Run FontWeight="SemiBold" Text="Search:"/><Run Text=" filters the tree; toggle content search to look inside template text."/>
                     </TextBlock>
 
-                    <TextBlock Grid.Row="6" Grid.Column="0" Text="⚡" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="🎨" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
+                        <Run FontWeight="SemiBold" Text="Editor:"/><Run Text=" format with the toolbar — headings, lists, tables, colors, and Info/Note/Success/Warning/Error panels. Use the HTML/Jira paste mode to paste panels into Jira."/>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Text="⚡" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
                         <Run FontWeight="SemiBold" Text="Quick Paste:"/><Run Text=" press the global hotkey (Settings ▸ General) anywhere to paste a template into the active app."/>
                     </TextBlock>
                 </Grid>

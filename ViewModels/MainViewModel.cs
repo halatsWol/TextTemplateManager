@@ -19,7 +19,7 @@ namespace TextTemplateManager.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    public List<PasteMode> PasteModes { get; } = Enum.GetValues(typeof(PasteMode)).Cast<PasteMode>().ToList();
+    public List<PasteMode> PasteModes { get; } = PasteModeLabel.DisplayOrder.ToList();
     private readonly DataNode _dataNode;
     private DispatcherQueue _ui;
     private DispatcherQueueTimer _syncPollTimer;
