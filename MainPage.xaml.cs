@@ -48,6 +48,7 @@ namespace TextTemplateManager
         private Microsoft.UI.Dispatching.DispatcherQueueTimer? _updateTimer;
         private string? _readyInstallerPath;
         private Version? _readyVersion;
+        private string? _readyVersionLabel;  // release tag shown in the install prompt (e.g. "0.9.6-beta")
         private Version? _promptedVersion;   // last version we showed the modal prompt for
         private bool _updateBusy;
 
@@ -1209,9 +1210,12 @@ namespace TextTemplateManager
 
         private async void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_readyInstallerPath != null && _readyVersion != null)
-                await PromptInstallAsync(_readyVersion, _readyInstallerPath);
+            if (_readyInstallerPath != null && _readyVersionLabel != null)
+                await PromptInstallAsync(_readyVersionLabel, _readyInstallerPath);
         }
+
+        // Tag as shown to the user in the install prompt — drop a leading "v" so it reads "Version 0.9.6-beta".
+        private static string DisplayTag(string tag) => string.IsNullOrWhiteSpace(tag) ? "" : tag.TrimStart('v', 'V');
 
         private async Task RunUpdateCheckAsync(bool manual)
         {
@@ -1221,7 +1225,7 @@ namespace TextTemplateManager
             try
             {
                 UpdateService.UpdateInfo? info;
-                try { info = await _updater.CheckAsync(); }
+                try { info = await _updater.CheckAsync(DataNode.Instance.CurrentSettings.AllowBetaUpdates); }
                 catch { if (manual) await ShowMessageAsync("Check for Updates", "Could not reach the update server."); return; }
 
                 if (info == null)
@@ -1237,6 +1241,7 @@ namespace TextTemplateManager
 
                 _readyInstallerPath = path;
                 _readyVersion = info.Version;
+                _readyVersionLabel = DisplayTag(info.Tag);
                 UpdateButton.Visibility = Visibility.Visible;
 
                 // Prompt on a manual check, or the first time a given version is seen (startup / newer release).
@@ -1244,19 +1249,19 @@ namespace TextTemplateManager
                 if (manual || _promptedVersion != info.Version)
                 {
                     _promptedVersion = info.Version;
-                    await PromptInstallAsync(info.Version, path);
+                    await PromptInstallAsync(_readyVersionLabel, path);
                 }
             }
             finally { _updateBusy = false; }
         }
 
-        private async Task PromptInstallAsync(Version version, string installerPath)
+        private async Task PromptInstallAsync(string versionLabel, string installerPath)
         {
             if (this.XamlRoot == null) return;   // too early; the Update-now button stays available
             var dialog = new ContentDialog
             {
                 Title = "Update available",
-                Content = $"Version {version.ToString(3)} is ready to install. The app will close, update, and reopen.",
+                Content = $"Version {versionLabel} is ready to install. The app will close, update, and reopen.",
                 PrimaryButtonText = "Install now",
                 CloseButtonText = "Later",
                 DefaultButton = ContentDialogButton.Primary,

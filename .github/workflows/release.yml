@@ -21,9 +21,14 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}" -replace '^v', ''
+          $tag = "${{ github.ref_name }}"
+          $v = $tag -replace '^v', ''
           "version=$v" >> $env:GITHUB_OUTPUT
-          Write-Host "Building version $v"
+          # A tag with beta / preview / unstable / prev is published as a GitHub pre-release, so it
+          # is only offered to clients that have "Allow beta updates" enabled.
+          $pre = if ($tag -match '(?i)beta|prev|unstable') { 'true' } else { 'false' }
+          "prerelease=$pre" >> $env:GITHUB_OUTPUT
+          Write-Host "Building version $v (prerelease=$pre)"
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -81,8 +86,12 @@ jobs:
           # --draft: the release (and its installer) is uploaded but NOT published. Review it on
           # the Releases page and click "Publish release" when ready. Auto-update only sees
           # published releases, so clients won't be offered the update until you publish.
-          gh release create "${{ github.ref_name }}" `
-            "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe" `
-            --title "${{ github.ref_name }}" `
-            --notes-file release-notes.md `
-            --draft
+          $ghArgs = @(
+            "${{ github.ref_name }}",
+            "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe",
+            "--title", "${{ github.ref_name }}",
+            "--notes-file", "release-notes.md",
+            "--draft"
+          )
+          if ("${{ steps.ver.outputs.prerelease }}" -eq 'true') { $ghArgs += "--prerelease" }
+          gh release create @ghArgs

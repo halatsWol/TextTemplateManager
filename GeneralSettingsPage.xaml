@@ -14,6 +14,14 @@
         <ToggleSwitch Header="Automatically check for updates"
                       IsOn="{x:Bind ViewModel.AutoCheckUpdates, Mode=TwoWay}"/>
 
+        <StackPanel Spacing="2">
+            <ToggleSwitch Header="Allow beta updates"
+                          IsOn="{x:Bind ViewModel.AllowBetaUpdates, Mode=TwoWay}"/>
+            <TextBlock Text="Also offer pre-release versions (beta / preview). Off = stable releases only."
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
+
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
 
         <StackPanel Spacing="8">

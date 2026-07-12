@@ -212,6 +212,8 @@ Open settings from **File ▸ Settings**.
 - **Run at Windows login** — starts the application automatically when you sign in to Windows.
 - **Automatically check for updates** — periodically checks for a newer release and offers to 
   install it. See *Updates*.
+- **Allow beta updates** — also offer pre-release (beta / preview) versions. Off by default, so 
+  only stable releases are offered.
 - **Default paste mode** — the paste mode applied to newly created templates.
 - **Global shortcut** — the hotkey that opens the Quick Paste window from any application. Click 
   the field and press the desired key combination to change it.
@@ -237,7 +239,9 @@ Manage synchronized sources, as described in *Synchronization*.
 ## Updates
 
 When automatic update checking is enabled, the application checks for a newer release on startup 
-and periodically thereafter, and you can also check on demand from **Help ▸ Check for Updates**.
+and periodically thereafter, and you can also check on demand from **Help ▸ Check for Updates**. 
+By default only stable releases are offered; enable **Allow beta updates** in **Settings ▸ General** 
+to also receive pre-release (beta / preview) versions.
 
 When a newer version is available, it is downloaded in the background and an **Update now** button 
 appears in the top-right corner of the main window. You are prompted to install immediately or to 
