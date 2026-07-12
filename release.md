@@ -14,14 +14,10 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-- **Callout panels in the editor.** A new **Panel** toolbar button wraps text in a colored **Info**, **Note**, **Success**, **Warning**, or **Error** callout — the same styles Atlassian Jira uses.
-- **Panels paste everywhere.** Panels adapt to each paste mode: native panels in Jira with **HTML/Jira**, colored boxes with **Auto**, **HTML**, and **RTF** for email and word processors, and a labeled quote with **Markdown**.
-- **Text color in Jira.** The **HTML/Jira** mode now also preserves text colors — snapped to Jira's nearest palette color — so colored text pastes into Jira's comment editor as colored text.
-- **Paste-mode menus reordered** to most-used first: Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext.
-- **Sync folder names are read-only in the tree.** A pinned sync folder's name is set only in **Settings ▸ Sync** and can no longer be changed (or accidentally edited) from the tree.
-- **Clear the selection easily.** Click an empty area of the tree, or press **Esc**, to deselect — so new templates and folders are created at the root instead of inside the selected folder.
-- **Move to Root.** Right-click any nested item and choose **Move to Root** to move it out to the top level — a reliable alternative to dragging.
-- **Drop rules.** Dropping a template onto another template now places it as a sibling directly below it; templates never contain other items.
+- **Quick Paste polish.** Right-click a template anywhere on its row to open the menu (not just on the text); **Alt+Esc** now cancels an in-progress multi-key shortcut instead of minimizing the window; the multi-key preview no longer marks a valid prefixed shortcut red; and the content preview keeps blank lines between paragraphs.
+- **Shortcut conflicts move to the top-right.** The conflicts panel now sits in the top-right corner. When it shows only cross-area (sync ↔ local) notes it can be dismissed with its **×**; genuine same-area conflicts stay until you resolve them — and conflicts within a sync folder now surface as you edit.
+- **Uppercase sync prefixes.** A synchronized folder's shortcut prefix (**Settings ▸ Sync**) is now always uppercase.
+- **Illustrated handbook.** **Help ▸ Open Handbook** now includes screenshots walking through the main window, the editor, Quick Paste, and setting up synchronization.
 
 {{CHANGELOG}}
 
