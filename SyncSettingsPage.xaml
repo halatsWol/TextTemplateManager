@@ -28,8 +28,11 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Shortcut prefix separator" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBox x:Name="SeparatorBox" Width="60" MaxLength="3"
-                             TextChanged="Separator_TextChanged"/>
+                    <ComboBox x:Name="SeparatorBox" Width="70"
+                              SelectionChanged="Separator_SelectionChanged">
+                        <ComboBoxItem Content="-"/>
+                        <ComboBoxItem Content="."/>
+                    </ComboBox>
                 </StackPanel>
             </StackPanel>
             <Button x:Name="SyncHelpButton" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right"
@@ -97,7 +100,7 @@
 
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="🔤" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Separator:"/><Run Text=" the character joining a prefix to a shortcut (default '-'). Allowed separators when typing are - _ ."/>
+                        <Run FontWeight="SemiBold" Text="Separator:"/><Run Text=" the character joining a prefix to a shortcut (default '-'). Choose '-' or '.'."/>
                     </TextBlock>
                 </Grid>
             </TeachingTip.Content>

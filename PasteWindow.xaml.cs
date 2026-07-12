@@ -304,7 +304,8 @@ namespace TextTemplateManager
                 return;
             }
 
-            // Separator / special characters allowed in a shortcut: '-', '_', '.'.
+            // '-' and '.' are shortcut/prefix separators; '_' (Shift+'-') is the trailing
+            // paste-as-plaintext modifier, allowed only at the end.
             if (TryGetSpecialChar(key, out char special))
             {
                 if (_multiKeyBuffer.EndsWith("_")) return; // nothing types after a plaintext modifier
@@ -312,8 +313,8 @@ namespace TextTemplateManager
 
                 if (special == '_')
                 {
-                    // '_' is either a separator (extends a real prefix) or the trailing plaintext modifier.
-                    if (!IsMultiKeyPrefix(cand) && _multiKeyBuffer.Length == 0) { PlayNoMatchBeep(); return; }
+                    // Only the trailing plaintext modifier; it can't start an entry.
+                    if (_multiKeyBuffer.Length == 0) { PlayNoMatchBeep(); return; }
                 }
                 else if (!IsMultiKeyPrefix(cand)) { PlayNoMatchBeep(); return; }
 

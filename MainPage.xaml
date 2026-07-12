@@ -148,8 +148,9 @@
                             <TextBox Width="250"
                                      MaxLength="15"
                                      CharacterCasing="Upper"
+                                     TextChanged="MultiKey_TextChanged"
                                      Text="{Binding MultiKeyShortcut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     
+
                                      ToolTipService.ToolTip="Shortcut already in use"
                                      HorizontalContentAlignment="Center"
                                      Padding="4"
@@ -391,6 +392,7 @@
                                     <TextBox Width="250"
                                              MaxLength="15"
                                              CharacterCasing="Upper"
+                                             TextChanged="MultiKey_TextChanged"
                                              Text="{Binding MultiKeyShortcut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              HorizontalContentAlignment="Center"
                                              Padding="4"

@@ -31,8 +31,14 @@ namespace TextTemplateManager
 
             _sync = DataNode.Instance.CurrentSyncSettings;
 
+            // Only '-' and '.' are supported now; migrate any legacy value (e.g. '_') to '-'.
+            if (_sync.Separator != "." && _sync.Separator != "-")
+            {
+                _sync.Separator = "-";
+                _ = SaveAsync();
+            }
             _loading = true;
-            SeparatorBox.Text = _sync.Separator;
+            SeparatorBox.SelectedIndex = _sync.Separator == "." ? 1 : 0;
             _loading = false;
 
             SourceList.ItemsSource = _sync.Sources;
@@ -91,10 +97,10 @@ namespace TextTemplateManager
                 await DataNode.Instance.ReapplySyncAsync();   // add / remove -> refresh tree (Move handled by buttons)
         }
 
-        private async void Separator_TextChanged(object sender, TextChangedEventArgs e)
+        private async void Separator_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_loading) return;
-            _sync.Separator = SeparatorBox.Text;
+            _sync.Separator = (SeparatorBox.SelectedItem as ComboBoxItem)?.Content as string ?? "-";
             await SaveAsync();
         }
 

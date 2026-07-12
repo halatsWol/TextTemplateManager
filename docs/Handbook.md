@@ -109,7 +109,7 @@ pasted.
   takes precedence, followed by synchronized folders in their configured order.
 - **Multi-key shortcut** — hold **Alt**, type the shortcut, and release **Alt** to paste.
   Shortcuts in synchronized folders are prefixed with the folder's prefix (for example, 
-  `and-msg`). The characters `-`, `_`, and `.` are permitted as separators. Press **Backspace** 
+  `and-msg`). The separator is `-` or `.` (set in **Settings ▸ Sync**). Press **Backspace** 
   while holding **Alt** to correct a mistyped entry.
 - **Paste as plain text** — end a multi-key entry with **Shift + -** (which produces `_`) to 
   insert the template as unformatted text, regardless of its default paste mode.
@@ -193,7 +193,7 @@ Each source offers the following options:
   folder's name is read-only in the tree.
 - **Prefix** — the text that namespaces the folder's multi-key shortcuts (for example, a prefix 
   of `and` turns the shortcut `msg` into `and-msg`). The character joining the prefix and the 
-  shortcut is set by the separator field; the permitted separators are `-`, `_`, and `.`.
+  shortcut is chosen at the top of the page (**Shortcut prefix separator**): `-` or `.`.
 - **Order** — the up and down arrows set the folder's priority. This priority determines which 
   template wins when a single key is shared across areas, and is applied immediately.
 
