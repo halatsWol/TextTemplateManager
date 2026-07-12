@@ -147,9 +147,13 @@ namespace TextTemplateManager
 
                 core.WebMessageReceived += Editor_WebMessageReceived;
 
-                // Local editor: no external nav / context menu.
-                core.Settings.AreDefaultContextMenusEnabled = false;
+                // Standard editing context menu (cut / copy / paste / spell-check suggestions).
+                // Editor_ContextMenuRequested trims it to editing items; dev tools stay off so
+                // there is no "Inspect".
+                core.Settings.AreDefaultContextMenusEnabled = true;
+                core.Settings.AreDevToolsEnabled = false;
                 core.Settings.IsStatusBarEnabled = false;
+                core.ContextMenuRequested += Editor_ContextMenuRequested;
 
                 // Inline CSS+JS (no fetch), so WebView2's cache can't serve a stale bundle.
                 string assetsDir = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "editor");
@@ -172,6 +176,43 @@ namespace TextTemplateManager
             {
                 System.Diagnostics.Debug.WriteLine($"[Editor] init failed: {ex.Message}");
             }
+        }
+
+        // Navigation / page / developer context-menu entries to drop, leaving the editing and
+        // spell-check items (whose names are dynamic and kept by default).
+        private static readonly HashSet<string> _hiddenContextItems = new()
+        {
+            "back", "forward", "reload", "reloadFrame", "saveAs", "savePageAs", "print",
+            "createQrCode", "inspectElement", "viewSource", "viewPageSource", "webCapture",
+            "share", "webSelect", "translate", "saveImageAs", "copyImage", "copyImageLink",
+            "openImageInNewTab", "saveLinkAs", "copyLinkToText",
+        };
+
+        // Entries WebView2 exposes with no stable Name, matched by label instead: the
+        // "Writing Direction" submenu and "Send tab to your devices".
+        private static readonly string[] _hiddenContextLabels = { "writing direction", "to your devices" };
+
+        private void Editor_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
+        {
+            var items = args.MenuItems;
+            for (int i = items.Count - 1; i >= 0; i--)
+                if (_hiddenContextItems.Contains(items[i].Name) || HasHiddenLabel(items[i].Label))
+                    items.RemoveAt(i);
+
+            // Drop separators left dangling at the menu edges after the removals.
+            while (items.Count > 0 && items[0].Kind == CoreWebView2ContextMenuItemKind.Separator)
+                items.RemoveAt(0);
+            while (items.Count > 0 && items[^1].Kind == CoreWebView2ContextMenuItemKind.Separator)
+                items.RemoveAt(items.Count - 1);
+        }
+
+        private static bool HasHiddenLabel(string label)
+        {
+            if (string.IsNullOrEmpty(label)) return false;
+            string s = label.Replace("&", "").ToLowerInvariant();
+            foreach (var frag in _hiddenContextLabels)
+                if (s.Contains(frag)) return true;
+            return false;
         }
 
         private void Editor_WebMessageReceived(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs args)

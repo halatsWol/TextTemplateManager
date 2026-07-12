@@ -234,6 +234,7 @@ body {
 
 /* ---- Link popup ---- */
 .link-input {
+    display: block;
     width: 220px;
     padding: 6px 8px;
     border: 1px solid var(--border);
@@ -242,6 +243,10 @@ body {
     color: var(--fg);
     font-size: 13px;
     outline: none;
+}
+
+.link-input + .link-input {
+    margin-top: 6px;
 }
 
 .link-input:focus {

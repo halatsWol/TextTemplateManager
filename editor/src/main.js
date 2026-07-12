@@ -15,6 +15,7 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import CodeBlock from '@tiptap/extension-code-block'
 import { Fragment, Slice } from '@tiptap/pm/model'
+import { TextSelection } from '@tiptap/pm/state'
 
 // Allow any block (incl. headings) inside a list item so heading + list can coexist.
 const RichListItem = ListItem.extend({ content: 'block+' })
@@ -181,6 +182,22 @@ const editor = new Editor({
     ],
     content: '',
     editorProps: {
+        // Enable the browser spell checker so WebView2's context menu offers suggestions.
+        attributes: { spellcheck: 'true' },
+        handleDOMEvents: {
+            // Right-click should place the caret under the pointer so the spell-check menu targets
+            // the word you clicked. Chromium doesn't move the caret mid-word on right-click inside
+            // ProseMirror, so suggestions only showed when clicking a word edge. Keep an existing
+            // selection if the click is inside it (so Copy/Cut still act on the selection).
+            contextmenu(view, event) {
+                const at = view.posAtCoords({ left: event.clientX, top: event.clientY })
+                if (!at) return false
+                const { from, to } = view.state.selection
+                if (from !== to && at.pos > from && at.pos < to) return false
+                view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(at.pos))))
+                return false
+            },
+        },
         // Clean pasted HTML from EXTERNAL sources (stray <br> runs before a block close).
         transformPastedHTML(html) {
             return html
@@ -523,18 +540,25 @@ popupButton(ICONS.table, 'Insert table', (pop, close) => {
 })
 toolbar.appendChild(sep())
 
-// Link: popup with a URL field. Prefills the current link, applies to the selection, or
-// inserts the URL as linked text when nothing is selected.
+// Link: popup with a Text field and a URL field. Prefills from the selection — a selected URL
+// goes to the Link field, other selected text to the Text field — and reuses an existing link's
+// href/text. On apply an empty Text field falls back to the URL. Pasting a URL onto a selection
+// still turns it into a link (handled by the Link extension, unchanged).
 ;(function addLinkControl() {
     const b = button(ICONS.link + '<span class="caret">▾</span>', 'Link', () => {})
     b.dataset.pop = '1'
     const pop = document.createElement('div')
     pop.className = 'popup hidden link-popup'
 
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.className = 'link-input'
-    input.placeholder = 'https://example.com'
+    const textInput = document.createElement('input')
+    textInput.type = 'text'
+    textInput.className = 'link-input'
+    textInput.placeholder = 'Text'
+
+    const urlInput = document.createElement('input')
+    urlInput.type = 'text'
+    urlInput.className = 'link-input'
+    urlInput.placeholder = 'https://example.com'
 
     const row = document.createElement('div')
     row.className = 'link-actions'
@@ -546,35 +570,76 @@ toolbar.appendChild(sep())
     removeBtn.textContent = 'Remove'
     row.appendChild(applyBtn)
     row.appendChild(removeBtn)
-    pop.appendChild(input)
+    pop.appendChild(textInput)
+    pop.appendChild(urlInput)
     pop.appendChild(row)
 
+    // A URL is a known scheme (http/ftp/mailto/tel/…) or an obvious bare domain; never has spaces.
+    const isUrl = (s) => {
+        s = (s || '').trim()
+        if (!s || /\s/.test(s)) return false
+        return /^(https?|ftp|ftps|mailto|tel):/i.test(s) ||
+               /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+([\/?#].*)?$/i.test(s)
+    }
+    const normalizeUrl = (s) => {
+        s = s.trim()
+        return /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : 'https://' + s  // bare domain -> https
+    }
+    const selectionText = () => {
+        const { from, to, empty } = editor.state.selection
+        return empty ? '' : editor.state.doc.textBetween(from, to, ' ')
+    }
+
     const apply = () => {
-        const url = input.value.trim()
+        const rawUrl = urlInput.value.trim()
+        if (!rawUrl) {                                   // no URL -> clear any link on the selection
+            run(c => c.extendMarkRange('link').unsetLink())
+            closePopup()
+            return
+        }
+        const href = normalizeUrl(rawUrl)
+        const text = textInput.value.trim()
+        const selEmpty = editor.state.selection.empty
         const chain = editor.chain().focus()
-        if (!url) {
-            chain.extendMarkRange('link').unsetLink().run()
-        } else if (editor.state.selection.empty && !editor.isActive('link')) {
-            chain.insertContent({ type: 'text', text: url, marks: [{ type: 'link', attrs: { href: url } }] })
-                 .insertContent(' ').run()
+
+        if (!selEmpty && (text === '' || text === selectionText())) {
+            // Keep the selected text as-is and just link it (preserves its inline formatting).
+            chain.extendMarkRange('link').setLink({ href }).run()
         } else {
-            chain.extendMarkRange('link').setLink({ href: url }).run()
+            // Insert/replace with explicit link text (empty Text falls back to the URL).
+            if (selEmpty && editor.isActive('link')) chain.extendMarkRange('link')
+            chain.insertContent({ type: 'text', text: text || rawUrl, marks: [{ type: 'link', attrs: { href } }] })
+            if (selEmpty && !editor.isActive('link')) chain.insertContent(' ')
+            chain.run()
         }
         closePopup()
     }
     applyBtn.onclick = (e) => { e.preventDefault(); apply() }
     removeBtn.onclick = (e) => { e.preventDefault(); run(c => c.extendMarkRange('link').unsetLink()); closePopup() }
-    input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); apply() } }
+    const onEnter = (e) => { if (e.key === 'Enter') { e.preventDefault(); apply() } }
+    textInput.onkeydown = onEnter
+    urlInput.onkeydown = onEnter
 
     b.onclick = (e) => {
         e.preventDefault()
         const wasOpen = openPopup === pop
         closePopup()
         if (!wasOpen) {
-            input.value = editor.getAttributes('link').href || ''
+            const href = editor.getAttributes('link').href || ''
+            const selText = selectionText()
+            if (href) {                        // editing an existing link
+                urlInput.value = href
+                textInput.value = selText
+            } else if (isUrl(selText)) {       // selected a URL -> it's the link
+                urlInput.value = selText
+                textInput.value = ''
+            } else {                           // selected plain text -> it's the display text
+                textInput.value = selText
+                urlInput.value = ''
+            }
             placePopup(pop, b)
             openPopup = pop
-            setTimeout(() => input.focus(), 0)
+            setTimeout(() => (urlInput.value ? textInput : urlInput).focus(), 0)
         }
     }
     toolbar.appendChild(b)
