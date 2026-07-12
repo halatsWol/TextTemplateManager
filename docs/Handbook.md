@@ -24,6 +24,8 @@ The toolbar above the tree provides buttons to add a template, add a folder, and
 selected item. The menu bar provides the **File** and **Help** menus, and the quick-help button
 in the top-right corner opens a short in-app reference.
 
+![The main window: the template tree and toolbar on the left, and the selected template's editor, properties, and paste-mode list on the right.](../Assets/HandbookImages/TTM_MainWindow-Editor-PasteModes.png)
+
 ---
 
 ## Templates and folders
@@ -51,6 +53,8 @@ Selecting a template opens it in the rich-text editor, which supports bold, ital
 strikethrough, text and highlight colors, headings, bulleted and numbered lists, tables, and 
 callout panels. Changes are saved automatically a short time after you stop typing, so there is 
 no separate save step.
+
+![A template open in the editor: a formatted body with an Info callout panel, its Single Key (M) and Multi Key (MSG) shortcuts, and the HTML/Jira default paste mode. The badge on the folder marks it as synchronized.](<../Assets/HandbookImages/TTM_MainWindow_TemplateExample(syncedTemplate).png>)
 
 ### Callout panels
 
@@ -113,7 +117,17 @@ pasted.
   path. Double-click any template, in either the tree or the shortcut lists, to paste it.
 
 The shortcut lists at the bottom of the window show the available single-key and multi-key 
-shortcuts, together with the area each belongs to (a synchronized folder's name, or *local*).
+shortcuts, together with the area each belongs to (a synchronized folder's name, or *local*). 
+Switch between them with the **Single Key** and **Multi Key** tabs:
+
+![Quick Paste, Single Key tab: press the listed key to paste; the area (here, local) is shown on the right.](../Assets/HandbookImages/TTM_QuickPaste_SingleKeyView.png)
+
+![Quick Paste, Multi Key tab: a synchronized shortcut carries its folder prefix (g.MSG); the local one does not (MSG).](../Assets/HandbookImages/TTM_QuickPaste_multiKeyView.png)
+
+To paste with a format other than the template's default just this once, right-click it (in the 
+tree or a shortcut list) and choose **Paste As**:
+
+![Right-clicking a template offers Paste and a Paste As submenu with every paste mode.](../Assets/HandbookImages/TTM_QuickPaste_TreeViewTemplateContextOptions.png)
 
 ---
 
@@ -136,7 +150,9 @@ resolves the clash automatically: a duplicate single-key shortcut is removed fro
 template, and a duplicate multi-key shortcut receives a numeric suffix (for example, `MSG` 
 becomes `MSG1`).
 
-Any outstanding conflicts and notes are listed in a small floating panel in the main window.
+Any outstanding conflicts and notes are listed in a small panel in the top-right of the main 
+window. Same-area conflicts must be resolved, so the panel stays until they are; a panel showing 
+only cross-area notes can be dismissed with its **×** button.
 
 ---
 
@@ -152,8 +168,21 @@ elsewhere appear without restarting the application.
 
 ### Configuring sources
 
-Manage synchronized sources under **Settings ▸ Sync**. You can link an existing shared file or 
-create a new one, and each source offers the following options:
+Manage synchronized sources under **Settings ▸ Sync**.
+
+![Settings ▸ Sync: set the shortcut-prefix separator at the top, then add a source with + or Create.](../Assets/HandbookImages/TTM_SyncSettings.png)
+
+To add a source, click **+** to link a shared file that already exists, or **Create** to make a 
+new one — for example in a OneDrive folder so it is shared automatically:
+
+![Create opens a Save dialog for a new shared .ttmdata file.](../Assets/HandbookImages/TTM_SyncSettings_createFilePicker.png)
+
+The source then appears as a row, shown in the tree as a pinned folder. Configure it with the 
+row's controls (detailed below):
+
+![A configured source: Active and Save checkboxes, an editable Name and Prefix, its file path, and the order-up/down and delete controls.](../Assets/HandbookImages/TTM_SyncSettings_added-createdSyncFolder.png)
+
+Each source offers the following options:
 
 - **Active** — load the source into the tree as a pinned folder. Clearing this hides the folder 
   without deleting the underlying file.
@@ -186,6 +215,8 @@ Open settings from **File ▸ Settings**.
 - **Default paste mode** — the paste mode applied to newly created templates.
 - **Global shortcut** — the hotkey that opens the Quick Paste window from any application. Click 
   the field and press the desired key combination to change it.
+
+![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/HandbookImages/TTM_GeneralSettings.png)
 
 ### Sync
 

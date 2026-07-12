@@ -90,8 +90,15 @@
 
   <!-- Regenerate the handbook when the markdown changes. ContinueOnError keeps the app build
        working offline / if the tool can't restore — the last committed PDF is used then. -->
+  <!-- Handbook source screenshots: build-time inputs for the PDF only; keep them out of the package. -->
+  <ItemGroup>
+    <Content Remove="Assets\HandbookImages\**\*" />
+    <None Remove="Assets\HandbookImages\**\*" />
+    <Page Remove="Assets\HandbookImages\**\*" />
+  </ItemGroup>
+
   <Target Name="GenerateHandbook" BeforeTargets="BeforeBuild"
-          Inputs="docs\Handbook.md;docs\images\**\*" Outputs="Assets\Handbook.pdf">
+          Inputs="docs\Handbook.md;Assets\HandbookImages\**\*" Outputs="Assets\Handbook.pdf">
     <Exec ContinueOnError="true"
           Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\tools\HandbookGen\HandbookGen.csproj&quot; -c Release -- &quot;$(MSBuildProjectDirectory)\docs\Handbook.md&quot; &quot;$(MSBuildProjectDirectory)\Assets\Handbook.pdf&quot; &quot;$(Version)&quot;" />
   </Target>
