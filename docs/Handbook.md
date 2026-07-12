@@ -81,7 +81,7 @@ The modes are listed below in the order they appear in the app.
 | Mode | Description |
 | --- | --- |
 | Auto | Chooses the most suitable format for the target application — the most broadly compatible choice. Callout panels render as colored boxes. |
-| HTML/Jira | HTML tuned for Atlassian Jira: callout panels are preserved so Jira's comment editor rebuilds them as native panels. |
+| HTML/Jira | HTML tuned for Atlassian Jira: callout panels and text colors are preserved so Jira's comment editor rebuilds them natively (colors snap to Jira's nearest palette color). |
 | HTML | HTML markup. Callout panels are rendered as colored boxes, for broad compatibility with email clients, word processors, and web apps. |
 | RTF | Rich Text Format. Callout panels are rendered as shaded, bordered boxes. |
 | Markdown | Markdown source text. Callout panels become a labeled blockquote. |
