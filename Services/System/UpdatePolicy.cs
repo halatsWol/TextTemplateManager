@@ -31,10 +31,7 @@ public static class UpdatePolicy
         }
     }
 
-    /// <summary>Any update checks/installs allowed (auto or manual).</summary>
     public static bool UpdatesAllowed => Current != UpdatePolicyLevel.NoUpdate;
-
-    /// <summary>Pre-release (beta) updates allowed.</summary>
     public static bool BetaAllowed => Current == UpdatePolicyLevel.AllowAll;
 
     private static int? ReadValue(RegistryKey root)

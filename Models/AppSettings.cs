@@ -6,8 +6,7 @@ namespace TextTemplateManager.Models;
 
 public partial class AppSettings : ObservableObject
 {
-    // Seeded from the OS autostart entry on first run (see DataNode.InitializeAsync) — off unless
-    // the installer/registry already enabled it. Thereafter the settings file wins.
+    // Default off; seeded from the OS autostart entry on first run (see DataNode.InitializeAsync).
     [ObservableProperty] private bool _runAtStartup = false;
     // Auto-update: check GitHub releases periodically and offer to install a newer version.
     [ObservableProperty] private bool _autoCheckUpdates = true;

@@ -83,9 +83,8 @@ public class DataNode
             finally { _isMoving = false; }
         }
 
-        // First run: seed RunAtStartup from the OS autostart entry (the installer may or may not
-        // have created it) — never force it on by default. Thereafter the file wins, so reconcile
-        // the OS autostart entry to it.
+        // First run: seed RunAtStartup from the OS autostart entry rather than defaulting it on.
+        // Thereafter the settings file wins and the OS entry is reconciled to it.
         bool settingsExisted = File.Exists(StorageService.GetSettingsPath());
         CurrentSettings = await StorageService.LoadSettingsAsync();
         if (!settingsExisted)

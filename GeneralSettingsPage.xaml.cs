@@ -35,11 +35,8 @@ public sealed partial class GeneralSettingsPage : Page
         base.OnNavigatedTo(e);
     }
 
-    // Reflects the enterprise update policy (read-only registry) into the two update toggles:
-    //   NoUpdate → auto-update off + grayed, beta off + grayed;
-    //   NoBeta   → auto-update normal, beta off + grayed;
-    //   AllowAll → normal (beta enabled only while auto-update is on).
-    // The stored setting is never mutated by policy — enforcement also happens at check time.
+    // Grays out the update toggles per enterprise policy without mutating the stored settings
+    // (the check itself is also gated in RunUpdateCheckAsync).
     private bool _updatePolicyLoading;
 
     private void InitUpdatePolicyUi()
@@ -103,8 +100,7 @@ public sealed partial class GeneralSettingsPage : Page
         _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
     }
 
-    // True once a full shortcut (modifier(s) + a final key) has been committed in the current key
-    // sequence; reset when a bare modifier is pressed to begin a new one.
+    // True once a full modifier(s)+key combo is committed; reset when a new bare modifier starts one.
     private bool _hotkeyCommitted = true;
 
     private void HotkeyTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -151,9 +147,8 @@ public sealed partial class GeneralSettingsPage : Page
         return mods;
     }
 
-    // Capture only updates the pending value + field text. The OS registration happens on focus
-    // loss (below), so the hotkey is never live while you are pressing it — otherwise pressing the
-    // current combo would fire it (opening Quick Paste) and swallow the final key.
+    // Only sets the pending value; OS registration waits for focus loss, so the combo you are
+    // pressing can't fire itself (opening Quick Paste and swallowing the final key).
     private void CommitHotkey(string hotkey) => ViewModel.PasteWindowHotkey = hotkey;
 
     private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)

@@ -198,8 +198,7 @@ namespace TextTemplateManager
             return node;
         }
 
-        // Builds a tree node holding only the descendants that match the query; a folder with a
-        // match is expanded so the match is visible. Returns null when nothing here matches.
+        // A node with only the matching descendants (matched folders expanded); null if nothing matches.
         private TreeViewNode? BuildFilteredNode(BaseItem item, string query)
         {
             var childNodes = new List<TreeViewNode>();

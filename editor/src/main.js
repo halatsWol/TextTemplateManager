@@ -305,9 +305,8 @@ window.editorApi = {
     setContent(html) {
         suppressChange = true
         editor.commands.setContent(normalizeBreaks(html), false)
-        // History is per template: discard undo/redo so "back" can't cross into the previously
-        // loaded template's content. Recreating the state re-inits the history plugin (empty
-        // stacks), making this content the baseline / first entry.
+        // Per-template history: recreating the state re-inits the history plugin (empty undo/redo),
+        // so "back" can't cross into the previously loaded template.
         editor.view.updateState(EditorState.create({
             doc: editor.state.doc,
             plugins: editor.state.plugins,

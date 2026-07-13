@@ -71,7 +71,6 @@ namespace TextTemplateManager
             ViewModel = new MainViewModel();
             this.DataContext = this;
 
-            // Flash a "Saved" indicator (top-right) whenever template data is written to disk.
             DataNode.Instance.DataSaved += () => DispatcherQueue.TryEnqueue(ShowSaveNotification);
 
             ViewModel.PropertyChanged += (s, e) =>
@@ -172,13 +171,12 @@ namespace TextTemplateManager
             tb.SelectionStart = Math.Clamp(caret - removed, 0, filtered.Length);
         }
 
-        // ---- "Saved" indicator ----
         private Microsoft.UI.Dispatching.DispatcherQueueTimer _saveNotifTimer;
         private Storyboard _saveFade;
 
         private void ShowSaveNotification()
         {
-            _saveFade?.Stop();               // cancel any in-progress fade-out
+            _saveFade?.Stop();
             SaveNotification.Opacity = 1;
             _saveNotifTimer ??= CreateSaveNotifTimer();
             _saveNotifTimer.Stop();
@@ -202,7 +200,6 @@ namespace TextTemplateManager
             return t;
         }
 
-        /// <summary>Clears the tree search (called when the window is hidden, so it reopens fresh).</summary>
         public void ClearSearch()
         {
             if (ViewModel != null) ViewModel.SearchText = string.Empty;
