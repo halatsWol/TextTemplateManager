@@ -14,12 +14,18 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-- **Opt-in beta updates.** A new **Allow beta updates** switch in **Settings ▸ General** (off by default). With it on, pre-release (beta / preview) versions are offered too; with it off, only stable releases are.
-- **Sturdier update detection.** The updater now handles pre-release and flexibly-formatted version tags — for example `v1.0`, `v1.0.11`, `v1.0.0.1`, `v0.9.6-beta`, and `v1.0.0-stable` — not just the strict `v1.0.0` format.
-- **Quick Paste polish.** Right-click a template anywhere on its row to open the menu (not just on the text); **Alt+Esc** now cancels an in-progress multi-key shortcut instead of minimizing the window; the multi-key preview no longer marks a valid prefixed shortcut red; and the content preview keeps blank lines between paragraphs.
-- **Shortcut conflicts move to the top-right.** The conflicts panel now sits in the top-right corner. When it shows only cross-area (sync ↔ local) notes it can be dismissed with its **×**; genuine same-area conflicts stay until you resolve them — and conflicts within a sync folder now surface as you edit.
-- **Uppercase sync prefixes.** A synchronized folder's shortcut prefix (**Settings ▸ Sync**) is now always uppercase.
-- **Illustrated handbook.** **Help ▸ Open Handbook** now includes screenshots walking through the main window, the editor, Quick Paste, and setting up synchronization.
+- **Enterprise update policy.** Administrators can restrict updates via a read-only registry value — `allowUpdate` (DWORD) under `Software\MarflowSoftware\TextTemplateManager` in HKLM or HKCU: `0` allows everything, `1` blocks beta only, `2` disables updates entirely. The affected switches are turned off and grayed out, with a note explaining the policy. See *Updates* in the handbook.
+- **"Saved" indicator.** The main window now briefly shows a **Saved** confirmation whenever your templates are written to disk.
+- **Live shortcut capture.** Setting the global Quick Paste hotkey in **Settings ▸ General** now shows each key as you press it.
+
+### Fixes
+
+- **Per-template undo history.** Undo in the editor no longer reaches back into a previously selected template — each template starts with a clean history, with its own content as the first entry.
+- **Search reveals its matches.** Searching in the main window now expands every folder and subfolder that contains a match.
+- **Quick Paste search.** The Quick Paste search box now filters to matching templates instead of listing everything.
+- **Search resets on close.** Closing the main window clears the search box, so it reopens unfiltered.
+- **Autostart no longer forced on.** Installing without the autostart option no longer switches *Run at Windows login* on by itself.
+- **Hotkey capture.** Recording the global shortcut in settings no longer opens Quick Paste or drops the final key.
 
 {{CHANGELOG}}
 

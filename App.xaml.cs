@@ -65,6 +65,7 @@ namespace TextTemplateManager
                 {
                     e.Cancel = true;
                     MainWindow.Hide();
+                    (MainWindow.Content as MainPage)?.ClearSearch();   // reopen with a fresh search
                 }
             };
 

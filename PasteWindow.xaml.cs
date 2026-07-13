@@ -123,9 +123,11 @@ namespace TextTemplateManager
             }
             else
             {
-                var filteredResults = FilterTreeWithHierarchy(DataNode.Instance.LocalItems, searchFilter);
-                foreach (var item in filteredResults)
-                    TemplateTree.RootNodes.Add(CreateNode(item));
+                foreach (var item in DataNode.Instance.LocalItems)
+                {
+                    var node = BuildFilteredNode(item, searchFilter);
+                    if (node != null) TemplateTree.RootNodes.Add(node);
+                }
             }
 
             if (string.IsNullOrEmpty(_multiKeyBuffer))
@@ -196,24 +198,27 @@ namespace TextTemplateManager
             return node;
         }
 
-        private List<BaseItem> FilterTreeWithHierarchy(IEnumerable<BaseItem> items, string query)
+        // Builds a tree node holding only the descendants that match the query; a folder with a
+        // match is expanded so the match is visible. Returns null when nothing here matches.
+        private TreeViewNode? BuildFilteredNode(BaseItem item, string query)
         {
-            var matches = new List<BaseItem>();
-            foreach (var item in items)
+            var childNodes = new List<TreeViewNode>();
+            foreach (var child in item.Children)
             {
-                item.IsExpanded = false;
-                bool selfMatches = item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                                  (item is Template t && (t.TagsCsv?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
-
-                var matchingChildren = FilterTreeWithHierarchy(item.Children, query);
-                if (selfMatches || matchingChildren.Count > 0)
-                {
-                    if (item is Folder && matchingChildren.Count > 0) item.IsExpanded = true;
-                    matches.Add(item);
-                }
+                var cn = BuildFilteredNode(child, query);
+                if (cn != null) childNodes.Add(cn);
             }
-            return matches;
+
+            if (!ItemMatches(item, query) && childNodes.Count == 0) return null;
+
+            var node = new TreeViewNode { Content = item, IsExpanded = childNodes.Count > 0 };
+            foreach (var cn in childNodes) node.Children.Add(cn);
+            return node;
         }
+
+        private static bool ItemMatches(BaseItem item, string query)
+            => item.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+               || (item is Template t && (t.TagsCsv?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
         #endregion
 
         #region Input & Paste Logic

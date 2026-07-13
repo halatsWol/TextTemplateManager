@@ -52,7 +52,8 @@ new templates and folders are created at the root.
 Selecting a template opens it in the rich-text editor, which supports bold, italic, underline, 
 strikethrough, text and highlight colors, headings, bulleted and numbered lists, tables, and 
 callout panels. Changes are saved automatically a short time after you stop typing, so there is 
-no separate save step.
+no separate save step — a brief **Saved** indicator appears in the top-right corner each time your 
+data is written.
 
 ![A template open in the editor: a formatted body with an Info callout panel, its Single Key (M) and Multi Key (MSG) shortcuts, and the HTML/Jira default paste mode. The badge on the folder marks it as synchronized.](<../Assets/HandbookImages/TTM_MainWindow_TemplateExample(syncedTemplate).png>)
 
@@ -248,17 +249,39 @@ appears in the top-right corner of the main window. You are prompted to install 
 defer; deferring keeps the button available and prompts again on the next start. Installing closes 
 the application, applies the update silently, and reopens it.
 
+### Disabling updates by policy (administrators)
+
+Updates can be centrally restricted with a registry value that the application only ever **reads** — 
+it never writes it — so it can be locked down via Group Policy or a deployment script and users 
+cannot change it in the app. Set a `DWORD` named `allowUpdate` under 
+`Software\MarflowSoftware\TextTemplateManager` in `HKEY_LOCAL_MACHINE` (machine-wide) or 
+`HKEY_CURRENT_USER` (per-user):
+
+| Value | Effect |
+| --- | --- |
+| `0` (or absent) | Updates and beta updates allowed — normal behavior. |
+| `1` | Stable updates allowed; **beta updates blocked** (the *Allow beta updates* switch is off and disabled). |
+| `2` | **All update checks disabled** (the *Automatically check for updates* switch is off and disabled, and no manual or automatic check runs). |
+
+`HKEY_LOCAL_MACHINE` takes precedence over `HKEY_CURRENT_USER` when both are set. When a policy is 
+in effect, a note appears under the update switches in **Settings ▸ General**.
+
+This restricts only the application's built-in updating — the automatic checks and the in-app 
+**Help ▸ Check for Updates**. It does not block installing a newer version by hand: downloading and 
+running a setup executable still upgrades the application normally.
+
 ---
 
 ## Keyboard reference
 
 | Context | Input | Action |
 | --- | --- | --- |
-| Main window | **Delete** | Delete the selected item (with confirmation). |
-| Main window | **Ctrl + C** | Copy the selected template in its default paste mode. |
-| Main window | **Esc** | Clear the current selection. |
+| Main window (Tree) | **Delete** | Delete the selected item (with confirmation). |
+| Main window (Tree) | **Ctrl + C** | Copy the selected template in its default paste mode. |
+| Main window (Tree) | **Esc** | Clear the current selection. |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
 | Quick Paste | **Alt** + *keys* | Paste by multi-key shortcut; release **Alt** to insert. |
+| Quick Paste | **Alt** + *keys* + **_**| Paste by multi-key shortcut as Plain Text; release **Alt** to insert. |
 | Quick Paste | **Alt** + **Backspace** | Correct the current multi-key entry. |
 | Quick Paste | **Esc** | Close the Quick Paste window. |
 

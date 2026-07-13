@@ -253,6 +253,13 @@
             <!-- Top-right actions at the File-menu height: update (when available) + quick help. -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right"
                         VerticalAlignment="Center" Spacing="6" Margin="0,0,10,0">
+                <!-- Transient "Saved" indicator; fades in on save, out after 3s (see MainPage.xaml.cs). -->
+                <StackPanel x:Name="SaveNotification" Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False">
+                    <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                    <TextBlock Text="Saved" FontSize="12" VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
                 <Button x:Name="UpdateButton" Visibility="Collapsed" Click="UpdateButton_Click"
                         Style="{StaticResource AccentButtonStyle}"
                         ToolTipService.ToolTip="Install the available update">
@@ -317,7 +324,7 @@
                         <TreeView.ItemTemplate>
                             <DataTemplate x:DataType="local:BaseItem">
                                 <TreeViewItem ItemsSource="{x:Bind ViewChildren, Mode=OneWay}"
-                                              IsExpanded="{x:Bind IsExpanded, Mode=OneWay}"
+                                              IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                                               RightTapped="Tree_RightTapped">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Grid VerticalAlignment="Center" Width="20" Height="20">

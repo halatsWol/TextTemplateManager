@@ -11,15 +11,26 @@
                       IsOn="{x:Bind ViewModel.RunAtStartup, Mode=TwoWay}"
                       Toggled="RunAtStartup_Toggled"/>
 
-        <ToggleSwitch Header="Automatically check for updates"
-                      IsOn="{x:Bind ViewModel.AutoCheckUpdates, Mode=TwoWay}"/>
+        <StackPanel Spacing="10">
+            <ToggleSwitch x:Name="AutoUpdateToggle"
+                          Header="Automatically check for updates"
+                          Toggled="AutoUpdate_Toggled"/>
 
-        <StackPanel Spacing="2">
-            <ToggleSwitch Header="Allow beta updates"
-                          IsOn="{x:Bind ViewModel.AllowBetaUpdates, Mode=TwoWay}"/>
-            <TextBlock Text="Also offer pre-release versions (beta / preview). Off = stable releases only."
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="BetaToggle"
+                              Header="Allow beta updates"
+                              Toggled="Beta_Toggled"/>
+                <TextBlock Text="Also offer pre-release versions (beta / preview). Off = stable releases only."
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
+
+            <!-- Shown only when an enterprise policy (registry) restricts updates. -->
+            <TextBlock x:Name="UpdatePolicyNote"
+                       Visibility="Collapsed"
+                       TextWrapping="Wrap"
                        Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                       Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
         </StackPanel>
 
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
@@ -46,11 +57,13 @@
                     <ColumnDefinition Width="200"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="HotkeyTextBox" 
-                         Text="{x:Bind ViewModel.PasteWindowHotkey, Mode=TwoWay}"
-                         IsReadOnly="True" 
+                <TextBox x:Name="HotkeyTextBox"
+                         IsReadOnly="True"
                          PlaceholderText="Click to set shortcut..."
-                         KeyDown="HotkeyTextBox_KeyDown"/>
+                         GotFocus="HotkeyTextBox_GotFocus"
+                         LostFocus="HotkeyTextBox_LostFocus"
+                         KeyDown="HotkeyTextBox_KeyDown"
+                         KeyUp="HotkeyTextBox_KeyUp"/>
                 <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
             </Grid>
         </StackPanel>

@@ -25,6 +25,7 @@ using TextTemplateManager.ViewModels;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using UpdateService = TextTemplateManager.Services.System.UpdateService;
+using UpdatePolicy = TextTemplateManager.Services.System.UpdatePolicy;
 
 namespace TextTemplateManager
 {
@@ -69,6 +70,9 @@ namespace TextTemplateManager
 
             ViewModel = new MainViewModel();
             this.DataContext = this;
+
+            // Flash a "Saved" indicator (top-right) whenever template data is written to disk.
+            DataNode.Instance.DataSaved += () => DispatcherQueue.TryEnqueue(ShowSaveNotification);
 
             ViewModel.PropertyChanged += (s, e) =>
             {
@@ -166,6 +170,42 @@ namespace TextTemplateManager
             int caret = tb.SelectionStart;
             tb.Text = filtered;                                       // re-enters, but now equal -> no loop
             tb.SelectionStart = Math.Clamp(caret - removed, 0, filtered.Length);
+        }
+
+        // ---- "Saved" indicator ----
+        private Microsoft.UI.Dispatching.DispatcherQueueTimer _saveNotifTimer;
+        private Storyboard _saveFade;
+
+        private void ShowSaveNotification()
+        {
+            _saveFade?.Stop();               // cancel any in-progress fade-out
+            SaveNotification.Opacity = 1;
+            _saveNotifTimer ??= CreateSaveNotifTimer();
+            _saveNotifTimer.Stop();
+            _saveNotifTimer.Start();         // restart the 3s window on each save
+        }
+
+        private Microsoft.UI.Dispatching.DispatcherQueueTimer CreateSaveNotifTimer()
+        {
+            var t = DispatcherQueue.CreateTimer();
+            t.Interval = TimeSpan.FromSeconds(3);
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                var fade = new DoubleAnimation { To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(500)) };
+                Storyboard.SetTarget(fade, SaveNotification);
+                Storyboard.SetTargetProperty(fade, "Opacity");
+                _saveFade = new Storyboard();
+                _saveFade.Children.Add(fade);
+                _saveFade.Begin();
+            };
+            return t;
+        }
+
+        /// <summary>Clears the tree search (called when the window is hidden, so it reopens fresh).</summary>
+        public void ClearSearch()
+        {
+            if (ViewModel != null) ViewModel.SearchText = string.Empty;
         }
 
 
@@ -1233,13 +1273,21 @@ namespace TextTemplateManager
 
         private async Task RunUpdateCheckAsync(bool manual)
         {
+            // Enterprise policy (read-only registry) can hard-disable updates for everyone.
+            if (!UpdatePolicy.UpdatesAllowed)
+            {
+                if (manual) await ShowMessageAsync("Check for Updates", "Updates are disabled by your organization.");
+                return;
+            }
             if (!manual && !DataNode.Instance.CurrentSettings.AutoCheckUpdates) return;
             if (_updateBusy) return;
             _updateBusy = true;
             try
             {
+                // Beta is honored only when both the user setting and policy allow it.
+                bool allowBeta = DataNode.Instance.CurrentSettings.AllowBetaUpdates && UpdatePolicy.BetaAllowed;
                 UpdateService.UpdateInfo? info;
-                try { info = await _updater.CheckAsync(DataNode.Instance.CurrentSettings.AllowBetaUpdates); }
+                try { info = await _updater.CheckAsync(allowBeta); }
                 catch { if (manual) await ShowMessageAsync("Check for Updates", "Could not reach the update server."); return; }
 
                 if (info == null)

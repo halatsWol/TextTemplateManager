@@ -45,6 +45,9 @@ public class DataNode
     /// <summary>Raised (after a sync re-apply) so the UI can refresh the tree projection.</summary>
     public event Action? TreeChanged;
 
+    /// <summary>Raised after template data is successfully written to disk (may be off the UI thread).</summary>
+    public event Action? DataSaved;
+
     /// <summary>Last observed write time per source, so the poller ignores our own writes.</summary>
     private readonly Dictionary<Guid, DateTime> _lastSeenWrite = new();
 
@@ -80,13 +83,14 @@ public class DataNode
             finally { _isMoving = false; }
         }
 
-        // First run: seed RunAtStartup (installer entry, else default ON) and persist. Thereafter
-        // the file wins, so reconcile the OS autostart entry to it.
+        // First run: seed RunAtStartup from the OS autostart entry (the installer may or may not
+        // have created it) — never force it on by default. Thereafter the file wins, so reconcile
+        // the OS autostart entry to it.
         bool settingsExisted = File.Exists(StorageService.GetSettingsPath());
         CurrentSettings = await StorageService.LoadSettingsAsync();
         if (!settingsExisted)
         {
-            CurrentSettings.RunAtStartup = Services.System.StartupManager.IsEnabled() || CurrentSettings.RunAtStartup;
+            CurrentSettings.RunAtStartup = Services.System.StartupManager.IsEnabled();
             await StorageService.SaveSettingsAsync(CurrentSettings);
         }
         Services.System.StartupManager.SetEnabled(CurrentSettings.RunAtStartup);
@@ -235,15 +239,18 @@ public class DataNode
     {
         if (_isMoving || !_isInitialized) return;
         await _saveLock.WaitAsync();
+        bool saved = false;
         try
         {
             await StorageService.SaveAsync(_localDataPath, RootFolder);
             await WriteSyncSourcesAsync();
+            saved = true;
         }
         finally
         {
             _saveLock.Release();
         }
+        if (saved) DataSaved?.Invoke();
     }
 
     #endregion

@@ -15,7 +15,7 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import CodeBlock from '@tiptap/extension-code-block'
 import { Fragment, Slice } from '@tiptap/pm/model'
-import { TextSelection } from '@tiptap/pm/state'
+import { TextSelection, EditorState } from '@tiptap/pm/state'
 
 // Allow any block (incl. headings) inside a list item so heading + list can coexist.
 const RichListItem = ListItem.extend({ content: 'block+' })
@@ -305,6 +305,13 @@ window.editorApi = {
     setContent(html) {
         suppressChange = true
         editor.commands.setContent(normalizeBreaks(html), false)
+        // History is per template: discard undo/redo so "back" can't cross into the previously
+        // loaded template's content. Recreating the state re-inits the history plugin (empty
+        // stacks), making this content the baseline / first entry.
+        editor.view.updateState(EditorState.create({
+            doc: editor.state.doc,
+            plugins: editor.state.plugins,
+        }))
         suppressChange = false
     },
     getContent() { return getCleanHtml() },
