@@ -514,7 +514,8 @@
         </Grid>
 
         <TeachingTip x:Name="MainHelpTip" Title="Template Manager Guide" Target="{x:Bind MainHelpButton}"
-                     PreferredPlacement="BottomLeft" IsLightDismissEnabled="True">
+                     PreferredPlacement="BottomLeft" IsLightDismissEnabled="True"
+                     ShouldConstrainToRootBounds="False">
             <TeachingTip.Content>
                 <Grid MaxWidth="360" Margin="0,4" ColumnSpacing="8" RowSpacing="8">
                     <Grid.ColumnDefinitions>

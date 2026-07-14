@@ -174,7 +174,7 @@
                 </Border>
 
                 <Grid Grid.Row="1">
-                    <ListView x:Name="SingleKeyList" SelectionMode="None">
+                    <ListView x:Name="SingleKeyList" SelectionMode="Single" IsTabStop="False">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:Template">
                                 <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
@@ -196,7 +196,7 @@
                         </ListView.ItemTemplate>
                     </ListView>
 
-                    <ListView x:Name="MultiKeyList" SelectionMode="None" Visibility="Collapsed">
+                    <ListView x:Name="MultiKeyList" SelectionMode="Single" IsTabStop="False" Visibility="Collapsed">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:Template">
                                 <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
@@ -223,7 +223,8 @@
         </Grid>
 
         <TeachingTip x:Name="HelpTip" Title="Quick Paste Guide" Target="{Binding ElementName=HelpButton}"
-                     PreferredPlacement="BottomRight" IsLightDismissEnabled="True">
+                     PreferredPlacement="BottomLeft" IsLightDismissEnabled="True"
+                     ShouldConstrainToRootBounds="False">
             <TeachingTip.Content>
                 <Grid MaxWidth="330" Margin="0,4" ColumnSpacing="8" RowSpacing="8">
                     <Grid.ColumnDefinitions>
@@ -243,12 +244,12 @@
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="⌨️" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="0" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Single key:"/><Run Text=" press a key to paste instantly (when Search is empty). If the same key exists in several areas, the local one wins, then sync folders in order."/>
+                        <Run FontWeight="SemiBold" Text="Single key:"/><Run Text=" press a key to paste instantly (when Search is empty), or use ↑/↓ and Enter to pick from the list. If the same key exists in several areas, the local one wins, then sync folders in order."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="⌨️" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Multi-key:"/><Run Text=" hold ALT and type the shortcut (synced ones are prefixed, e.g. and-msg; separators - _ . allowed), release ALT to paste."/>
+                        <Run FontWeight="SemiBold" Text="Multi-key:"/><Run Text=" hold ALT and type the shortcut (synced ones are prefixed, e.g. and-msg; separators - _ . allowed). Release ALT to paste the highlighted match — a partial entry is enough. ↑/↓ move the highlight, Enter pastes it."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" FontSize="13" Margin="14,0,0,0"

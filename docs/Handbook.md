@@ -107,11 +107,16 @@ pasted.
 
 - **Single-key shortcut** — with the search box empty, press the key assigned to a template to 
   paste it immediately. If the same key is assigned in more than one area, the local template 
-  takes precedence, followed by synchronized folders in their configured order.
-- **Multi-key shortcut** — hold **Alt**, type the shortcut, and release **Alt** to paste.
-  Shortcuts in synchronized folders are prefixed with the folder's prefix (for example, 
-  `and-msg`). The separator is `-` or `.` (set in **Settings ▸ Sync**). Press **Backspace** 
-  while holding **Alt** to correct a mistyped entry.
+  takes precedence, followed by synchronized folders in their configured order. You can also 
+  browse the list with the **↑ / ↓** arrow keys and press **Enter** to paste the highlighted row.
+- **Multi-key shortcut** — hold **Alt** and type the shortcut. The list narrows as you type and 
+  highlights the top match; **release Alt** to paste it. You don't have to type the whole 
+  shortcut — a partial entry pastes the highlighted match. Use **↑ / ↓** while holding **Alt** to 
+  move the highlight (this doesn't change what you've typed), and press **Enter** to paste the 
+  highlighted row even before typing anything. If you type and then delete everything, releasing 
+  **Alt** pastes nothing. Shortcuts in synchronized folders carry the folder's prefix (for 
+  example, `and-msg`); the separator is `-` or `.` (set in **Settings ▸ Sync**). Press 
+  **Backspace** while holding **Alt** to correct a mistyped entry.
 - **Paste as plain text** — end a multi-key entry with **Shift + -** (which produces `_`) to 
   insert the template as unformatted text, regardless of its default paste mode.
 - **Search** — type in the search box to filter the tree; matching templates display their folder 
