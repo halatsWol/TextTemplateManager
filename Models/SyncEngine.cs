@@ -22,6 +22,10 @@ namespace TextTemplateManager.Models
             target.SyncId = fileRoot.Id;   // the sync file's root id (usually Guid.Empty)
             target.Title = name;
             target.ItemType = ItemType.Folder;
+            // Adopt the file's root timestamp. Without this, each device keeps its own cached value
+            // and writes it back on load, so a read-only open re-serializes differently and churns
+            // the shared file — which makes OneDrive spawn conflict copies across devices.
+            target.LastChange = fileRoot.LastChange;
 
             SyncChildren(target.Children, merged);
         }
