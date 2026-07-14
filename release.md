@@ -24,5 +24,6 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ---
 
-Full documentation is available in the app under **Help ▸ Open Handbook**.
+Full documentation is available in the app under **Help ▸ Open Handbook**, or download
+**`TextTemplateManager-Handbook-{{VERSION}}.pdf`** from the assets below.
 Source: https://github.com/halatsWol/TextTemplateManager

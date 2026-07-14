@@ -51,11 +51,14 @@ jobs:
         shell: pwsh
         run: ./package.ps1 -Version ${{ steps.ver.outputs.version }}
 
-      - name: Name the asset with the version
+      - name: Name the assets with the version
         shell: pwsh
         run: |
           Copy-Item "installer/TextTemplateManager-Setup.exe" `
                     "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
+          # package.ps1 regenerates the handbook PDF (Assets/Handbook.pdf) — ship it as an asset too.
+          Copy-Item "Assets/Handbook.pdf" `
+                    "installer/TextTemplateManager-Handbook-${{ steps.ver.outputs.version }}.pdf"
 
       - name: Render release notes from release.md
         shell: pwsh
@@ -89,6 +92,7 @@ jobs:
           $ghArgs = @(
             "${{ github.ref_name }}",
             "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe",
+            "installer/TextTemplateManager-Handbook-${{ steps.ver.outputs.version }}.pdf",
             "--title", "${{ github.ref_name }}",
             "--notes-file", "release-notes.md",
             "--draft"
