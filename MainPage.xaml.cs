@@ -1308,6 +1308,9 @@ namespace TextTemplateManager
                 if (manual || _promptedVersion != info.Version)
                 {
                     _promptedVersion = info.Version;
+                    // Auto-detected update: the user may be in another app, so flash the taskbar.
+                    if (!manual)
+                        WindowHelper.FlashTaskbar(WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow));
                     await PromptInstallAsync(_readyVersionLabel, path);
                 }
             }

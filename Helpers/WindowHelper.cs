@@ -257,6 +257,38 @@ namespace TextTemplateManager.Helpers
             SetActiveWindow(hWnd);
             return result;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FLASHWINFO
+        {
+            public uint cbSize;
+            public IntPtr hwnd;
+            public uint dwFlags;
+            public uint uCount;
+            public uint dwTimeout;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+
+        private const uint FLASHW_TRAY = 0x2;          // flash the taskbar button
+        private const uint FLASHW_TIMERNOFG = 0xC;     // keep flashing until the window is brought to the front
+
+        /// <summary>Flash the window's taskbar button until the user brings it to the foreground.
+        /// No-op if the window is already foreground.</summary>
+        public static void FlashTaskbar(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return;
+            var fw = new FLASHWINFO
+            {
+                cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+                hwnd = hWnd,
+                dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG,
+                uCount = uint.MaxValue,
+                dwTimeout = 0,
+            };
+            FlashWindowEx(ref fw);
+        }
     }
 
     public sealed class CaretContext
