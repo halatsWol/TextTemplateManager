@@ -1,16 +1,14 @@
+using MarflowSoftware.Helpers;
 using System;
-using System.Text;
-using System.Linq;
-using System.Threading;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using MarflowSoftware.Helpers;
 using TextTemplateManager.Common;
 using TextTemplateManager.Helpers;
-using TextTemplateManager.Services.Pasting.Strategies;
-using Windows.ApplicationModel.DataTransfer;
 
 namespace TextTemplateManager.Services.Pasting
 {

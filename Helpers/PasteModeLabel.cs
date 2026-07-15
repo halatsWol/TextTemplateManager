@@ -1,5 +1,5 @@
-using System;
 using Microsoft.UI.Xaml.Data;
+using System;
 using TextTemplateManager.Common;
 
 namespace TextTemplateManager.Helpers

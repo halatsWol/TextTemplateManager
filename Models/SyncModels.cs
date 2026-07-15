@@ -1,8 +1,8 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json.Serialization;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TextTemplateManager.Models
 {

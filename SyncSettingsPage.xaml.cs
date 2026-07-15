@@ -1,12 +1,11 @@
-using System;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading.Tasks;
 using TextTemplateManager.Data;
 using TextTemplateManager.Models;
 using Windows.Storage.Pickers;
@@ -78,7 +77,7 @@ namespace TextTemplateManager
                 case nameof(SyncSource.Name):       // just rename the folder live
                     if (sender is SyncSource s) UpdateFolderTitle(s);
                     break;
-                // AllowSave (write-through checks it live) and ShortcutPrefix need no reconcile.
+                    // AllowSave (write-through checks it live) and ShortcutPrefix need no reconcile.
             }
         }
 

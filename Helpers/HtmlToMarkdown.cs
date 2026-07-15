@@ -1,8 +1,8 @@
+using HtmlAgilityPack;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using HtmlAgilityPack;
 
 namespace TextTemplateManager.Helpers
 {
@@ -40,7 +40,12 @@ namespace TextTemplateManager.Helpers
 
             switch (node.Name.ToLowerInvariant())
             {
-                case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
+                case "h1":
+                case "h2":
+                case "h3":
+                case "h4":
+                case "h5":
+                case "h6":
                     int level = node.Name[1] - '0';
                     sb.Append('\n').Append(new string('#', level)).Append(' ');
                     WriteChildren(node, sb, listOrdered, depth);
@@ -56,15 +61,19 @@ namespace TextTemplateManager.Helpers
                     sb.Append("  \n");
                     break;
 
-                case "strong": case "b":
+                case "strong":
+                case "b":
                     AppendInlineMark(node, sb, "**", depth);
                     break;
 
-                case "em": case "i":
+                case "em":
+                case "i":
                     AppendInlineMark(node, sb, "*", depth);
                     break;
 
-                case "s": case "del": case "strike":
+                case "s":
+                case "del":
+                case "strike":
                     AppendInlineMark(node, sb, "~~", depth);
                     break;
 

@@ -4,11 +4,8 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using System;
-using System.Threading.Tasks;
-using TextTemplateManager.Common;
 using TextTemplateManager.Data;
 using TextTemplateManager.Helpers;
-using TextTemplateManager.Services.Pasting.Strategies;
 using TextTemplateManager.Services.System;
 using WinRT.Interop;
 
@@ -76,7 +73,8 @@ namespace TextTemplateManager
         {
             WindowHelper.CaptureTargetContext();
 
-            MainWindow.DispatcherQueue.TryEnqueue(() => {
+            MainWindow.DispatcherQueue.TryEnqueue(() =>
+            {
                 if (_pasteWindow == null)
                 {
                     _pasteWindow = new PasteWindow();

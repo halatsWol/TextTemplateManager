@@ -1,14 +1,13 @@
-﻿using System;
-using Windows.Foundation;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Threading.Tasks;
 using TextTemplateManager.Data;
-using Windows.ApplicationModel;
-using Windows.Storage.Pickers;
 using TextTemplateManager.Models;
+using Windows.Storage.Pickers;
 
 namespace TextTemplateManager.ViewModels;
+
 public partial class SettingsViewModel : ObservableObject
 {
     [ObservableProperty] private AppSettings _settings;

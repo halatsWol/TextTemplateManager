@@ -1,5 +1,5 @@
-using System.Text;
 using HtmlAgilityPack;
+using System.Text;
 
 namespace TextTemplateManager.Helpers
 {
@@ -94,7 +94,12 @@ namespace TextTemplateManager.Helpers
                 case "i": case "em": rtf.Append(@"\i0 "); break;
                 case "u": rtf.Append(@"\ulnone "); break;
                 case "s": case "strike": case "del": rtf.Append(@"\strike0 "); break;
-                case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
+                case "h1":
+                case "h2":
+                case "h3":
+                case "h4":
+                case "h5":
+                case "h6":
                     rtf.Append(@"\b0\fs22 \par "); break;
             }
         }

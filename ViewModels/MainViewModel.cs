@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Dispatching;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,8 +11,6 @@ using TextTemplateManager.Data;
 using TextTemplateManager.Helpers;
 using TextTemplateManager.Models;
 using Windows.Storage.Pickers;
-using TextTemplateManager.Services.Pasting.Strategies;
-using Microsoft.UI.Dispatching;
 
 
 namespace TextTemplateManager.ViewModels;
@@ -68,9 +66,11 @@ public partial class MainViewModel : ObservableObject
                 SelectedItem = prev;
         });
 
-        _ = Task.Run(async () => {
+        _ = Task.Run(async () =>
+        {
             await _dataNode.InitializeAsync();
-            _ui?.TryEnqueue(() => {
+            _ui?.TryEnqueue(() =>
+            {
                 ApplyFilter();
                 StartSyncPolling();
             });

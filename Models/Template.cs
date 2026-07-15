@@ -2,10 +2,10 @@
 using System;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using TextTemplateManager.Common;
 using TextTemplateManager.Helpers;
 using TextTemplateManager.ViewModels;
-using System.Text.RegularExpressions;
 
 
 namespace TextTemplateManager.Models

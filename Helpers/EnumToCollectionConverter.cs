@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Data;
 using System;
 using System.Linq;
 using TextTemplateManager.Common;
-using TextTemplateManager.Models;
 
 namespace TextTemplateManager.Helpers;
 
@@ -24,5 +23,5 @@ public class EnumToCollectionConverter : IValueConverter
 
         return value;
     }
-    
+
 }

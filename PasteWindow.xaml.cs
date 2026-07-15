@@ -1,14 +1,13 @@
 using Microsoft.UI;
-using Microsoft.UI.Text;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Input;
-using Windows.UI.Core;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using TextTemplateManager.Common;
@@ -17,7 +16,7 @@ using TextTemplateManager.Helpers;
 using TextTemplateManager.Models;
 using TextTemplateManager.Services.Pasting;
 using Windows.System;
-using System.Diagnostics;
+using Windows.UI.Core;
 
 namespace TextTemplateManager
 {

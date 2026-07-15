@@ -1,14 +1,13 @@
 using MarflowSoftware.Helpers;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Input;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Input;
-using Windows.UI.Core;
 using Microsoft.Web.WebView2.Core;
 using System;
 using System.Collections.Generic;
@@ -24,8 +23,9 @@ using TextTemplateManager.Services.Pasting;
 using TextTemplateManager.ViewModels;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
-using UpdateService = TextTemplateManager.Services.System.UpdateService;
+using Windows.UI.Core;
 using UpdatePolicy = TextTemplateManager.Services.System.UpdatePolicy;
+using UpdateService = TextTemplateManager.Services.System.UpdateService;
 
 namespace TextTemplateManager
 {
