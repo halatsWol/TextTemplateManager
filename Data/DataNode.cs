@@ -214,9 +214,23 @@ public class DataNode
         }
     }
 
+    // Transient/derived properties (expansion, list display projections, conflict flags) are not
+    // real data edits: changing them must not bump LastChange or save, which would churn the sync
+    // file — e.g. Quick Paste stamps EffectiveMultiKey/SourceLabel on the tree templates when it opens.
+    private static readonly HashSet<string> _nonPersistedProps = new()
+    {
+        nameof(BaseItem.IsExpanded),
+        nameof(Template.EffectiveMultiKey),
+        nameof(Template.SourceLabel),
+        nameof(Template.IsLocalSource),
+        nameof(Template.HasSingleKeyConflict),
+        nameof(Template.HasMultiKeyConflict),
+        nameof(Template.HasSingleKeyCrossAreaWarning),
+    };
+
     private async void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(BaseItem.IsExpanded) || _isMoving) return;
+        if (_isMoving || e.PropertyName == null || _nonPersistedProps.Contains(e.PropertyName)) return;
         if (sender is BaseItem item)
         {
             item.LastChange = DateTime.Now.ToString("yyyyMMddHHmmss");

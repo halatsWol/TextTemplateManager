@@ -223,7 +223,8 @@ public partial class MainViewModel : ObservableObject
         {
             Title = GetUniqueTitle("New Template", siblings),
             Id = Guid.NewGuid(),
-            Owner = this
+            Owner = this,
+            DefaultPasteMode = _dataNode.CurrentSettings.DefaultPasteMode
         };
 
         if (parent != null) parent.IsExpanded = true;   // reveal the new item
