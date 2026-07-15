@@ -49,9 +49,9 @@ new templates and folders are created at the root.
 
 ### The template editor
 
-Selecting a template opens it in the rich-text editor, which supports bold, italic, underline, 
-strikethrough, text and highlight colors, headings, bulleted and numbered lists, tables, and 
-callout panels. Changes are saved automatically a short time after you stop typing, so there is 
+Selecting a template opens it in the editor, which supports bold, italic, underline, 
+strikethrough, text and highlight colors, headings, bulleted and numbered lists, links, tables, 
+and callout panels. Changes are saved automatically a short time after you stop typing, so there is 
 no separate save step — a brief **Saved** indicator appears in the top-right corner each time your 
 data is written.
 
@@ -285,7 +285,9 @@ running a setup executable still upgrades the application normally.
 | Main window (Tree) | **Ctrl + C** | Copy the selected template in its default paste mode. |
 | Main window (Tree) | **Esc** | Clear the current selection. |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
-| Quick Paste | **Alt** + *keys* | Paste by multi-key shortcut; release **Alt** to insert. |
+| Quick Paste | **↑ / ↓** | Move the highlight through the current shortcut list. |
+| Quick Paste | **Enter** | Paste the highlighted shortcut. |
+| Quick Paste | **Alt** + *keys* | Paste by multi-key shortcut; release **Alt** to insert the highlighted match. |
 | Quick Paste | **Alt** + *keys* + **_**| Paste by multi-key shortcut as Plain Text; release **Alt** to insert. |
 | Quick Paste | **Alt** + **Backspace** | Correct the current multi-key entry. |
 | Quick Paste | **Esc** | Close the Quick Paste window. |
