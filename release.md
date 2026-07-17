@@ -14,10 +14,19 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
+#### New
+
+- **Keyboard navigation in Quick Paste and the tree.** The Quick Paste tree and shortcut lists are now fully keyboard-drivable: arrow keys move the selection, **← / →** expand and collapse folders, **Enter** or **Space** pastes a template (or expands a folder), and **Esc** steps back through focus (tree → search → shortcut list → close). Holding **Alt** now switches cleanly to multi-key entry. In the main window, **Enter** or **Space** also expands the selected folder.
+- **"none" shortcut-prefix separator.** In **Settings ▸ Sync** you can now join a sync folder's prefix directly to a shortcut with no separator (for example `ANDMSG`), alongside `-` and `.`.
+
 #### Fixes
 
-- **Default paste mode now applies to new templates.** Creating a template uses the mode set in **Settings ▸ General ▸ Default paste mode** again, instead of always starting on Auto.
-- **Opening Quick Paste no longer writes to synced files.** The first time the Quick Paste window opened in a session, it rewrote each active sync file even when nothing was pasted — enough to set OneDrive syncing and, across several devices, spawn conflict copies. Opening the window now leaves synced files untouched.
+- **Opening Quick Paste no longer collapses the main window's tree.**
+- **The link dialog shows the existing text.** Editing a link with the cursor inside it now fills the Text field (it was left blank, and could replace the link's display text with the URL).
+
+#### Changed
+
+- The in-app handbook is now called the **Manual** (**Help ▸ Open Manual**).
 
 {{CHANGELOG}}
 
