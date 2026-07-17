@@ -307,6 +307,8 @@
                     </StackPanel>
 
                     <!-- TreeView -->
+                    <!-- KeyDown is attached in code with handledEventsToo so Enter/Space are seen
+                         even after the TreeView marks them handled (see the constructor). -->
                     <TreeView x:Name="ItemTreeView"
                               Grid.Row="2"
                               SelectionMode="Single"
@@ -315,7 +317,6 @@
                               AllowDrop="True"
                               ItemsSource="{x:Bind ViewModel.RootNodes, Mode=OneWay}"
                               ItemInvoked="ItemTreeView_ItemInvoked"
-                              KeyDown="ItemTreeView_KeyDown"
                               Tapped="ItemTreeView_Tapped"
                               DragOver="ItemTreeView_DragOver"
                               DragItemsStarting="ItemTreeView_DragItemsStarting"

@@ -235,7 +235,8 @@ namespace TextTemplateManager
 
                 if (altIsDown || _isAltPressed) return;   // Alt+Esc handled by the low-level hook
 
-                // Esc in the tree hands navigation/Enter back to the shortcut lists, not close.
+                // Esc steps focus back toward shortcut mode before it ever closes the window:
+                // tree → search box → shortcut mode → close (so from the tree the 3rd Esc closes).
                 if (IsTreeFocused())
                 {
                     e.Handled = true;
@@ -244,12 +245,18 @@ namespace TextTemplateManager
                 }
 
                 var escFocus = FocusManager.GetFocusedElement(this.Content.XamlRoot);
-                bool searching = ReferenceEquals(escFocus, SearchBox) && !string.IsNullOrEmpty(SearchBox.Text);
-                if (!searching)   // don't close mid-search
+                if (ReferenceEquals(escFocus, SearchBox))
                 {
+                    // Leave the search box (clearing any filter) so single/multi-key and list
+                    // navigation work again; a further Esc, already in shortcut mode, closes.
                     e.Handled = true;
-                    this.Close();
+                    SearchBox.Text = "";
+                    RootGrid.Focus(FocusState.Programmatic);
+                    return;
                 }
+
+                e.Handled = true;
+                this.Close();
                 return;
             }
 
@@ -260,6 +267,8 @@ namespace TextTemplateManager
                 _savedTab ??= ShortcutTabs.SelectedItem as SelectorBarItem;
                 ShortcutTabs.SelectedItem = TabMulti;
                 MultiKeyList.SelectedIndex = MultiKeyList.Items.Count > 0 ? 0 : -1;   // Enter can commit this
+                // Pull focus off the tree so arrows/typing drive the multi-key entry, not the tree.
+                if (IsTreeFocused()) RootGrid.Focus(FocusState.Programmatic);
                 e.Handled = true;
                 return;
             }
@@ -278,9 +287,15 @@ namespace TextTemplateManager
             bool treeFocused = IsTreeFocused();
             if (treeFocused)
             {
-                if (e.Key == VirtualKey.Enter)
+                // Enter/Space paste a template, or expand/collapse a folder.
+                if (e.Key is VirtualKey.Enter or VirtualKey.Space)
                 {
-                    if (SelectedTreeTemplate() is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
+                    e.Handled = true;
+                    if (TemplateTree.SelectedItem is TreeViewNode node)
+                    {
+                        if (node.Content is Template t) ExecutePaste(t, false);
+                        else node.IsExpanded = !node.IsExpanded;
+                    }
                     return;
                 }
                 if (e.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
@@ -473,12 +488,6 @@ namespace TextTemplateManager
             return false;
         }
 
-        private Template? SelectedTreeTemplate() => TemplateTree.SelectedItem switch
-        {
-            TreeViewNode n => n.Content as Template,
-            Template t => t,
-            _ => null,
-        };
 
         // Pastes the highlighted multi-key row (trailing '_' = plaintext). Returns true if a paste
         // fired. requireBuffer gates the passive ALT-release commit on having typed something;

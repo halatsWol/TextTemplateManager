@@ -59,6 +59,10 @@ namespace TextTemplateManager
         {
             this.InitializeComponent();
 
+            // handledEventsToo: the TreeView marks Enter/Space handled, so a plain KeyDown handler
+            // never sees them — attach here to still get folder expand/collapse on those keys.
+            ItemTreeView.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ItemTreeView_KeyDown), true);
+
             // Keep the conflict panel anchored to the top-right as the window sizes/resizes, until
             // the user drags it. This also corrects the very first show, which can happen before
             // the canvas has a real width.
@@ -1424,6 +1428,13 @@ namespace TextTemplateManager
             {
                 e.Handled = true;
                 await PasteService.CopyToClipboardAsync(t.Content, t.DefaultPasteMode);
+            }
+
+            // Enter/Space on a folder: expand/collapse it.
+            if ((e.Key is VirtualKey.Enter or VirtualKey.Space) && ViewModel.SelectedItem is Folder f)
+            {
+                e.Handled = true;
+                f.IsExpanded = !f.IsExpanded;
             }
         }
 
