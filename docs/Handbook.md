@@ -199,7 +199,8 @@ Each source offers the following options:
   folder's name is read-only in the tree.
 - **Prefix** — the text that namespaces the folder's multi-key shortcuts (for example, a prefix 
   of `and` turns the shortcut `msg` into `and-msg`). The character joining the prefix and the 
-  shortcut is chosen at the top of the page (**Shortcut prefix separator**): `-` or `.`.
+  shortcut is chosen at the top of the page (**Shortcut prefix separator**): `-`, `.`, or *none* 
+  (the prefix joins the shortcut directly, e.g. `andmsg`).
 - **Order** — the up and down arrows set the folder's priority. This priority determines which 
   template wins when a single key is shared across areas, and is applied immediately.
 

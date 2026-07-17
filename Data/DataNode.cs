@@ -95,9 +95,9 @@ public class DataNode
         Services.System.StartupManager.SetEnabled(CurrentSettings.RunAtStartup);
 
         CurrentSyncSettings = await StorageService.LoadSyncSettingsAsync();
-        // Only '-' and '.' are supported separators now; migrate any legacy value (e.g. '_') so
+        // Valid separators are '-', '.', or "" (none); migrate any legacy value (e.g. '_') so
         // multi-key shortcuts resolve consistently even before Sync settings is opened.
-        if (CurrentSyncSettings.Separator != "." && CurrentSyncSettings.Separator != "-")
+        if (CurrentSyncSettings.Separator is not ("." or "-" or ""))
         {
             CurrentSyncSettings.Separator = "-";
             await SaveSyncSettingsAsync();

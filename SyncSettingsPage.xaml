@@ -28,10 +28,14 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Shortcut prefix separator" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <ComboBox x:Name="SeparatorBox" Width="70"
+                    <!-- Value is mapped by index: 0='-', 1='.', 2=none (""). See the code-behind. -->
+                    <ComboBox x:Name="SeparatorBox" Width="80"
                               SelectionChanged="Separator_SelectionChanged">
                         <ComboBoxItem Content="-"/>
                         <ComboBoxItem Content="."/>
+                        <ComboBoxItem>
+                            <TextBlock Text="none" FontStyle="Italic"/>
+                        </ComboBoxItem>
                     </ComboBox>
                 </StackPanel>
             </StackPanel>
@@ -100,7 +104,7 @@
 
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="🔤" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Separator:"/><Run Text=" the character joining a prefix to a shortcut (default '-'). Choose '-' or '.'."/>
+                        <Run FontWeight="SemiBold" Text="Separator:"/><Run Text=" the character joining a prefix to a shortcut (default '-'). Choose '-', '.', or none (the prefix joins the shortcut directly, e.g. ANDMSG)."/>
                     </TextBlock>
                 </Grid>
             </TeachingTip.Content>
