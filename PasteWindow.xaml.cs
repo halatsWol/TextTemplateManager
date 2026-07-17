@@ -70,7 +70,6 @@ namespace TextTemplateManager
 
         private void LoadInitialData()
         {
-            ResetExpansion(DataNode.Instance.LocalItems, false);
             UpdateAllFilters("");
             UpdateBufferUI();
         }
@@ -116,7 +115,6 @@ namespace TextTemplateManager
 
             if (string.IsNullOrWhiteSpace(searchFilter))
             {
-                ResetExpansion(DataNode.Instance.LocalItems, false);
                 foreach (var item in DataNode.Instance.LocalItems)
                     TemplateTree.RootNodes.Add(CreateNode(item));
             }
@@ -186,18 +184,11 @@ namespace TextTemplateManager
         #endregion
 
         #region TreeView Helpers
-        private void ResetExpansion(IEnumerable<BaseItem> items, bool expand)
-        {
-            foreach (var item in items)
-            {
-                item.IsExpanded = expand;
-                if (item.Children.Any()) ResetExpansion(item.Children, expand);
-            }
-        }
-
+        // Quick Paste owns its own node tree, so expansion lives on the nodes — never write
+        // BaseItem.IsExpanded here: that model is shared with the main window and would collapse it.
         private TreeViewNode CreateNode(BaseItem item)
         {
-            var node = new TreeViewNode() { Content = item, IsExpanded = item.IsExpanded };
+            var node = new TreeViewNode() { Content = item, IsExpanded = false };
             if (item.Children != null)
                 foreach (var child in item.Children) node.Children.Add(CreateNode(child));
             return node;
@@ -244,6 +235,14 @@ namespace TextTemplateManager
 
                 if (altIsDown || _isAltPressed) return;   // Alt+Esc handled by the low-level hook
 
+                // Esc in the tree hands navigation/Enter back to the shortcut lists, not close.
+                if (IsTreeFocused())
+                {
+                    e.Handled = true;
+                    SearchBox.Focus(FocusState.Programmatic);
+                    return;
+                }
+
                 var escFocus = FocusManager.GetFocusedElement(this.Content.XamlRoot);
                 bool searching = ReferenceEquals(escFocus, SearchBox) && !string.IsNullOrEmpty(SearchBox.Text);
                 if (!searching)   // don't close mid-search
@@ -273,8 +272,22 @@ namespace TextTemplateManager
                 return;
             }
 
+            // While the tree has focus it owns navigation: the TreeView handles the arrows itself
+            // (left/right collapse/expand) and Enter pastes the selected template. Focus elsewhere
+            // (or Esc, above) hands navigation back to the shortcut lists.
+            bool treeFocused = IsTreeFocused();
+            if (treeFocused)
+            {
+                if (e.Key == VirtualKey.Enter)
+                {
+                    if (SelectedTreeTemplate() is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
+                    return;
+                }
+                if (e.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
+                    return;
+            }
             // Single-key tab: arrow up/down browse the list, Enter pastes the highlighted row.
-            if (IsSingleTabActive())
+            else if (IsSingleTabActive())
             {
                 if (e.Key == VirtualKey.Up || e.Key == VirtualKey.Down)
                 {
@@ -309,13 +322,14 @@ namespace TextTemplateManager
                 return;
             }
 
-            // Outside the search box: a printable non-shortcut key beeps; other keys focus search.
+            // Outside the search box: a printable non-shortcut key beeps; other keys focus search
+            // (but never steal focus away from the tree while the user is navigating it).
             if (TryGetCharKey(e.Key, out _))
             {
                 e.Handled = true;
                 PlayNoMatchBeep();
             }
-            else
+            else if (!treeFocused)
             {
                 SearchBox.Focus(FocusState.Programmatic);
             }
@@ -446,6 +460,25 @@ namespace TextTemplateManager
         }
 
         private bool IsSingleTabActive() => ReferenceEquals(ShortcutTabs.SelectedItem, TabSingle);
+
+        // True while focus is inside the template tree (the TreeViewItem is focused, not the TreeView).
+        private bool IsTreeFocused()
+        {
+            var node = FocusManager.GetFocusedElement(this.Content.XamlRoot) as DependencyObject;
+            while (node != null)
+            {
+                if (ReferenceEquals(node, TemplateTree)) return true;
+                node = VisualTreeHelper.GetParent(node);
+            }
+            return false;
+        }
+
+        private Template? SelectedTreeTemplate() => TemplateTree.SelectedItem switch
+        {
+            TreeViewNode n => n.Content as Template,
+            Template t => t,
+            _ => null,
+        };
 
         // Pastes the highlighted multi-key row (trailing '_' = plaintext). Returns true if a paste
         // fired. requireBuffer gates the passive ALT-release commit on having typed something;

@@ -1,4 +1,4 @@
-import { Editor, Node, mergeAttributes } from '@tiptap/core'
+import { Editor, Node, mergeAttributes, getMarkRange } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextStyle from '@tiptap/extension-text-style'
@@ -595,6 +595,11 @@ toolbar.appendChild(sep())
         const { from, to, empty } = editor.state.selection
         return empty ? '' : editor.state.doc.textBetween(from, to, ' ')
     }
+    // Whole text of the link under the caret, so the Text field is filled when nothing is selected.
+    const linkText = () => {
+        const range = getMarkRange(editor.state.selection.$from, editor.schema.marks.link)
+        return range ? editor.state.doc.textBetween(range.from, range.to, ' ') : ''
+    }
 
     const apply = () => {
         const rawUrl = urlInput.value.trim()
@@ -635,7 +640,7 @@ toolbar.appendChild(sep())
             const selText = selectionText()
             if (href) {                        // editing an existing link
                 urlInput.value = href
-                textInput.value = selText
+                textInput.value = selText || linkText()   // caret inside the link -> its whole text
             } else if (isUrl(selText)) {       // selected a URL -> it's the link
                 urlInput.value = selText
                 textInput.value = ''
