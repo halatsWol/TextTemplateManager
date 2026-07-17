@@ -6,11 +6,11 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-// Build-time generator: renders docs/Handbook.md to a PDF next to the app exe.
+// Build-time generator: renders docs/Manual.md to a PDF next to the app exe.
 // Args: <input.md> <output.pdf> [version]
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("usage: HandbookGen <input.md> <output.pdf> [version]");
+    Console.Error.WriteLine("usage: ManualGen <input.md> <output.pdf> [version]");
     return 1;
 }
 
@@ -19,7 +19,7 @@ string output = args[1];
 string version = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]) ? args[2] : "0.0.0-dev";
 if (!File.Exists(input))
 {
-    Console.Error.WriteLine($"HandbookGen: input not found: {input}");
+    Console.Error.WriteLine($"ManualGen: input not found: {input}");
     return 1;
 }
 
@@ -31,7 +31,7 @@ var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
 var document = Markdown.Parse(raw, pipeline);
 
 // Image paths in the markdown are resolved relative to the markdown file.
-HandbookContext.ImageBaseDir = Path.GetDirectoryName(Path.GetFullPath(input)) ?? "";
+ManualContext.ImageBaseDir = Path.GetDirectoryName(Path.GetFullPath(input)) ?? "";
 
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
 
@@ -43,14 +43,14 @@ Document.Create(container =>
         page.Margin(2, Unit.Centimetre);
         page.DefaultTextStyle(x => x.FontSize(11).LineHeight(1.35f));
 
-        page.Header().Text("Text Template Manager — Handbook")
+        page.Header().Text("Text Template Manager — Manual")
             .SemiBold().FontColor(Colors.Grey.Darken2);
 
         page.Content().Column(col =>
         {
             // Cover / title block (once, at the top of the first page).
             col.Item().Text("Text Template Manager").FontSize(26).Bold().FontColor(Colors.Grey.Darken4);
-            col.Item().Text("User Handbook").FontSize(14).FontColor(Colors.Grey.Darken1);
+            col.Item().Text("User Manual").FontSize(14).FontColor(Colors.Grey.Darken1);
             col.Item().PaddingTop(6).Text($"Version {version}   ·   Marflow Software")
                 .FontSize(10).FontColor(Colors.Grey.Darken1);
             col.Item().PaddingTop(12).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
@@ -67,7 +67,7 @@ Document.Create(container =>
     });
 }).GeneratePdf(output);
 
-Console.WriteLine($"HandbookGen: {output}");
+Console.WriteLine($"ManualGen: {output}");
 return 0;
 
 static void RenderBlocks(ColumnDescriptor col, ContainerBlock container)
@@ -255,7 +255,7 @@ static bool HasImage(ContainerInline? inline)
 }
 
 // Renders a paragraph that mixes text and images: text runs become text items and each image a
-// block image, in document order. Handbook images normally sit alone in their own paragraph.
+// block image, in document order. Manual images normally sit alone in their own paragraph.
 static void RenderParagraphWithImages(ColumnDescriptor col, ContainerInline? inline)
 {
     if (inline == null) return;
@@ -284,15 +284,15 @@ static void RenderImage(ColumnDescriptor col, LinkInline img)
         url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
     {
         col.Item().PaddingTop(6).Text($"[remote image not embedded: {url}]").Italic().FontColor(Colors.Grey.Darken1);
-        Console.Error.WriteLine($"HandbookGen: skipping remote image {url}");
+        Console.Error.WriteLine($"ManualGen: skipping remote image {url}");
         return;
     }
 
-    string path = Path.IsPathRooted(url) ? url : Path.GetFullPath(Path.Combine(HandbookContext.ImageBaseDir, url));
+    string path = Path.IsPathRooted(url) ? url : Path.GetFullPath(Path.Combine(ManualContext.ImageBaseDir, url));
     if (!File.Exists(path))
     {
         col.Item().PaddingTop(6).Text($"[missing image: {url}]").Italic().FontColor(Colors.Red.Medium);
-        Console.Error.WriteLine($"HandbookGen: image not found: {path}");
+        Console.Error.WriteLine($"ManualGen: image not found: {path}");
         return;
     }
 
@@ -364,7 +364,7 @@ static (int Width, int Height)? JpegSize(Stream s)
     return null;
 }
 
-static class HandbookContext
+static class ManualContext
 {
     public static string ImageBaseDir = "";
 }

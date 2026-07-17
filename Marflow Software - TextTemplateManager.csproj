@@ -62,7 +62,7 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!-- The handbook generator is a standalone build tool; keep its sources out of the app build. -->
+  <!-- The manual generator is a standalone build tool; keep its sources out of the app build. -->
   <ItemGroup>
     <Compile Remove="tools\**" />
     <Content Remove="tools\**" />
@@ -70,12 +70,12 @@
     <Page Remove="tools\**" />
   </ItemGroup>
 
-  <!-- Handbook PDF, generated from docs/Handbook.md, shipped next to the exe. Remove from the
+  <!-- Manual PDF, generated from docs/Manual.md, shipped next to the exe. Remove from the
        default None glob first, then include as copied Content (same pattern as the image assets). -->
   <ItemGroup>
-    <None Remove="Assets\Handbook.pdf" />
+    <None Remove="Assets\Manual.pdf" />
     <!-- Link places the loose copy at the output root (next to ttm.exe), not under Assets\. -->
-    <Content Include="Assets\Handbook.pdf" Link="Handbook.pdf">
+    <Content Include="Assets\Manual.pdf" Link="Manual.pdf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -88,19 +88,19 @@
     </Content>
   </ItemGroup>
 
-  <!-- Regenerate the handbook when the markdown changes. ContinueOnError keeps the app build
+  <!-- Regenerate the manual when the markdown changes. ContinueOnError keeps the app build
        working offline / if the tool can't restore — the last committed PDF is used then. -->
-  <!-- Handbook source screenshots: build-time inputs for the PDF only; keep them out of the package. -->
+  <!-- Manual source screenshots: build-time inputs for the PDF only; keep them out of the package. -->
   <ItemGroup>
-    <Content Remove="Assets\HandbookImages\**\*" />
-    <None Remove="Assets\HandbookImages\**\*" />
-    <Page Remove="Assets\HandbookImages\**\*" />
+    <Content Remove="Assets\ManualImages\**\*" />
+    <None Remove="Assets\ManualImages\**\*" />
+    <Page Remove="Assets\ManualImages\**\*" />
   </ItemGroup>
 
-  <Target Name="GenerateHandbook" BeforeTargets="BeforeBuild"
-          Inputs="docs\Handbook.md;Assets\HandbookImages\**\*" Outputs="Assets\Handbook.pdf">
+  <Target Name="GenerateManual" BeforeTargets="BeforeBuild"
+          Inputs="docs\Manual.md;Assets\ManualImages\**\*" Outputs="Assets\Manual.pdf">
     <Exec ContinueOnError="true"
-          Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\tools\HandbookGen\HandbookGen.csproj&quot; -c Release -- &quot;$(MSBuildProjectDirectory)\docs\Handbook.md&quot; &quot;$(MSBuildProjectDirectory)\Assets\Handbook.pdf&quot; &quot;$(Version)&quot;" />
+          Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\tools\ManualGen\ManualGen.csproj&quot; -c Release -- &quot;$(MSBuildProjectDirectory)\docs\Manual.md&quot; &quot;$(MSBuildProjectDirectory)\Assets\Manual.pdf&quot; &quot;$(Version)&quot;" />
   </Target>
 
   <!-- Bundled TipTap editor assets (built from /editor via `npm run build`). -->

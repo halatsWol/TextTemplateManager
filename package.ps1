@@ -30,12 +30,12 @@ Push-Location (Join-Path $root "editor")
 try { & node build.mjs; if ($LASTEXITCODE -ne 0) { throw "editor build failed" } }
 finally { Pop-Location }
 
-# Stamp the handbook cover with the release version. (The in-build target is incremental and
+# Stamp the manual cover with the release version. (The in-build target is incremental and
 # would otherwise keep an older, dev-versioned PDF; regenerate it here before publishing.)
-Write-Host "==> Generating handbook (version $Version)" -ForegroundColor Cyan
-& dotnet run --project (Join-Path $root "tools\HandbookGen\HandbookGen.csproj") -c Release -- `
-    (Join-Path $root "docs\Handbook.md") (Join-Path $root "Assets\Handbook.pdf") $Version
-if ($LASTEXITCODE -ne 0) { throw "handbook generation failed" }
+Write-Host "==> Generating manual (version $Version)" -ForegroundColor Cyan
+& dotnet run --project (Join-Path $root "tools\ManualGen\ManualGen.csproj") -c Release -- `
+    (Join-Path $root "docs\Manual.md") (Join-Path $root "Assets\Manual.pdf") $Version
+if ($LASTEXITCODE -ne 0) { throw "manual generation failed" }
 
 Write-Host "==> Publishing unpackaged, self-contained (Release / win-x64)" -ForegroundColor Cyan
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }

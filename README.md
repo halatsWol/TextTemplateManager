@@ -35,7 +35,7 @@ was always reviewed and double-checked by me.
 - **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.
 - **Backup / export** — export the whole tree or a single folder.
 - **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
-- **Run at login**, configurable global hotkey, and an in-app **Handbook** (PDF).
+- **Run at login**, configurable global hotkey, and an in-app **Manual** (PDF).
 
 ---
 
@@ -45,7 +45,8 @@ Download the latest `TextTemplateManager-Setup-<version>.exe` from the
 [Releases](https://github.com/halatsWol/TextTemplateManager/releases) page and run it.
 
 It is a **per-user** install (no administrator rights) and **self-contained** — the .NET 8 runtime
-and the Windows App SDK ship inside the app, so nothing else needs to be installed.
+and the Windows App SDK ship inside the app, so nothing else needs to be installed. The bundled
+runtime is always the latest .NET 8 release available at the time the version was built.
 
 ---
 
@@ -66,11 +67,11 @@ Run/debug from Visual Studio (which deploys the Windows App SDK runtime). A loos
 run directly will not start, because the runtime is only registered by a deploy or a self-contained
 publish.
 
-### The handbook
+### The manual
 
-`docs/Handbook.md` is rendered to `Handbook.pdf` (next to the exe) at build time by the small
-`tools/HandbookGen` tool. Edit the markdown and rebuild to regenerate it. If the tool can't run
-(e.g. offline), the last committed `Assets/Handbook.pdf` is used.
+`docs/Manual.md` is rendered to `Manual.pdf` (next to the exe) at build time by the small
+`tools/ManualGen` tool. Edit the markdown and rebuild to regenerate it. If the tool can't run
+(e.g. offline), the last committed `Assets/Manual.pdf` is used.
 
 ---
 
@@ -117,7 +118,7 @@ publish.
 - **UI** — WinUI 3 / Windows App SDK 1.8, MVVM (CommunityToolkit.Mvvm)
 - **Editor** — TipTap / ProseMirror, bundled with esbuild, hosted in WebView2
 - **Storage** — `System.Text.Json` (`.ttmdata` files)
-- **Handbook** — Markdig + QuestPDF (`tools/HandbookGen`)
+- **Manual** — Markdig + QuestPDF (`tools/ManualGen`)
 - **Installer** — Inno Setup (unsigned, per-user)
 
 ---

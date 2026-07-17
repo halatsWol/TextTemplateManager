@@ -8,7 +8,7 @@ give them shortcuts, and paste them into any application from a global Quick Pas
 Download **`TextTemplateManager-Setup-{{VERSION}}.exe`** from the assets below and run it.
 
 - Per-user install — no administrator rights required.
-- Self-contained — the .NET 8 runtime and the Windows App SDK are bundled, so nothing else needs to be installed.
+- Self-contained — the .NET 8 runtime and the Windows App SDK are bundled, so nothing else needs to be installed. The bundled runtime is always the latest .NET 8 release available at the time this version was built.
 
 Already have it installed? The app offers this update automatically, or you can trigger it from **Help ▸ Check for Updates**.
 
@@ -23,6 +23,6 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ---
 
-Full documentation is available in the app under **Help ▸ Open Handbook**, or download
-**`TextTemplateManager-Handbook-{{VERSION}}.pdf`** from the assets below.
+Full documentation is available in the app under **Help ▸ Open Manual**, or download
+**`TextTemplateManager-Manual-{{VERSION}}.pdf`** from the assets below.
 Source: https://github.com/halatsWol/TextTemplateManager

@@ -59,4 +59,4 @@ $RECYCLE.BIN/
 
 # NOTE: these are intentionally NOT ignored (committed as build inputs/fallbacks):
 #   Assets/editor/**          - prebuilt editor bundle the app inlines at build
-#   Assets/Handbook.pdf       - fallback handbook (regenerated from docs/Handbook.md at build)
+#   Assets/Manual.pdf       - fallback manual (regenerated from docs/Manual.md at build)

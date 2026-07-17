@@ -238,7 +238,7 @@
                     <MenuFlyoutItem Text="Exit" Click="Exit_Click"/>
                 </MenuBarItem>
                 <MenuBarItem Title="Help">
-                    <MenuFlyoutItem Text="Open Handbook" Icon="Library" Click="OpenHandbook_Click"/>
+                    <MenuFlyoutItem Text="Open Manual" Icon="Library" Click="OpenManual_Click"/>
                     <MenuFlyoutItem Text="Check for Updates" Icon="Refresh" Click="CheckForUpdates_Click"/>
                     <MenuFlyoutItem Text="Go to GitHub" Click="GoToGitHub_Click">
                         <MenuFlyoutItem.Icon>

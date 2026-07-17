@@ -56,9 +56,9 @@ jobs:
         run: |
           Copy-Item "installer/TextTemplateManager-Setup.exe" `
                     "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
-          # package.ps1 regenerates the handbook PDF (Assets/Handbook.pdf) — ship it as an asset too.
-          Copy-Item "Assets/Handbook.pdf" `
-                    "installer/TextTemplateManager-Handbook-${{ steps.ver.outputs.version }}.pdf"
+          # package.ps1 regenerates the manual PDF (Assets/Manual.pdf) — ship it as an asset too.
+          Copy-Item "Assets/Manual.pdf" `
+                    "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf"
 
       - name: Render release notes from release.md
         shell: pwsh
@@ -92,7 +92,7 @@ jobs:
           $ghArgs = @(
             "${{ github.ref_name }}",
             "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe",
-            "installer/TextTemplateManager-Handbook-${{ steps.ver.outputs.version }}.pdf",
+            "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
             "--title", "${{ github.ref_name }}",
             "--notes-file", "release-notes.md",
             "--draft"

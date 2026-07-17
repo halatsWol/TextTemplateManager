@@ -1143,12 +1143,12 @@ namespace TextTemplateManager
 
         private void GoToGitHub_Click(object sender, RoutedEventArgs e) => OpenExternal(GitHubUrl);
 
-        private async void OpenHandbook_Click(object sender, RoutedEventArgs e)
+        private async void OpenManual_Click(object sender, RoutedEventArgs e)
         {
-            string path = System.IO.Path.Combine(AppContext.BaseDirectory, "Handbook.pdf");
+            string path = System.IO.Path.Combine(AppContext.BaseDirectory, "Manual.pdf");
             if (System.IO.File.Exists(path)) OpenExternal(path);
-            else await ShowMessageAsync("Handbook unavailable",
-                "The handbook PDF was not found next to the app. It is generated at build time.");
+            else await ShowMessageAsync("Manual unavailable",
+                "The manual PDF was not found next to the app. It is generated at build time.");
         }
 
         // Opens a URL or local file with the shell's default handler.
