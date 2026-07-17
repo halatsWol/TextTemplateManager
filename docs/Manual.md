@@ -107,6 +107,12 @@ Press the configured global hotkey (see **Settings ▸ General**) from any appli
 Quick Paste remembers the application you came from and returns focus to it when a template is 
 pasted.
 
+> **Remote Desktop (RDP):** If Text Template Manager is running on both your local computer and a 
+> remote computer you connect to over RDP, the global hotkey always opens Quick Paste on the 
+> **local** computer — Windows delivers a registered global hotkey locally, so it never reaches the 
+> remote session. Give each machine a **different** hotkey (in **Settings ▸ General**), or run only 
+> one instance, to avoid the clash.
+
 ### Inserting a template
 
 - **Single-key shortcut** — with the search box empty, press the key assigned to a template to 

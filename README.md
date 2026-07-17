@@ -48,6 +48,12 @@ It is a **per-user** install (no administrator rights) and **self-contained** �
 and the Windows App SDK ship inside the app, so nothing else needs to be installed. The bundled
 runtime is always the latest .NET 8 release available at the time the version was built.
 
+> **Note — Remote Desktop (RDP):** If Text Template Manager runs on both your local computer and a
+> remote computer you connect to over RDP, the global Quick Paste hotkey always opens Quick Paste on
+> the **local** computer — Windows delivers a registered global hotkey locally, so it never reaches
+> the remote session. Give each machine a **different** Quick Paste hotkey, or run only one instance,
+> to avoid the clash.
+
 ---
 
 ## Build from source
