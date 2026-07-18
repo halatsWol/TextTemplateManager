@@ -24,6 +24,10 @@ namespace TextTemplateManager
         private DispatcherQueue _uiDispatcher = null!;    // set in OnLaunched
         private BrowserConnector? _connector;
         private AppConnectorData? _connectorData;
+        private SingleInstance _singleInstance = null!;   // set in OnLaunched
+
+        // Pipe message a bare second launch sends to just surface the running window (no file).
+        private const string ActivateSignal = "__activate__";
 
         public App()
         {
@@ -32,6 +36,20 @@ namespace TextTemplateManager
 
         protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            // Single-instance guard. A .ttmdata opened from Explorer starts another ttm.exe with the
+            // file as an argument; hand it to the running instance and exit rather than run twice.
+            _uiDispatcher = DispatcherQueue.GetForCurrentThread();
+            _singleInstance = new SingleInstance();
+            string? fileArg = GetTtmDataArg();
+            if (!_singleInstance.TryAcquire())
+            {
+                SingleInstance.SendToRunningInstance(fileArg ?? ActivateSignal);
+                Environment.Exit(0);
+                return;
+            }
+            _singleInstance.MessageReceived += OnOtherInstanceMessage;
+            _singleInstance.StartServer();
+
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             await DataNode.Instance.InitializeAsync();
@@ -52,7 +70,6 @@ namespace TextTemplateManager
             WindowHelper.SetWindowMinSize(hwnd, 720, 560);   // don't clip the panes
 
 
-            _uiDispatcher = DispatcherQueue.GetForCurrentThread();
             _trayService = new TrayIconService(MainWindow);
 
             ApplyBrowserConnectorSettings();   // start the loopback connector if enabled
@@ -70,6 +87,47 @@ namespace TextTemplateManager
                 }
             };
 
+            MainWindow.Activate();
+
+            // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
+            if (fileArg != null)
+                (MainWindow.Content as MainPage)?.HandleOpenTtmDataFile(fileArg);
+        }
+
+        // ---- File association (.ttmdata) ----
+
+        // The path Explorer passes when opening a .ttmdata, or null for a normal launch.
+        private static string? GetTtmDataArg()
+        {
+            foreach (var a in Environment.GetCommandLineArgs())
+            {
+                if (a.EndsWith(".ttmdata", StringComparison.OrdinalIgnoreCase))
+                {
+                    try { if (System.IO.File.Exists(a)) return System.IO.Path.GetFullPath(a); }
+                    catch { }
+                }
+            }
+            return null;
+        }
+
+        // Another launch reached the running instance: surface the window and open its file (if any).
+        private void OnOtherInstanceMessage(string message)
+        {
+            _uiDispatcher?.TryEnqueue(() =>
+            {
+                ShowMainWindow();
+                if (message != ActivateSignal)
+                    (MainWindow.Content as MainPage)?.HandleOpenTtmDataFile(message);
+            });
+        }
+
+        // Restore + foreground the main window (it may be hidden in the tray). Mirrors the tray's Open.
+        private static void ShowMainWindow()
+        {
+            MainWindow.Show();
+            IntPtr hWnd = WindowNative.GetWindowHandle(MainWindow);
+            WindowHelper.ShowWindow(hWnd, 9);          // SW_RESTORE
+            WindowHelper.SetForegroundWindow(hWnd);
             MainWindow.Activate();
         }
 
@@ -134,6 +192,7 @@ namespace TextTemplateManager
         {
             _isClosingFromTray = true;
             try { _connector?.Stop(); } catch { }
+            try { _singleInstance?.Dispose(); } catch { }
             try { _trayService?.Dispose(); } catch { }
             Environment.Exit(0);
         }

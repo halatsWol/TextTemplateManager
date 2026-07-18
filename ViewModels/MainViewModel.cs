@@ -333,7 +333,6 @@ public partial class MainViewModel : ObservableObject
         WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
         picker.FileTypeChoices.Add("TextTemplateManager data", new List<string> { ".ttmdata" });
-        picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
         picker.SuggestedFileName = $"Backup_{DateTime.Now:yyyyMMdd}";
 
         var file = await picker.PickSaveFileAsync();
@@ -349,7 +348,6 @@ public partial class MainViewModel : ObservableObject
         WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
         picker.FileTypeChoices.Add("TextTemplateManager data", new List<string> { ".ttmdata" });
-        picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
         picker.SuggestedFileName = folder.Title;
 
         var file = await picker.PickSaveFileAsync();
@@ -364,7 +362,6 @@ public partial class MainViewModel : ObservableObject
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
         WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
-        picker.FileTypeFilter.Add(".json");
         picker.FileTypeFilter.Add(".ttmdata");
 
         var file = await picker.PickSingleFileAsync();

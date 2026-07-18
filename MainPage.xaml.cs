@@ -590,6 +590,57 @@ namespace TextTemplateManager
             ViewModel.ReloadTree();   // full rebuild so sync-folder order changes are reflected
         }
 
+        // ---- File association (.ttmdata) ----
+
+        /// <summary>Opens the in-window Settings directly on the Sync page.</summary>
+        public void OpenSyncSettings()
+        {
+            SettingsOverlay.Visibility = Visibility.Visible;
+            var syncItem = SettingsNav.MenuItems.OfType<NavigationViewItem>()
+                .FirstOrDefault(i => (i.Tag as string) == "Sync");
+            if (syncItem == null) return;
+            if (ReferenceEquals(SettingsNav.SelectedItem, syncItem))
+                NavigateSettings("Sync");                // already selected -> navigate manually
+            else
+                SettingsNav.SelectedItem = syncItem;     // fires SelectionChanged -> navigate
+        }
+
+        /// <summary>Handles a .ttmdata opened via the file association: links it as a sync source
+        /// (unless it's this app's own data file or already linked), then shows Sync settings.</summary>
+        public async void HandleOpenTtmDataFile(string path)
+        {
+            string full;
+            try { full = System.IO.Path.GetFullPath(path); }
+            catch { return; }
+            if (!System.IO.File.Exists(full)) return;
+
+            // The app's own primary data file is never linked as a sync source.
+            if (string.Equals(full, StorageService.GetDataPath(), StringComparison.OrdinalIgnoreCase))
+            {
+                OpenSyncSettings();
+                await ShowMessageAsync("Not added as a sync source",
+                    "The added file is this app's own data file, so it can't be linked as a sync source.");
+                return;
+            }
+
+            var sync = DataNode.Instance.CurrentSyncSettings;
+            bool already = sync.Sources.Any(s => string.Equals(s.Path, full, StringComparison.OrdinalIgnoreCase));
+            if (!already)
+            {
+                sync.Sources.Add(new SyncSource
+                {
+                    Name = System.IO.Path.GetFileNameWithoutExtension(full),
+                    Path = full,
+                    IsActive = true,
+                    AllowSave = false,
+                });
+                await DataNode.Instance.SaveSyncSettingsAsync();
+                await DataNode.Instance.ReapplySyncAsync();
+            }
+
+            OpenSyncSettings();
+        }
+
         private const string GitHubUrl = "https://github.com/halatsWol/TextTemplateManager";
         private const string ContactEmail = "contact@kmarflow.com";
 

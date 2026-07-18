@@ -11,11 +11,11 @@ namespace TextTemplateManager.Data;
 
 public static class StorageService
 {
-    // Path: %localappdata%\MarflowSoftware\TextTemplatesManager\
+    // Path: %localappdata%\Marflow Software\TextTemplateManager\
     private static readonly string BaseDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Marflow Software",
-        "TextTemplatesManager");
+        "TextTemplateManager");
 
     private static readonly string DataFileName = "data.ttmdata";
     private static readonly string SettingsFileName = "settings.ttmsettings";
@@ -31,7 +31,25 @@ public static class StorageService
 
     static StorageService()
     {
+        MigrateLegacyFolder();   // rename the old plural folder before creating the new one
         EnsureDirectories();
+    }
+
+    // One-time migration: the data folder was historically named "TextTemplatesManager" (plural).
+    // Rename it to the correct singular name so upgrading users keep their templates, settings, and
+    // sync config. Runs before EnsureDirectories, so the destination doesn't exist yet.
+    private static void MigrateLegacyFolder()
+    {
+        try
+        {
+            string legacy = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Marflow Software",
+                "TextTemplatesManager");
+            if (Directory.Exists(legacy) && !Directory.Exists(BaseDirectory))
+                Directory.Move(legacy, BaseDirectory);
+        }
+        catch { /* best effort — EnsureDirectories still yields a usable folder */ }
     }
 
     public static void EnsureDirectories()

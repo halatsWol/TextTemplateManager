@@ -59,6 +59,9 @@ and callout panels. Changes are saved automatically a short time after you stop 
 no separate save step — a brief **Saved** indicator appears in the top-right corner each time your 
 data is written.
 
+**Ctrl+click** a link to open it in your default browser, and hover over a link to see where it 
+points. A plain click just places the cursor so you can edit the link.
+
 ![A template open in the editor: a formatted body with an Info callout panel, its Single Key (M) and Multi Key (MSG) shortcuts, and the HTML/Jira default paste mode. The badge on the folder marks it as synchronized.](<../Assets/ManualImages/TTM_MainWindow_TemplateExample(syncedTemplate).png>)
 
 ### Callout panels
@@ -66,6 +69,10 @@ data is written.
 The **Panel** button on the editor toolbar wraps the current block in a colored callout, in one 
 of five styles: **Info**, **Note**, **Success**, **Warning**, or **Error**. Choosing the panel's 
 current style again removes the panel; choosing a different style changes it.
+
+To move the cursor out of a panel, press **↓** or **→** at the end of its last line, or press 
+**Enter** on an empty last line (a first **Enter** adds a line inside the panel, a second steps 
+out) — the same way code blocks behave.
 
 Panels adapt to whichever paste mode you use (see *Paste modes*): they become native panels in 
 Atlassian Jira, colored boxes in email and word processors, and a labeled quote in Markdown.
@@ -186,9 +193,9 @@ elsewhere appear without restarting the application.
 
 Manage synchronized sources under **Settings ▸ Sync**.
 
-![Settings ▸ Sync: set the shortcut-prefix separator at the top, then add a source with + or Create.](../Assets/ManualImages/TTM_SyncSettings.png)
+![Settings ▸ Sync: set the shortcut-prefix separator at the top, then add a source with Add or Create.](../Assets/ManualImages/TTM_SyncSettings.png)
 
-To add a source, click **+** to link a shared file that already exists, or **Create** to make a 
+To add a source, click **Add** to link a shared file that already exists, or **Create** to make a 
 new one — for example in a OneDrive folder so it is shared automatically:
 
 ![Create opens a Save dialog for a new shared .ttmdata file.](../Assets/ManualImages/TTM_SyncSettings_createFilePicker.png)
@@ -218,6 +225,12 @@ If a source's file cannot be found (for example, it has been moved or is tempora
 warning icon is shown next to it. Click the icon to re-link the source to its file. The most 
 recently cached contents remain visible in the meantime.
 
+You can also add a source by **opening a `.ttmdata` file** — double-click it in File Explorer, or 
+use **Open with ▸ Text Template Manager**. The app comes to the front on this page with the file 
+linked as an active source; if the file is already linked it is simply shown here, and the app's own 
+data file is never added. (Text Template Manager runs as a single instance, so opening a file always 
+uses the window that is already running.)
+
 ---
 
 ## Settings
@@ -236,6 +249,9 @@ Open settings from **File ▸ Settings**.
   the field and press the desired key combination to change it.
 - **Browser extensions (beta)** — enables a local connector for a companion browser extension. See 
   *Browser connector* below.
+- **File association** — the **Set as default for .ttmdata** button makes `.ttmdata` files open with 
+  Text Template Manager (opening one adds it as a sync source, as described in *Synchronization*). 
+  Use it if another program has taken over the association.
 
 ![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
 
@@ -277,6 +293,9 @@ API (endpoints, security, examples) via the **View API documentation** link in s
 - Right-clicking a folder and choosing **Export** saves just that folder and its contents to a 
   standalone file, which is useful for creating a new shared source or sharing a subset of 
   templates.
+
+Backups use the `.ttmdata` format. An older `.json` backup still loads after you rename it to 
+`.ttmdata` — the two are the same format.
 
 ---
 
@@ -339,7 +358,7 @@ and **Copy As** for templates, **Export** for folders, and **Move to Root** for 
 
 Application data is stored per user under:
 
-`%LocalAppData%\Marflow Software\TextTemplatesManager`
+`%LocalAppData%\Marflow Software\TextTemplateManager`
 
 This folder contains your template data, application settings, and synchronization configuration.
 Downloaded update installers are staged in an `installer` subfolder. Shared synchronization files 

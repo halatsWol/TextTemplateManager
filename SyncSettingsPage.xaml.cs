@@ -121,7 +121,6 @@ namespace TextTemplateManager
             var picker = new FileOpenPicker();
             WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
             picker.FileTypeFilter.Add(".ttmdata");
-            picker.FileTypeFilter.Add(".json");
 
             var file = await picker.PickSingleFileAsync();
             if (file == null) return;
@@ -168,7 +167,6 @@ namespace TextTemplateManager
             var picker = new FileOpenPicker();
             WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
             picker.FileTypeFilter.Add(".ttmdata");
-            picker.FileTypeFilter.Add(".json");
 
             var file = await picker.PickSingleFileAsync();
             if (file == null) return;

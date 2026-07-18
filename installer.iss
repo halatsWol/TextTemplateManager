@@ -45,6 +45,9 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
+; Refresh Explorer's icon/association cache after the .ttmdata registry keys change.
+ChangesAssociations=yes
+
 ; Auto-update runs Setup silently. Let it close the running app so files can be replaced; the
 ; [Run] entry (no skipifsilent) relaunches the app when the silent install finishes.
 CloseApplications=yes
@@ -67,6 +70,13 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Registry]
 ; Auto-start on login (current user). Added only when the task is selected; removed on uninstall.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+
+; Associate .ttmdata with the app (per-user; no admin). Opening one launches ttm.exe with the file
+; path, which links it as a sync source (see App.OnLaunched -> MainPage.HandleOpenTtmDataFile).
+Root: HKCU; Subkey: "Software\Classes\.ttmdata"; ValueType: string; ValueName: ""; ValueData: "TextTemplateManager.ttmdata"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata"; ValueType: string; ValueName: ""; ValueData: "Text Template Manager data"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall

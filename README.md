@@ -29,7 +29,8 @@ was always reviewed and double-checked by me.
   typing a **multi-key** shortcut.
 - **Folders & drag-drop** — organize templates; a template can never contain other items.
 - **Sync** — share a `.ttmdata` file across machines via a cloud folder (e.g. OneDrive); shown as a
-  pinned folder, with per-source read-only and shortcut-prefix options.
+  pinned folder, with per-source read-only and shortcut-prefix options. Open a `.ttmdata` file in
+  Explorer to add it as a source.
 - **Area-aware shortcuts** — the same key can be reused across sync folders; it resolves by priority
   (local first, then sync folders in order).
 - **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.

@@ -292,7 +292,7 @@ public class DataNode
         if (!_isInitialized) return;
 
         bool changed = false;
-        foreach (var source in CurrentSyncSettings.Sources.Where(s => s.IsActive))
+        foreach (var source in CurrentSyncSettings.Sources.Where(s => s.IsActive).ToList())
         {
             DateTime write = GetLastWriteSafe(source.Path);
             if (_lastSeenWrite.TryGetValue(source.Id, out var prev) && write != prev)
@@ -397,7 +397,8 @@ public class DataNode
         }
 
         var syncedFolders = new List<Folder>();
-        foreach (var source in sources.Where(s => s.IsActive))
+        // Snapshot: the loop awaits a file read per source, during which the collection may change.
+        foreach (var source in sources.Where(s => s.IsActive).ToList())
         {
             cachedSynced.TryGetValue(source.Id, out var folder);
             folder ??= new Folder { Id = source.Id };
@@ -437,7 +438,9 @@ public class DataNode
     /// files). StorageService skips the write when the content is unchanged.</summary>
     private async Task WriteSyncSourcesAsync()
     {
-        foreach (var source in CurrentSyncSettings.Sources.Where(s => s.IsActive && s.AllowSave))
+        // Snapshot: the loop awaits file writes, during which another flow (opening a .ttmdata, a
+        // Sync-settings edit, a save/poll timer) may add or remove a source and invalidate the iterator.
+        foreach (var source in CurrentSyncSettings.Sources.Where(s => s.IsActive && s.AllowSave).ToList())
         {
             if (RootFolder.Children.FirstOrDefault(c => c.Id == source.Id) is not Folder folder) continue;
             if (folder.SyncFileMissing) continue;

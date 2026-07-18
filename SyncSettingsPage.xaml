@@ -48,9 +48,7 @@
 
         <!-- Toolbar: add existing / create new -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-            <Button Click="AddExisting_Click" ToolTipService.ToolTip="Link an existing sync file">
-                <FontIcon Glyph="&#xE710;"/>
-            </Button>
+            <Button Content="Add" Click="AddExisting_Click" ToolTipService.ToolTip="Link an existing .ttmdata sync file"/>
             <Button Content="Create" Click="CreateNew_Click"
                     ToolTipService.ToolTip="Create a new sync file"/>
         </StackPanel>

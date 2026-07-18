@@ -115,6 +115,17 @@ public sealed partial class GeneralSettingsPage : Page
         RefreshConnectorUi();
     }
 
+    // ---- File association ----
+    private void RegisterFileType_Click(object sender, RoutedEventArgs e)
+    {
+        bool ok = FileAssociation.RegisterTtmData();
+        FileAssocInfo.Severity = ok ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+        FileAssocInfo.Message = ok
+            ? ".ttmdata files now open with Text Template Manager."
+            : "Couldn't update the file association.";
+        FileAssocInfo.IsOpen = true;
+    }
+
     // Grays out the update toggles per enterprise policy without mutating the stored settings
     // (the check itself is also gated in RunUpdateCheckAsync).
     private bool _updatePolicyLoading;
