@@ -234,12 +234,36 @@ Open settings from **File ▸ Settings**.
 - **Default paste mode** — the paste mode applied to newly created templates.
 - **Global shortcut** — the hotkey that opens the Quick Paste window from any application. Click 
   the field and press the desired key combination to change it.
+- **Browser extensions (beta)** — enables a local connector for a companion browser extension. See 
+  *Browser connector* below.
 
 ![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
 
 ### Sync
 
 Manage synchronized sources, as described in *Synchronization*.
+
+---
+
+## Browser connector (beta)
+
+The browser connector lets a companion browser extension (Chrome, Edge, or Firefox) list your 
+templates and paste them from the browser. It is **off by default** and enabled under 
+**Settings ▸ General ▸ Browser extensions**.
+
+When enabled, the application runs a small local service (`127.0.0.1` — loopback only, never exposed 
+to the network) that the extension talks to. Pairing is by **token**:
+
+- Turn on **Enable browser connector**. A random **token** is generated and shown, along with the 
+  port.
+- Copy the token (and the port, if you changed it) into the extension's settings. Every request must 
+  present the token, so only an extension you have paired can reach your templates.
+- **Regenerate** issues a new token and invalidates the old one — re-pair the extension afterwards.
+
+The connector serves template names, ids, and the available paste modes, and returns a template's 
+content rendered in a chosen paste mode (or the template's default). Only browser extensions may use 
+it — an ordinary web page cannot — and the application must be running. Developers can find the full 
+API (endpoints, security, examples) via the **View API documentation** link in settings.
 
 ---
 

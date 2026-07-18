@@ -16,6 +16,12 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private PasteMode _defaultPasteMode = PasteMode.Auto;
     [ObservableProperty] private string _pasteWindowHotkey = "Shift+Alt+Y";
 
+    // Local loopback connector for browser extensions. Off by default (opens a 127.0.0.1 port);
+    // the token is generated when first enabled and required on every request.
+    [ObservableProperty] private bool _browserConnectorEnabled = false;
+    [ObservableProperty] private int _browserConnectorPort = 47615;
+    [ObservableProperty] private string _browserConnectorToken = "";
+
     public ObservableCollection<SyncEntry> SyncEntries { get; set; } = new();
 }
 

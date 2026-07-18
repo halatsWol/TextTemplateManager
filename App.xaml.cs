@@ -22,6 +22,8 @@ namespace TextTemplateManager
         private PasteWindow? _pasteWindow;
         private TrayIconService _trayService;
         private DispatcherQueue _uiDispatcher;
+        private BrowserConnector? _connector;
+        private AppConnectorData? _connectorData;
 
         public App()
         {
@@ -52,6 +54,8 @@ namespace TextTemplateManager
 
             _uiDispatcher = DispatcherQueue.GetForCurrentThread();
             _trayService = new TrayIconService(MainWindow);
+
+            ApplyBrowserConnectorSettings();   // start the loopback connector if enabled
 
 
 
@@ -92,12 +96,44 @@ namespace TextTemplateManager
             _hotkeyListener?.Register(hotkey);
         }
 
+        /// <summary>Starts/stops/restarts the browser connector to match the current settings.
+        /// Safe to call at launch and whenever the connector settings change.</summary>
+        public void ApplyBrowserConnectorSettings()
+        {
+            var s = DataNode.Instance.CurrentSettings;
+            if (!s.BrowserConnectorEnabled) { _connector?.Stop(); return; }
+
+            // Generate the shared token on first enable and persist it.
+            if (string.IsNullOrEmpty(s.BrowserConnectorToken))
+            {
+                s.BrowserConnectorToken = Guid.NewGuid().ToString("N");
+                _ = StorageService.SaveSettingsAsync(s);
+            }
+
+            if (_connectorData == null)
+            {
+                _connectorData = new AppConnectorData();
+                DataNode.Instance.TreeChanged += RebuildConnectorSnapshot;
+                DataNode.Instance.DataSaved += RebuildConnectorSnapshot;
+            }
+            _connectorData.Rebuild();   // on the UI thread here
+
+            _connector ??= new BrowserConnector(_connectorData);
+            try { _connector.Start(s.BrowserConnectorPort, s.BrowserConnectorToken); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Connector] start failed: {ex.Message}"); }
+        }
+
+        // TreeChanged/DataSaved can fire off the UI thread; marshal the snapshot rebuild back.
+        private void RebuildConnectorSnapshot() =>
+            _uiDispatcher?.TryEnqueue(() => { try { _connectorData?.Rebuild(); } catch { } });
+
         /// <summary>Quit: remove the tray icon, then hard-exit. Uses Environment.Exit because
         /// Application.Current.Exit()'s teardown throws a stowed exception (0xc000027b) here.
         /// Persist pending state before calling.</summary>
         public void Shutdown()
         {
             _isClosingFromTray = true;
+            try { _connector?.Stop(); } catch { }
             try { _trayService?.Dispose(); } catch { }
             Environment.Exit(0);
         }

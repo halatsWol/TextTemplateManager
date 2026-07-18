@@ -20,6 +20,7 @@ Already have it installed? The app offers this update automatically, or you can 
 
 - **Keyboard navigation in Quick Paste and the tree.** The Quick Paste tree and shortcut lists are now fully keyboard-drivable: arrow keys move the selection, **← / →** expand and collapse folders, **Enter** or **Space** pastes a template (or expands a folder), and **Esc** steps back through focus (tree → search → shortcut list → close). Holding **Alt** now switches cleanly to multi-key entry. In the main window, **Enter** or **Space** also expands the selected folder.
 - **"none" shortcut-prefix separator.** In **Settings ▸ Sync** you can now join a sync folder's prefix directly to a shortcut with no separator (for example `ANDMSG`), alongside `-` and `.`.
+- **Browser connector (beta).** A local, opt-in connector (**Settings ▸ General ▸ Browser extensions**) lets a companion browser extension list your templates and fetch rendered content over `127.0.0.1`, secured by a pairing token. See the API documentation linked in settings.
 
 #### Fixes
 

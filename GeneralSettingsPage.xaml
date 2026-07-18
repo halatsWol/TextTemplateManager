@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:common="using:TextTemplateManager.Common">
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
     <StackPanel Spacing="25" Padding="20">
         <TextBlock Text="General Settings" Style="{StaticResource TitleTextBlockStyle}"/>
 
@@ -67,5 +68,39 @@
                 <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
             </Grid>
         </StackPanel>
+
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
+        <StackPanel Spacing="8">
+            <TextBlock Text="Browser extensions (beta)" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="Lets a companion browser extension list and paste your templates over a local (127.0.0.1) connection. Off by default; paste the token below into the extension to pair it."/>
+            <ToggleSwitch x:Name="ConnectorToggle" Header="Enable browser connector" Toggled="Connector_Toggled"/>
+
+            <HyperlinkButton x:Name="ApiDocLink" Content="View API documentation" Padding="0"/>
+
+            <Grid x:Name="ConnectorDetails" Visibility="Collapsed" ColumnSpacing="10" RowSpacing="8" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="280"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Port" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ConnectorPortBox" HorizontalAlignment="Left" MinWidth="90"
+                         InputScope="Number" LostFocus="ConnectorPort_LostFocus"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Token" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ConnectorTokenBox" IsReadOnly="True" IsSpellCheckEnabled="False"/>
+                <Button Grid.Row="1" Grid.Column="2" Content="Copy" Click="CopyToken_Click"/>
+                <Button Grid.Row="1" Grid.Column="3" Content="Regenerate" Click="RegenerateToken_Click"/>
+            </Grid>
+        </StackPanel>
     </StackPanel>
+    </ScrollViewer>
 </Page>

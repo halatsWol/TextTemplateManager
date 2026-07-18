@@ -174,6 +174,23 @@ namespace TextTemplateManager.Services.Pasting
             await SetClipboardFormatsAsync(formats);
         }
 
+        /// <summary>Renders a template's content to its string form for a paste mode, for
+        /// out-of-process consumers (the browser connector). Returns the content and a MIME type.
+        /// Pure — no clipboard, no UI — so it is safe to call off the UI thread.</summary>
+        public static (string content, string contentType) RenderForMode(string rawContent, PasteMode mode)
+        {
+            var (html, plainText) = PrepareContent(rawContent);
+            return mode switch
+            {
+                PasteMode.Plaintext => (plainText, "text/plain"),
+                PasteMode.Markdown => (HtmlToMarkdown.Convert(html), "text/markdown"),
+                PasteMode.RTF => (SafeHtmlToRtf(html), "application/rtf"),
+                PasteMode.HTML => (PanelHtml.ToStyledHtml(html), "text/html"),
+                PasteMode.Jira => (PanelHtml.Prepare(html), "text/html"),
+                _ => (PanelHtml.ToStyledHtml(html), "text/html"),   // Auto — most compatible
+            };
+        }
+
         public static async Task HandlePaste(string rtfContent, PasteMode mode)
         {
             IntPtr targetHwnd = WindowHelper.GetTargetWindow();
