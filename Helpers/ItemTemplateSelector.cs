@@ -6,9 +6,9 @@ namespace TextTemplateManager.Helpers
 {
     public class ItemTemplateSelector : DataTemplateSelector
     {
-        public DataTemplate TemplateTemplate { get; set; }
-        public DataTemplate FolderTemplate { get; set; }
-        public DataTemplate DefaultTemplate { get; set; }
+        public DataTemplate TemplateTemplate { get; set; } = null!;   // set in XAML
+        public DataTemplate FolderTemplate { get; set; } = null!;     // set in XAML
+        public DataTemplate DefaultTemplate { get; set; } = null!;    // set in XAML
 
         protected override DataTemplate SelectTemplateCore(object item)
         {

@@ -35,14 +35,14 @@ namespace TextTemplateManager
         private bool _isInternalChange = false;
         private Timer _saveTimer;
 
-        // References to the controls inside the DataTemplate
-        private RichEditBox _richEditor;
-        private Pivot _editorPivot;
+        // References to the controls inside the DataTemplate (set on Loaded, cleared on Unloaded).
+        private RichEditBox? _richEditor;
+        private Pivot? _editorPivot;
         private bool _conflictUserMoved = false;   // user dragged the panel; stop auto-anchoring it
         private bool _conflictVisible = false;
-        private Storyboard _conflictStoryboard;
-        private string _dismissedNotesSignature;   // cross-area note set the user dismissed
-        private string _currentNotesSignature;
+        private Storyboard? _conflictStoryboard;
+        private string? _dismissedNotesSignature;   // cross-area note set the user dismissed (null = none)
+        private string _currentNotesSignature = "";
 
         // Auto-update
         private readonly UpdateService _updater = new();
@@ -147,7 +147,7 @@ namespace TextTemplateManager
             _ = RunUpdateCheckAsync(manual: false);
         }
 
-        private void Template_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void Template_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (sender is TextTemplateManager.Models.Template t &&
                 (e.PropertyName == nameof(TextTemplateManager.Models.Template.SingleKeyShortcut) ||
@@ -175,8 +175,8 @@ namespace TextTemplateManager
             tb.SelectionStart = Math.Clamp(caret - removed, 0, filtered.Length);
         }
 
-        private Microsoft.UI.Dispatching.DispatcherQueueTimer _saveNotifTimer;
-        private Storyboard _saveFade;
+        private Microsoft.UI.Dispatching.DispatcherQueueTimer? _saveNotifTimer;
+        private Storyboard? _saveFade;
 
         private void ShowSaveNotification()
         {
@@ -1451,7 +1451,7 @@ namespace TextTemplateManager
                 e.AcceptedOperation = DataPackageOperation.None;
         }
 
-        private static BaseItem FindItemFromSource(object source)
+        private static BaseItem? FindItemFromSource(object source)
         {
             var el = source as DependencyObject;
             while (el != null)
@@ -1520,7 +1520,7 @@ namespace TextTemplateManager
             _conflictVisible = false;
         }
 
-        private static bool IsWithin(DependencyObject node, DependencyObject ancestor)
+        private static bool IsWithin(DependencyObject? node, DependencyObject ancestor)
         {
             while (node != null)
             {

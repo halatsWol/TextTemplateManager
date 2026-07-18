@@ -18,10 +18,10 @@ namespace TextTemplateManager
         private static bool _isClosingFromTray = false;
 
         // Keep references to prevent Garbage Collection
-        private HotkeyListener _hotkeyListener;
+        private HotkeyListener _hotkeyListener = null!;   // set in OnLaunched
         private PasteWindow? _pasteWindow;
-        private TrayIconService _trayService;
-        private DispatcherQueue _uiDispatcher;
+        private TrayIconService _trayService = null!;     // set in OnLaunched
+        private DispatcherQueue _uiDispatcher = null!;    // set in OnLaunched
         private BrowserConnector? _connector;
         private AppConnectorData? _connectorData;
 

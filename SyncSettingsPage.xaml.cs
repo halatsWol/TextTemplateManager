@@ -63,7 +63,7 @@ namespace TextTemplateManager
         private void Subscribe(SyncSource s) => s.PropertyChanged += Source_PropertyChanged;
         private void Unsubscribe(SyncSource s) => s.PropertyChanged -= Source_PropertyChanged;
 
-        private async void Source_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private async void Source_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(SyncSource.IsFileMissing)) return; // computed, not persisted
             await SaveAsync();
@@ -87,7 +87,7 @@ namespace TextTemplateManager
                 folder.Title = s.Name;
         }
 
-        private async void Sources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private async void Sources_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.OldItems != null) foreach (SyncSource s in e.OldItems) Unsubscribe(s);
             if (e.NewItems != null) foreach (SyncSource s in e.NewItems) Subscribe(s);
@@ -158,7 +158,7 @@ namespace TextTemplateManager
         }
 
         // ---- Per-row actions ----
-        private static SyncSource Source(object sender) =>
+        private static SyncSource? Source(object sender) =>
             (sender as Microsoft.UI.Xaml.FrameworkElement)?.DataContext as SyncSource;
 
         private async void Relink_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)

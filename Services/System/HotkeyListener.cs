@@ -14,7 +14,7 @@ public class HotkeyListener : IDisposable
     private const int WM_HOTKEY = 0x0312;
     private const string WindowClassName = "TTM_HotkeyMessageWindow";
 
-    public event Action HotkeyPressed;
+    public event Action? HotkeyPressed;
 
     public HotkeyListener()
     {

@@ -311,7 +311,7 @@ public class DataNode
 
     /// <summary>Returns the sync source an item belongs to (via its top-level ancestor), or null
     /// if the item is local.</summary>
-    public SyncSource GetSyncSourceForItem(BaseItem item)
+    public SyncSource? GetSyncSourceForItem(BaseItem item)
     {
         var top = FindTopLevelAncestor(item);
         return top == null ? null : CurrentSyncSettings.Sources.FirstOrDefault(s => s.Id == top.Id);
@@ -338,7 +338,7 @@ public class DataNode
     }
 
     /// <summary>Highest-priority template for a single key (local first, then sync order).</summary>
-    public Template ResolveSingleKey(string key)
+    public Template? ResolveSingleKey(string key)
     {
         if (string.IsNullOrEmpty(key)) return null;
         return AllItems
@@ -367,7 +367,7 @@ public class DataNode
             : t.MultiKeyShortcut;
     }
 
-    private BaseItem FindTopLevelAncestor(BaseItem item)
+    private BaseItem? FindTopLevelAncestor(BaseItem item)
     {
         foreach (var top in RootFolder.Children)
             if (ReferenceEquals(top, item) || ContainsRecursive(top, item)) return top;
@@ -403,7 +403,7 @@ public class DataNode
             folder ??= new Folder { Id = source.Id };
             folder.IsSyncRoot = true;
 
-            Folder fileRoot = null;
+            Folder? fileRoot = null;
             if (!string.IsNullOrWhiteSpace(source.Path) && File.Exists(source.Path))
             {
                 try { fileRoot = await StorageService.LoadRootSharedAsync(source.Path); }

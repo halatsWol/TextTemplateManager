@@ -41,7 +41,7 @@ namespace TextTemplateManager.Helpers
             string name = node.Name.ToLowerInvariant();
 
             // Callout panel -> a shaded single-cell table with a left accent border.
-            if (name == "div" && node.GetAttributeValue("data-panel-type", null) != null)
+            if (name == "div" && !string.IsNullOrEmpty(node.GetAttributeValue("data-panel-type", "")))
             {
                 WritePanel(node, rtf);
                 return;

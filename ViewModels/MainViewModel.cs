@@ -20,7 +20,7 @@ public partial class MainViewModel : ObservableObject
     public List<PasteMode> PasteModes { get; } = PasteModeLabel.DisplayOrder.ToList();
     private readonly DataNode _dataNode;
     private DispatcherQueue _ui;
-    private DispatcherQueueTimer _syncPollTimer;
+    private DispatcherQueueTimer _syncPollTimer = null!;   // set in the constructor's timer setup
 
     public ObservableCollection<BaseItem> AllItems => _dataNode.LocalItems;
 
@@ -210,7 +210,7 @@ public partial class MainViewModel : ObservableObject
     #region CRUD Commands
 
     /// <summary>Target for a new item: the selected folder, a selected template's parent, else root.</summary>
-    private Folder AddTargetFolder() =>
+    private Folder? AddTargetFolder() =>
         SelectedItem as Folder ?? (SelectedItem != null ? FindParent(AllItems, SelectedItem) as Folder : null);
 
     [RelayCommand]
@@ -273,7 +273,7 @@ public partial class MainViewModel : ObservableObject
         if (SelectedItem == null) return;
 
         // Read-only item → clone locally (outside the sync folder); else sibling of the original.
-        Folder parent = _dataNode.IsItemReadOnly(SelectedItem)
+        Folder? parent = _dataNode.IsItemReadOnly(SelectedItem)
             ? null
             : FindParent(AllItems, SelectedItem) as Folder;
         var siblings = parent?.Children ?? AllItems;
@@ -404,7 +404,7 @@ public partial class MainViewModel : ObservableObject
     public void BeginDrag() => _dataNode.BeginDrag();
     public void EndDrag() => _dataNode.EndDrag();
 
-    private sealed record DragOrigin(SyncSource Source, BaseItem Parent, int Index);
+    private sealed record DragOrigin(SyncSource? Source, BaseItem? Parent, int Index);
     private readonly Dictionary<BaseItem, DragOrigin> _dragOrigins = new();
 
     /// <summary>Remember an item's origin (source + parent + index) so a bad drop can be reverted

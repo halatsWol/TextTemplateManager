@@ -15,7 +15,7 @@ namespace TextTemplateManager;
 
 public sealed partial class GeneralSettingsPage : Page
 {
-    public AppSettings ViewModel { get; set; }
+    public AppSettings ViewModel { get; set; } = null!;   // set in OnNavigatedTo
 
     public GeneralSettingsPage()
     {

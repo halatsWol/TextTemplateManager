@@ -147,8 +147,8 @@ namespace TextTemplateManager.Helpers
                     break;
 
                 case "div":
-                    string panelType = node.GetAttributeValue("data-panel-type", null);
-                    if (panelType != null) WritePanel(node, sb, panelType, depth);
+                    string panelType = node.GetAttributeValue("data-panel-type", "");
+                    if (!string.IsNullOrEmpty(panelType)) WritePanel(node, sb, panelType, depth);
                     else WriteChildren(node, sb, listOrdered, depth);
                     break;
 
