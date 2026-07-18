@@ -311,6 +311,11 @@ namespace TextTemplateManager
                     var html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() : null;
                     OnEditorContentChanged(html ?? string.Empty);
                 }
+                else if (type == "openLink")
+                {
+                    var href = doc.RootElement.TryGetProperty("href", out var u) ? u.GetString() : null;
+                    OpenExternalLink(href);
+                }
             }
             catch (Exception ex)
             {
@@ -603,6 +608,16 @@ namespace TextTemplateManager
         {
             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true }); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Help] open failed: {ex.Message}"); }
+        }
+
+        // Opens an editor link (Ctrl+click) in the system browser. Restricted to web/mail/tel
+        // schemes so a template can't launch file:// or a custom protocol handler via a click.
+        private static void OpenExternalLink(string? href)
+        {
+            if (string.IsNullOrWhiteSpace(href)) return;
+            if (!Uri.TryCreate(href, UriKind.Absolute, out var uri)) return;
+            if (uri.Scheme is "http" or "https" or "mailto" or "tel" or "ftp" or "ftps")
+                OpenExternal(uri.AbsoluteUri);
         }
 
         // The release version, taken from the tag-driven InformationalVersion (e.g. "0.9.3"),

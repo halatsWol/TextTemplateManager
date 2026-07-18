@@ -67,6 +67,21 @@ const LineNumberCodeBlock = CodeBlock.extend({
             }
         }
     },
+    // Jira parity: the built-in ArrowDown exits a code block when it's the last node; add the
+    // same for Right arrow pressed at the very end of the block.
+    addKeyboardShortcuts() {
+        return {
+            ...this.parent?.(),
+            ArrowRight: ({ editor }) => {
+                const { $from, empty } = editor.state.selection
+                if (!empty || $from.parent.type !== this.type) return false
+                if ($from.parentOffset !== $from.parent.content.size) return false   // not at block end
+                const after = $from.after()
+                if (after === undefined || editor.state.doc.nodeAt(after)) return false
+                return editor.commands.exitCode()
+            },
+        }
+    },
 })
 
 // Jira-style callout panel (info / note / success / warning / error). Serialized as
@@ -102,6 +117,47 @@ const Panel = Node.create({
                 if (editor.isActive('panel', { panelType })) return commands.lift('panel')
                 if (editor.isActive('panel')) return commands.updateAttributes('panel', { panelType })
                 return commands.wrapIn('panel', { panelType })
+            },
+        }
+    },
+    // Keyboard parity with Jira panels (and our code block): let the caret escape the panel.
+    addKeyboardShortcuts() {
+        // At the end of the panel's last block: drop a paragraph after the panel and go there,
+        // but only when nothing already follows (otherwise let the arrow move into it).
+        const escapeAtEnd = () => {
+            const { state } = this.editor
+            const { $from, empty } = state.selection
+            if (!empty) return false
+            let d = $from.depth
+            while (d > 0 && $from.node(d).type !== this.type) d--
+            if (d === 0) return false
+            const panel = $from.node(d)
+            const atEnd = $from.index(d) === panel.childCount - 1 &&
+                          $from.parentOffset === $from.parent.content.size
+            if (!atEnd) return false
+            const after = $from.after(d)
+            if (state.doc.nodeAt(after)) return false
+            return this.editor.chain()
+                .insertContentAt(after, { type: 'paragraph' })
+                .setTextSelection(after + 1)
+                .focus()
+                .run()
+        }
+        return {
+            ArrowDown: escapeAtEnd,
+            ArrowRight: escapeAtEnd,
+            // A brand-new panel is a single empty paragraph; the default Enter would lift it out
+            // and delete the panel. Add a line instead. With >1 line the default already matches
+            // Jira (a 2nd Enter on a trailing empty line lifts it out of the panel).
+            Enter: () => {
+                const { $from, empty } = this.editor.state.selection
+                if (!empty) return false
+                const parent = $from.node(-1)
+                if (parent && parent.type === this.type &&
+                    parent.childCount === 1 && $from.parent.content.size === 0) {
+                    return this.editor.commands.splitBlock()
+                }
+                return false
             },
         }
     },
@@ -197,6 +253,16 @@ const editor = new Editor({
                 view.dispatch(view.state.tr.setSelection(TextSelection.near(view.state.doc.resolve(at.pos))))
                 return false
             },
+            // Show where a link goes and how to follow it (a plain click only moves the caret).
+            // Set on the live DOM node only, so it never leaks into the serialized/pasted HTML.
+            mouseover(view, event) {
+                const a = event.target && event.target.closest ? event.target.closest('a[href]') : null
+                if (a) {
+                    const tip = 'Ctrl+click to open: ' + a.getAttribute('href')
+                    if (a.title !== tip) a.title = tip
+                }
+                return false
+            },
         },
         // Clean pasted HTML from EXTERNAL sources (stray <br> runs before a block close).
         transformPastedHTML(html) {
@@ -208,6 +274,19 @@ const editor = new Editor({
         // uses ProseMirror's internal slice (not the HTML), so transformPastedHTML can't reach it.
         transformPasted(slice) {
             return new Slice(stripBoundaryBreaks(slice.content), slice.openStart, slice.openEnd)
+        },
+        // Ctrl/Cmd-click a link opens it in the system browser; a plain click keeps editing it.
+        // The host launches the URL (see Editor_WebMessageReceived), never the WebView itself.
+        handleClick(view, pos, event) {
+            if (event.ctrlKey || event.metaKey) {
+                const a = event.target && event.target.closest ? event.target.closest('a[href]') : null
+                if (a) {
+                    event.preventDefault()
+                    post({ type: 'openLink', href: a.getAttribute('href') })
+                    return true
+                }
+            }
+            return false
         },
         handleKeyDown(view, event) {
             // Tab in plain text inserts spaces; inside lists StarterKit handles nesting.
@@ -223,8 +302,10 @@ const editor = new Editor({
         },
     },
     onCreate() { refreshToolbar(); post({ type: 'ready' }) },
-    onUpdate() { emitChange(); refreshToolbar() },
-    onSelectionUpdate() { refreshToolbar() },
+    onUpdate() { emitChange() },
+    // Fires on every transaction — including stored-mark changes (e.g. toggling superscript with
+    // no selection), which onUpdate/onSelectionUpdate miss — so the toolbar tracks pending marks.
+    onTransaction() { refreshToolbar() },
 })
 
 // ---- Public API called from C# ------------------------------------------------
@@ -483,16 +564,16 @@ function colorPopup(colors, resetLabel, apply, reset) {
     }
 }
 
-popupButton(ICONS.textColor, 'Text color', colorPopup(
+addActive(popupButton(ICONS.textColor, 'Text color', colorPopup(
     TEXT_COLORS, 'Automatic',
     (hex) => run(c => c.setColor(hex)),
     () => run(c => c.unsetColor()),
-))
-popupButton(ICONS.highlight, 'Highlight color', colorPopup(
+)), () => !!editor.getAttributes('textStyle').color)
+addActive(popupButton(ICONS.highlight, 'Highlight color', colorPopup(
     HIGHLIGHT_COLORS, 'None',
     (hex) => run(c => c.setHighlight({ color: hex })),
     () => run(c => c.unsetHighlight()),
-))
+)), () => editor.isActive('highlight'))
 toolbar.appendChild(sep())
 
 // Table: 8x8 hover grid + in-table actions

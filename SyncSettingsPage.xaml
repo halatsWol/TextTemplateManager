@@ -29,12 +29,13 @@
                     <TextBlock Text="Shortcut prefix separator" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     <!-- Value is mapped by index: 0='-', 1='.', 2=none (""). See the code-behind. -->
-                    <ComboBox x:Name="SeparatorBox" Width="80"
+                    <ComboBox x:Name="SeparatorBox" Width="96"
                               SelectionChanged="Separator_SelectionChanged">
                         <ComboBoxItem Content="-"/>
                         <ComboBoxItem Content="."/>
                         <ComboBoxItem>
-                            <TextBlock Text="none" FontStyle="Italic"/>
+                            <!-- Right padding keeps the italic slant of "none" from clipping when selected. -->
+                            <TextBlock Text="none" FontStyle="Italic" Padding="0,0,4,0"/>
                         </ComboBoxItem>
                     </ComboBox>
                 </StackPanel>
