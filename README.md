@@ -35,7 +35,7 @@ was always reviewed and double-checked by me.
 - **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.
 - **Backup / export** — export the whole tree or a single folder.
 - **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
-- **Browser connector (beta)** — an opt-in local API a companion browser extension can call to list and paste templates ([API docs](docs/BrowserConnectorApi.md)).
+- **Browser connector (beta)** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list and paste templates ([API docs](docs/BrowserConnectorApi.md)). Chrome, Edge, and Firefox store listings coming soon.
 - **Run at login**, configurable global hotkey, and an in-app **Manual** (PDF).
 
 ---
