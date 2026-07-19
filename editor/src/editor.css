@@ -307,10 +307,22 @@ body {
     min-width: 0;
     overflow: auto;  /* wide content (tables, code, long tokens) scrolls horizontally here */
     padding: 12px 14px;
+    display: flex;          /* stretch the editable area to the full surface (see #editor) */
+    flex-direction: column;
+}
+
+/* Stretch the editable area to fill the surface, so clicking the blank space below the text still
+   lands in the document (ProseMirror drops the caret at the end) and shows the text cursor. Grow but
+   never shrink, so tall content overflows into the scroll container instead of being clipped. */
+#editor {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
 }
 
 .ProseMirror {
     outline: none;
+    flex: 1 0 auto;
     min-height: 120px;
     line-height: 1.5;
 }
