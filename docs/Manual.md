@@ -267,8 +267,11 @@ The browser connector lets a companion browser extension (Chrome, Edge, or Firef
 templates and paste them from the browser. It is **off by default** and enabled under 
 **Settings ▸ General ▸ Browser extensions**.
 
-The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect). Browser store 
-listings (Chrome Web Store, Microsoft Edge Add-ons, and Firefox Add-ons) are coming soon.
+The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect), available on:
+
+- [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+- Microsoft Edge Add-ons — coming soon
+- Firefox Add-ons — coming soon
 
 When enabled, the application runs a small local service (`127.0.0.1` — loopback only, never exposed 
 to the network) that the extension talks to. Pairing is by **token**:

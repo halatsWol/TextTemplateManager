@@ -77,6 +77,19 @@
                        Text="Lets a companion browser extension list and paste your templates over a local (127.0.0.1) connection. Off by default; paste the token below into the extension to pair it."/>
             <ToggleSwitch x:Name="ConnectorToggle" Header="Enable browser connector" Toggled="Connector_Toggled"/>
 
+            <StackPanel Spacing="2">
+                <TextBlock Text="Get the extension:" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <StackPanel Margin="12,0,0,0" Spacing="2">
+                    <HyperlinkButton Content="Chrome Web Store"
+                                     NavigateUri="https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi"
+                                     Padding="0"/>
+                    <TextBlock Text="Microsoft Edge — coming soon" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock Text="Firefox — coming soon" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </StackPanel>
             <HyperlinkButton x:Name="ApiDocLink" Content="View API documentation" Padding="0"/>
 
             <Grid x:Name="ConnectorDetails" Visibility="Collapsed" ColumnSpacing="10" RowSpacing="8" HorizontalAlignment="Left">

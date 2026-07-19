@@ -23,6 +23,10 @@ This is the first **stable** release after the 0.9 beta series.
 - **Open `.ttmdata` files directly.** Double-clicking a `.ttmdata` file (or **Open with ▸ Text Template Manager**) opens the app on **Settings ▸ Sync** and links the file as a sync source. If it is already linked it is just shown, and the app's own data file is never added.
 - **Set the default app for `.ttmdata`.** A **Set as default for .ttmdata** button in **Settings ▸ General ▸ File association** re-registers the association if another program has taken it over.
 - **Follow links from the editor.** **Ctrl+click** a link in the template editor to open it in your default browser, and hover a link to see where it points. A plain click still just places the cursor for editing.
+- **Browser extension published.** The companion extension for the browser connector ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) is available on:
+    - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+    - Microsoft Edge — coming soon
+    - Firefox — coming soon
 
 #### Changed
 
