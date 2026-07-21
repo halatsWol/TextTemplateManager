@@ -24,6 +24,7 @@ using Windows.System;
 using Windows.UI.Core;
 using UpdatePolicy = TextTemplateManager.Services.System.UpdatePolicy;
 using UpdateService = TextTemplateManager.Services.System.UpdateService;
+using BrowserConnector = TextTemplateManager.Services.System.BrowserConnector;
 
 namespace TextTemplateManager
 {
@@ -693,6 +694,7 @@ namespace TextTemplateManager
             var panel = new StackPanel { Spacing = 4 };
             panel.Children.Add(new TextBlock { Text = "Text Template Manager", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
             panel.Children.Add(new TextBlock { Text = $"Version {AppVersion()}", Foreground = secondary });
+            panel.Children.Add(new TextBlock { Text = $"Connector API protocol {BrowserConnector.ProtocolVersion}", Foreground = secondary });
             panel.Children.Add(new TextBlock { Text = "Marflow Software", Margin = new Thickness(0, 8, 0, 0) });
             panel.Children.Add(new TextBlock { Text = $"© {DateTime.Now.Year} Marflow Software", Foreground = secondary });
             panel.Children.Add(new TextBlock { Text = "A hotkey-driven text-template paste tool.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
