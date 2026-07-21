@@ -206,11 +206,11 @@ static void RenderInlineNode(TextDescriptor text, Inline node, InlineStyle style
             break;
 
         case AutolinkInline auto:
-            AddSpan(text, auto.Url, style with { Link = true });
+            AddSpan(text, auto.Url, style with { Link = true, Url = auto.Url });
             break;
 
         case LinkInline link when !link.IsImage:
-            var ls = style with { Link = true };
+            var ls = style with { Link = true, Url = link.Url };
             bool any = false;
             foreach (var child in link) { RenderInlineNode(text, child, ls); any = true; }
             if (!any && link.Url != null) AddSpan(text, link.Url, ls);
@@ -228,7 +228,15 @@ static void RenderInlineNode(TextDescriptor text, Inline node, InlineStyle style
 static void AddSpan(TextDescriptor text, string s, InlineStyle style)
 {
     if (string.IsNullOrEmpty(s)) return;
-    var span = text.Span(s);
+
+    string? url = style.Url;
+    bool clickable = !string.IsNullOrEmpty(url) &&
+        (url!.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+         url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+         url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase));
+
+    // Hyperlink(text, url) makes the span an actual clickable PDF link; Span(text) is plain.
+    var span = clickable ? text.Hyperlink(s, url!) : text.Span(s);
     if (style.Bold) span.Bold();
     if (style.Italic) span.Italic();
     if (style.Mono) span.FontFamily("Consolas").FontSize(10);
@@ -369,4 +377,4 @@ static class ManualContext
     public static string ImageBaseDir = "";
 }
 
-readonly record struct InlineStyle(bool Bold, bool Italic, bool Mono, bool Link);
+readonly record struct InlineStyle(bool Bold, bool Italic, bool Mono, bool Link, string? Url);
