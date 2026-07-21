@@ -46,7 +46,9 @@ namespace TextTemplateManager
                         if (_inputSiteHwnd == IntPtr.Zero)
                             _inputSiteHwnd = WindowHelper.SuppressAltMenuBeepOnChild(_hwnd);
 
-                        SearchBox.Focus(FocusState.Programmatic);
+                        // Open in "shortcut mode" (focus the root, not search) so a single-key
+                        // shortcut pastes immediately; typing a letter or clicking moves into search.
+                        RootGrid.Focus(FocusState.Programmatic);
                     });
                 }
                 else if (!_hasExecuted)
@@ -321,28 +323,42 @@ namespace TextTemplateManager
                 }
             }
 
-            // Single-key, resolved by priority (local, then sync order).
-            var match = DataNode.Instance.ResolveSingleKey(e.Key.ToString());
-            if (match != null && string.IsNullOrEmpty(SearchBox.Text))   // don't hijack an active search
-            {
-                e.Handled = true;
-                ExecutePaste(match, false);
-                return;
-            }
-
-            // Otherwise let the search box type normally.
+            // Single-key shortcuts fire only in "shortcut mode" — never while the search box or the
+            // tree has focus, where the letter belongs to the search/tree. (A SearchBox.Text check
+            // isn't enough: the text is still empty on the FIRST keystroke into search, so that first
+            // letter would be hijacked into a paste.)
             var focused = FocusManager.GetFocusedElement(this.Content.XamlRoot);
-            if (focused is TextBox)
+            bool searchFocused = focused is TextBox;
+
+            if (!searchFocused && !treeFocused)
             {
-                return;
+                var match = DataNode.Instance.ResolveSingleKey(e.Key.ToString());
+                if (match != null)
+                {
+                    e.Handled = true;
+                    ExecutePaste(match, false);
+                    return;
+                }
             }
 
-            // Outside the search box: a printable non-shortcut key beeps; other keys focus search
-            // (but never steal focus away from the tree while the user is navigating it).
-            if (TryGetCharKey(e.Key, out _))
+            if (searchFocused) return;   // in the search box: let it type normally
+
+            // Shortcut mode, a key that isn't a shortcut: a printable one starts a search (focus the
+            // box and insert it); other keys just move focus there. While the tree is navigating, keep
+            // its focus and only beep on a stray letter.
+            if (TryGetCharKey(e.Key, out char typed))
             {
                 e.Handled = true;
-                PlayNoMatchBeep();
+                if (treeFocused)
+                {
+                    PlayNoMatchBeep();
+                }
+                else
+                {
+                    SearchBox.Focus(FocusState.Programmatic);
+                    SearchBox.Text += typed;
+                    SearchBox.SelectionStart = SearchBox.Text.Length;
+                }
             }
             else if (!treeFocused)
             {
