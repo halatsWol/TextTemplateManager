@@ -86,8 +86,9 @@
                                      Padding="0"/>
                     <TextBlock Text="Microsoft Edge — coming soon" Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <TextBlock Text="Firefox — coming soon" Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <HyperlinkButton Content="Firefox Add-ons"
+                                     NavigateUri="https://addons.mozilla.org/addon/ttm-connect/"
+                                     Padding="0"/>
                 </StackPanel>
             </StackPanel>
             <HyperlinkButton x:Name="ApiDocLink" Content="View API documentation" Padding="0"/>
