@@ -51,13 +51,14 @@ public sealed class AppConnectorData : IConnectorDataSource
         {
             try
             {
-                string baseName = string.IsNullOrWhiteSpace(name) ? "New Template" : name.Trim();
-                string title = UniqueTitle(baseName, DataNode.Instance.LocalItems);
+                string title = UniqueTitle(CleanName(name), DataNode.Instance.LocalItems);
                 var item = new Template
                 {
                     Id = Guid.NewGuid(),
                     Title = title,
-                    Content = content ?? "",
+                    // Content is untrusted HTML (a browser selection) — strip active content so a
+                    // stored template can't carry script into paste targets or connector replies.
+                    Content = HtmlSanitizer.Sanitize(content),
                     DefaultPasteMode = DataNode.Instance.CurrentSettings.DefaultPasteMode,
                 };
                 await DataNode.Instance.AddItemAsync(item);   // parent null -> local root
@@ -74,6 +75,14 @@ public sealed class AppConnectorData : IConnectorDataSource
         if (!tcs.Task.Wait(TimeSpan.FromSeconds(10)))
             throw new TimeoutException("create-template timed out");
         return tcs.Task.GetAwaiter().GetResult();
+    }
+
+    // A plain-text title from the (untrusted) name field: no control chars, trimmed, length-capped.
+    private static string CleanName(string? name)
+    {
+        string s = new string((name ?? "").Where(c => !char.IsControl(c)).ToArray()).Trim();
+        if (s.Length == 0) return "New Template";
+        return s.Length > 120 ? s[..120].Trim() : s;
     }
 
     // baseName, else the first free "baseName N" — mirrors the app's new-item naming.
