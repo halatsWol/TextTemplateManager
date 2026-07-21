@@ -18,14 +18,19 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New
 
-- **Browser extension now on the Chrome Web Store.** The companion extension for the browser connector ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) is available on:
+- **Browser extension now on Firefox Add-ons.** The companion extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) is now available for Firefox as well:
     - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+    - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
     - Microsoft Edge — coming soon
-    - Firefox — coming soon
+- **Create templates from the browser.** With the connector enabled, the companion extension can save selected text as a new template — it is added to your local templates.
+
+#### Changed
+
+- **Help ▸ About** now shows the connector API protocol version.
 
 #### Fixes
 
-- **Clicking in the empty area below the text now works.** The space under the last line was inactive — it showed the arrow cursor and ignored clicks and typing. The whole editor surface is editable now, so clicking there places the cursor at the end of your text.
+- **Single-key shortcuts no longer fire while you're typing in the Quick Paste search box.** The window opens ready for shortcuts, but once the search box (or the tree) has focus, letters only filter the list — the first letter of a search is no longer swallowed as a paste.
 
 {{CHANGELOG}}
 

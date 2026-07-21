@@ -122,22 +122,26 @@ pasted.
 
 ### Inserting a template
 
-- **Single-key shortcut** — with the search box empty, press the key assigned to a template to 
-  paste it immediately. If the same key is assigned in more than one area, the local template 
-  takes precedence, followed by synchronized folders in their configured order. You can also 
-  browse the list with the **↑ / ↓** arrow keys and press **Enter** to paste the highlighted row.
+- **Single-key shortcut** — Quick Paste opens ready for shortcuts (the search box isn't focused), so 
+  just press the key assigned to a template to paste it immediately. If the same key is assigned in 
+  more than one area, the local template takes precedence, followed by synchronized folders in their 
+  configured order. You can also browse the list with the **↑ / ↓** arrow keys and press **Enter** to 
+  paste the highlighted row. (Once the search box has focus, letters filter instead of triggering 
+  shortcuts — see *Search*.)
 - **Multi-key shortcut** — hold **Alt** and type the shortcut. The list narrows as you type and 
   highlights the top match; **release Alt** to paste it. You don't have to type the whole 
   shortcut — a partial entry pastes the highlighted match. Use **↑ / ↓** while holding **Alt** to 
   move the highlight (this doesn't change what you've typed), and press **Enter** to paste the 
   highlighted row even before typing anything. If you type and then delete everything, releasing 
   **Alt** pastes nothing. Shortcuts in synchronized folders carry the folder's prefix (for 
-  example, `and-msg`); the separator is `-` or `.` (set in **Settings ▸ Sync**). Press 
+  example, `AND-MSG`); the separator is `-`, `.` or *none* (set in **Settings ▸ Sync**). Press 
   **Backspace** while holding **Alt** to correct a mistyped entry.
-- **Paste as plain text** — end a multi-key entry with **Shift + -** (which produces `_`) to 
+- **Paste as plain text** — while still holding **Alt**, end a multi-key entry with **Shift + -** (which produces `_`) to 
   insert the template as unformatted text, regardless of its default paste mode.
-- **Search** — type in the search box to filter the tree; matching templates display their folder 
-  path. Double-click any template, in either the tree or the shortcut lists, to paste it.
+- **Search** — click the search box (or start typing) to filter the tree; matching templates display 
+  their folder path. While the search box has focus, every letter filters and never triggers a 
+  shortcut; press **Esc** to return to shortcut mode. Double-click any template, in either the tree 
+  or the shortcut lists, to paste it.
 
 The shortcut lists at the bottom of the window show the available single-key and multi-key 
 shortcuts, together with the area each belongs to (a synchronized folder's name, or *local*). 
@@ -179,113 +183,97 @@ only cross-area notes can be dismissed with its **×** button.
 
 ---
 
-## Synchronization
+## Settings
 
-Synchronization lets several people, or several of your own computers, share the same set of 
-templates. A synchronized source is an ordinary template file that is stored in a shared 
-location — most commonly a cloud folder such as OneDrive — and surfaced in the tree as a pinned 
-folder at the top.
+Open settings from **File ▸ Settings**. It has a **General** and a **Sync** tab.
 
-Synchronized files are watched for external changes and reconciled automatically, so edits made 
+### General
+
+- **Run at Windows login** — start the app automatically when you sign in.
+- **Automatic updates** — check for new releases; **Allow beta updates** also offers pre-release
+  versions (off by default). See *Updates*.
+- **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
+- **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and
+  press the combination.
+- **Browser extensions (beta)** — enable a local connector for a companion browser extension (see
+  *Browser extensions* below).
+- **File association** — **Set as default for .ttmdata** makes `.ttmdata` files open with this app
+  (opening one adds it as a sync source — see the **Sync** tab). Use it if another program took the
+  association over.
+
+![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
+
+#### Browser extensions (beta)
+
+The browser connector lets a companion browser extension (Chrome, Edge, or Firefox) list your
+templates, paste them from the browser, and create new templates from selected text. It is **off by
+default**; turn it on with **Browser extensions** on this tab.
+
+The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect), available on:
+
+- [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+- [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
+- Microsoft Edge Add-ons — coming soon
+
+When enabled, the application runs a small local service (`127.0.0.1` — loopback only, never exposed
+to the network) that the extension talks to. Pairing is by **token**:
+
+- Turn on **Enable browser connector**. A random **token** is generated and shown, along with the
+  port. (only on first time Activation, a token is generated, future disable/re-enable will list the previous token)
+- Copy the token (and the port, if you changed it) into the extension's settings. Every request must
+  present the token, so only an extension you have paired can reach your templates.
+- **Regenerate** issues a new token and invalidates the old one — re-pair the extension afterwards.
+
+The connector serves template names, ids, and the available paste modes, and returns a template's
+content rendered in a chosen paste mode (or the template's default). It can also **create** a new
+template from content the extension sends (e.g. the current page selection); the new template is added
+to your local area. Only browser extensions may use it — an ordinary web page cannot — and the
+application must be running. Developers can find the full API (endpoints, security, examples) via the
+**View API documentation** link in settings.
+
+### Sync
+
+Synchronization lets several people, or several of your own computers, share the same set of
+templates. A synchronized source is an ordinary template file stored in a shared location — most
+commonly a cloud folder such as OneDrive — and surfaced in the tree as a pinned folder at the top.
+Synchronized files are watched for external changes and reconciled automatically, so edits made
 elsewhere appear without restarting the application.
-
-### Configuring sources
-
-Manage synchronized sources under **Settings ▸ Sync**.
 
 ![Settings ▸ Sync: set the shortcut-prefix separator at the top, then add a source with Add or Create.](../Assets/ManualImages/TTM_SyncSettings.png)
 
-To add a source, click **Add** to link a shared file that already exists, or **Create** to make a 
+To add a source, click **Add** to link a shared file that already exists, or **Create** to make a
 new one — for example in a OneDrive folder so it is shared automatically:
 
 ![Create opens a Save dialog for a new shared .ttmdata file.](../Assets/ManualImages/TTM_SyncSettings_createFilePicker.png)
 
-The source then appears as a row, shown in the tree as a pinned folder. Configure it with the 
-row's controls (detailed below):
+The source then appears as a row, shown in the tree as a pinned folder:
 
 ![A configured source: Active and Save checkboxes, an editable Name and Prefix, its file path, and the order-up/down and delete controls.](../Assets/ManualImages/TTM_SyncSettings_added-createdSyncFolder.png)
 
 Each source offers the following options:
 
-- **Active** — load the source into the tree as a pinned folder. Clearing this hides the folder 
-  without deleting the underlying file.
-- **Save** — when enabled, the folder is editable and your changes are written back to the shared 
-  file. When disabled, the folder is read-only and the shared file always takes precedence on 
-  reload.
+- **Active** — load the source into the tree as a pinned folder. Clearing this hides the folder
+  without deleting the underlying file, or removing it from the list completely.
+- **Save** — when enabled, the folder is editable and your changes are written back to the shared
+  file. When disabled, the folder is read-only and the shared file always takes precedence on reload.
 - **Name** — the folder's title as shown on this computer. It is set here only; the pinned sync
   folder's name is read-only in the tree.
-- **Prefix** — the text that namespaces the folder's multi-key shortcuts (for example, a prefix 
-  of `and` turns the shortcut `msg` into `and-msg`). The character joining the prefix and the 
-  shortcut is chosen at the top of the page (**Shortcut prefix separator**): `-`, `.`, or *none* 
-  (the prefix joins the shortcut directly, e.g. `andmsg`).
-- **Order** — the up and down arrows set the folder's priority. This priority determines which 
+- **Prefix** — the text that namespaces the folder's multi-key shortcuts (for example, a prefix of
+  `AND` turns the shortcut `MSG` into `AND-MSG`). The character joining the prefix and the shortcut is
+  chosen at the top of the page (**Shortcut prefix separator**): `-`, `.`, or *none* (the prefix joins
+  the shortcut directly, e.g. `ANDMSG`).
+- **Order** — the up and down arrows set the folder's priority. This priority determines which
   template wins when a single key is shared across areas, and is applied immediately.
 
-If a source's file cannot be found (for example, it has been moved or is temporarily offline), a 
-warning icon is shown next to it. Click the icon to re-link the source to its file. The most 
-recently cached contents remain visible in the meantime.
+If a source's file cannot be found (for example, it has been moved or is temporarily offline), a
+warning icon is shown next to it. Click the icon to re-link the source to its file. The most recently
+cached contents remain visible in the meantime.
 
-You can also add a source by **opening a `.ttmdata` file** — double-click it in File Explorer, or 
-use **Open with ▸ Text Template Manager**. The app comes to the front on this page with the file 
-linked as an active source; if the file is already linked it is simply shown here, and the app's own 
-data file is never added. (Text Template Manager runs as a single instance, so opening a file always 
-uses the window that is already running.)
-
----
-
-## Settings
-
-Open settings from **File ▸ Settings**.
-
-### General
-
-- **Run at Windows login** — starts the application automatically when you sign in to Windows.
-- **Automatically check for updates** — periodically checks for a newer release and offers to 
-  install it. See *Updates*.
-- **Allow beta updates** — also offer pre-release (beta / preview) versions. Off by default, so 
-  only stable releases are offered.
-- **Default paste mode** — the paste mode applied to newly created templates.
-- **Global shortcut** — the hotkey that opens the Quick Paste window from any application. Click 
-  the field and press the desired key combination to change it.
-- **Browser extensions (beta)** — enables a local connector for a companion browser extension. See 
-  *Browser connector* below.
-- **File association** — the **Set as default for .ttmdata** button makes `.ttmdata` files open with 
-  Text Template Manager (opening one adds it as a sync source, as described in *Synchronization*). 
-  Use it if another program has taken over the association.
-
-![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
-
-### Sync
-
-Manage synchronized sources, as described in *Synchronization*.
-
----
-
-## Browser connector (beta)
-
-The browser connector lets a companion browser extension (Chrome, Edge, or Firefox) list your 
-templates and paste them from the browser. It is **off by default** and enabled under 
-**Settings ▸ General ▸ Browser extensions**.
-
-The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect), available on:
-
-- [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
-- Microsoft Edge Add-ons — coming soon
-- Firefox Add-ons — coming soon
-
-When enabled, the application runs a small local service (`127.0.0.1` — loopback only, never exposed 
-to the network) that the extension talks to. Pairing is by **token**:
-
-- Turn on **Enable browser connector**. A random **token** is generated and shown, along with the 
-  port.
-- Copy the token (and the port, if you changed it) into the extension's settings. Every request must 
-  present the token, so only an extension you have paired can reach your templates.
-- **Regenerate** issues a new token and invalidates the old one — re-pair the extension afterwards.
-
-The connector serves template names, ids, and the available paste modes, and returns a template's 
-content rendered in a chosen paste mode (or the template's default). Only browser extensions may use 
-it — an ordinary web page cannot — and the application must be running. Developers can find the full 
-API (endpoints, security, examples) via the **View API documentation** link in settings.
+You can also add a source by **opening a `.ttmdata` file** — double-click it in File Explorer, or use
+**Open with ▸ ttm**. The app comes to the front on this page with the file linked as an active
+source; if the file is already linked it is simply shown here, and the app's own data file is never
+added. (Text Template Manager runs as a single instance, so opening a file always uses the window that
+is already running.)
 
 ---
 
