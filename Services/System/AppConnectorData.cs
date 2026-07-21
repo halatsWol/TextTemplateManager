@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
+using Microsoft.UI.Dispatching;
 using TextTemplateManager.Common;
 using TextTemplateManager.Data;
 using TextTemplateManager.Helpers;
@@ -20,6 +22,9 @@ public sealed class AppConnectorData : IConnectorDataSource
 
     private volatile Snap _snap = new(new(), new());
 
+    // Captured on the UI thread (this is constructed there); writes marshal back to it.
+    private readonly DispatcherQueue? _ui = DispatcherQueue.GetForCurrentThread();
+
     public string AppVersion => VersionString();
 
     public IReadOnlyList<PasteModeDto> PasteModes() =>
@@ -33,6 +38,52 @@ public sealed class AppConnectorData : IConnectorDataSource
         PasteMode m = ParseMode(mode, t.Default);
         var (content, contentType) = PasteService.RenderForMode(t.Content, m);
         return new TemplateContentDto(id, t.Name, m.ToString(), contentType, content);
+    }
+
+    /// <summary>Creates a template in the local area with the given content and returns its id/name.
+    /// Runs on the UI thread (tree edit + save); the calling connector thread blocks until it's done.</summary>
+    public CreatedTemplateDto CreateTemplate(string content, string? name)
+    {
+        var ui = _ui ?? throw new InvalidOperationException("connector has no UI dispatcher");
+        var tcs = new TaskCompletionSource<CreatedTemplateDto>();
+
+        bool queued = ui.TryEnqueue(async () =>
+        {
+            try
+            {
+                string baseName = string.IsNullOrWhiteSpace(name) ? "New Template" : name.Trim();
+                string title = UniqueTitle(baseName, DataNode.Instance.LocalItems);
+                var item = new Template
+                {
+                    Id = Guid.NewGuid(),
+                    Title = title,
+                    Content = content ?? "",
+                    DefaultPasteMode = DataNode.Instance.CurrentSettings.DefaultPasteMode,
+                };
+                await DataNode.Instance.AddItemAsync(item);   // parent null -> local root
+                Rebuild();                                     // include it in the served snapshot
+                DataNode.Instance.NotifyTreeChanged();         // refresh the main-window tree projection
+                tcs.TrySetResult(new CreatedTemplateDto(item.Id.ToString(), title));
+            }
+            catch (Exception ex) { tcs.TrySetException(ex); }
+        });
+        if (!queued) throw new InvalidOperationException("UI thread unavailable");
+
+        // Block the connector thread until the UI thread finishes — bounded so a stalled/closing UI
+        // can't hang the connection forever.
+        if (!tcs.Task.Wait(TimeSpan.FromSeconds(10)))
+            throw new TimeoutException("create-template timed out");
+        return tcs.Task.GetAwaiter().GetResult();
+    }
+
+    // baseName, else the first free "baseName N" — mirrors the app's new-item naming.
+    private static string UniqueTitle(string baseName, IEnumerable<BaseItem> siblings)
+    {
+        var taken = new HashSet<string>(siblings.Select(s => s.Title ?? ""), StringComparer.OrdinalIgnoreCase);
+        if (!taken.Contains(baseName)) return baseName;
+        int n = 1;
+        while (taken.Contains($"{baseName} {n}")) n++;
+        return $"{baseName} {n}";
     }
 
     /// <summary>Rebuilds the snapshot from the live tree. MUST be called on the UI thread.</summary>

@@ -45,6 +45,10 @@ public class DataNode
     /// <summary>Raised (after a sync re-apply) so the UI can refresh the tree projection.</summary>
     public event Action? TreeChanged;
 
+    /// <summary>Raise TreeChanged for a structural change made outside the ViewModel (e.g. a template
+    /// created via the browser connector), so the main-window tree re-projects.</summary>
+    public void NotifyTreeChanged() => TreeChanged?.Invoke();
+
     /// <summary>Raised after template data is successfully written to disk (may be off the UI thread).</summary>
     public event Action? DataSaved;
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,16 +15,18 @@ namespace TextTemplateManager.Services.System;
 public sealed record PasteModeDto(string Id, string Label);
 public sealed record ConnectorNodeDto(string Id, string Name, string Type, string? DefaultMode, string? Source, List<ConnectorNodeDto>? Children);
 public sealed record TemplateContentDto(string Id, string Name, string Mode, string ContentType, string Content);
+public sealed record CreatedTemplateDto(string Id, string Name);
 
 /// <summary>Data the connector serves. The app implements this over its live templates; a test
-/// harness can implement it with fixtures. Called from the connector's background threads, so
-/// implementations must be thread-safe (read from an immutable snapshot).</summary>
+/// harness can implement it with fixtures. Read methods run on the connector's background threads
+/// (implementations read an immutable snapshot); CreateTemplate marshals to the UI thread itself.</summary>
 public interface IConnectorDataSource
 {
     string AppVersion { get; }
     IReadOnlyList<PasteModeDto> PasteModes();
     IReadOnlyList<ConnectorNodeDto> Tree();
     TemplateContentDto? Template(string id, string? mode);   // null when the id is unknown
+    CreatedTemplateDto CreateTemplate(string content, string? name);   // adds a template to the local area
 }
 
 /// <summary>
@@ -34,7 +37,7 @@ public interface IConnectorDataSource
 /// </summary>
 public sealed class BrowserConnector : IDisposable
 {
-    public const int ProtocolVersion = 1;
+    public const int ProtocolVersion = 2;   // v2 adds POST /template (create)
     public const string TokenHeader = "x-ttm-token";
 
     private readonly IConnectorDataSource _data;
@@ -61,7 +64,12 @@ public sealed class BrowserConnector : IDisposable
         _cts = new CancellationTokenSource();
         _listener = new TcpListener(IPAddress.Loopback, port);
         _listener.Start();
-        _ = AcceptLoopAsync(_listener, _cts.Token);
+        // Run the accept loop on the thread pool, never the caller's (UI) thread. Otherwise the
+        // awaits capture the UI context and request handling runs on the UI thread — where
+        // CreateTemplate (which marshals a create back to the UI thread and waits for it) deadlocks.
+        var listener = _listener;
+        var ct = _cts.Token;
+        _ = Task.Run(() => AcceptLoopAsync(listener, ct));
     }
 
     public void Stop()
@@ -109,26 +117,32 @@ public sealed class BrowserConnector : IDisposable
     }
 
     // ---- Request parsing ----
-    private sealed record Request(string Method, string Path, Dictionary<string, string> Query, Dictionary<string, string> Headers);
+    private sealed record Request(string Method, string Path, Dictionary<string, string> Query, Dictionary<string, string> Headers, string Body);
+
+    private static readonly byte[] HeaderEnd = { 0x0D, 0x0A, 0x0D, 0x0A };   // \r\n\r\n
 
     private static async Task<Request?> ReadRequestAsync(NetworkStream stream, CancellationToken ct)
     {
         var buf = new byte[8192];
-        var sb = new StringBuilder();
-        // Read until end-of-headers. A GET/OPTIONS request has no body we need.
-        while (sb.ToString().IndexOf("\r\n\r\n", StringComparison.Ordinal) < 0)
+        using var ms = new MemoryStream();
+        int headEnd = -1;
+
+        // Read raw bytes until the header block ends. Headers are ASCII, but a POST body (below) is
+        // UTF-8, so the two can't be ASCII-decoded together.
+        while (headEnd < 0)
         {
             int n = await stream.ReadAsync(buf.AsMemory(0, buf.Length), ct);
             if (n <= 0) break;
-            sb.Append(Encoding.ASCII.GetString(buf, 0, n));
-            if (sb.Length > 64 * 1024) break;   // guard against oversized headers
+            ms.Write(buf, 0, n);
+            headEnd = IndexOf(ms.GetBuffer(), (int)ms.Length, HeaderEnd);
+            if (ms.Length > 64 * 1024) break;   // guard against oversized headers
         }
-
-        string text = sb.ToString();
-        int headEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
         if (headEnd < 0) return null;
 
-        var lines = text.Substring(0, headEnd).Split("\r\n");
+        byte[] all = ms.GetBuffer();
+        int total = (int)ms.Length;
+
+        var lines = Encoding.ASCII.GetString(all, 0, headEnd).Split("\r\n");
         var start = lines[0].Split(' ');
         if (start.Length < 2) return null;
 
@@ -155,7 +169,40 @@ public sealed class BrowserConnector : IDisposable
             int c = lines[i].IndexOf(':');
             if (c > 0) headers[lines[i].Substring(0, c).Trim()] = lines[i].Substring(c + 1).Trim();
         }
-        return new Request(method, path.TrimEnd('/') is "" ? "/" : path.TrimEnd('/'), query, headers);
+
+        // Body: read up to Content-Length bytes (capped), decoded as UTF-8. Some may already be buffered.
+        string body = "";
+        if (headers.TryGetValue("Content-Length", out var clStr) &&
+            int.TryParse(clStr, out int contentLength) && contentLength > 0)
+        {
+            contentLength = Math.Min(contentLength, 1024 * 1024);   // cap at 1 MB
+            int bodyStart = headEnd + HeaderEnd.Length;
+            using var bodyMs = new MemoryStream();
+            int have = total - bodyStart;
+            if (have > 0) bodyMs.Write(all, bodyStart, Math.Min(have, contentLength));
+            while (bodyMs.Length < contentLength)
+            {
+                int n = await stream.ReadAsync(buf.AsMemory(0, buf.Length), ct);
+                if (n <= 0) break;
+                bodyMs.Write(buf, 0, Math.Min(n, contentLength - (int)bodyMs.Length));
+            }
+            body = Encoding.UTF8.GetString(bodyMs.GetBuffer(), 0, (int)bodyMs.Length);
+        }
+
+        string cleanPath = path.TrimEnd('/');
+        return new Request(method, cleanPath.Length == 0 ? "/" : cleanPath, query, headers, body);
+    }
+
+    // First index of `pattern` within the first `len` bytes of `b`, or -1.
+    private static int IndexOf(byte[] b, int len, byte[] pattern)
+    {
+        for (int i = 0; i + pattern.Length <= len; i++)
+        {
+            int j = 0;
+            while (j < pattern.Length && b[i + j] == pattern[j]) j++;
+            if (j == pattern.Length) return i;
+        }
+        return -1;
     }
 
     // ---- Routing + security ----
@@ -196,6 +243,8 @@ public sealed class BrowserConnector : IDisposable
                     return Ok(_data.PasteModes(), corsOrigin);
                 case "/tree":
                     return Ok(_data.Tree(), corsOrigin);
+                case "/template" when req.Method == "POST":
+                    return CreateTemplate(req, corsOrigin);
                 case "/template":
                     if (!req.Query.TryGetValue("id", out string? id) || string.IsNullOrWhiteSpace(id))
                         return new Response(400, "{\"error\":\"missing id\"}", corsOrigin);
@@ -214,6 +263,28 @@ public sealed class BrowserConnector : IDisposable
         }
     }
 
+    // POST /template — body {"content": "...", "name"?: "..."}. Adds a template to the local area
+    // (name defaults to "New Template", incremented on collision) and returns {"id","name"}.
+    private Response CreateTemplate(Request req, string corsOrigin)
+    {
+        string? content = null, name = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(req.Body) ? "{}" : req.Body);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("content", out var c)) content = c.GetString();
+                if (doc.RootElement.TryGetProperty("name", out var n)) name = n.GetString();
+            }
+        }
+        catch { return new Response(400, "{\"error\":\"invalid json\"}", corsOrigin); }
+
+        if (string.IsNullOrEmpty(content))
+            return new Response(400, "{\"error\":\"missing content\"}", corsOrigin);
+
+        return Ok(_data.CreateTemplate(content, name), corsOrigin);
+    }
+
     private static Response Ok(object payload, string origin) =>
         new(200, JsonSerializer.Serialize(payload, Json), origin);
 
@@ -229,7 +300,7 @@ public sealed class BrowserConnector : IDisposable
             head.Append("Access-Control-Allow-Origin: ").Append(res.Origin).Append("\r\n");
             head.Append("Vary: Origin\r\n");
             head.Append("Access-Control-Allow-Headers: ").Append(TokenHeader).Append(", Content-Type\r\n");
-            head.Append("Access-Control-Allow-Methods: GET, OPTIONS\r\n");
+            head.Append("Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n");
             head.Append("Access-Control-Max-Age: 600\r\n");
         }
         head.Append("Connection: close\r\n\r\n");

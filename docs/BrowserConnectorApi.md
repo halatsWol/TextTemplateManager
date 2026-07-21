@@ -1,8 +1,8 @@
 # Browser Connector API
 
 Text Template Manager exposes a small local HTTP API that a browser extension (Chrome / Edge /
-Firefox) can call to list templates and fetch rendered content. It is meant for building a
-context-menu "insert template" extension.
+Firefox) can call to list templates, fetch rendered content, and create new templates from selected
+text. It is meant for building a context-menu "insert template" extension.
 
 ## Enabling & pairing
 
@@ -36,12 +36,12 @@ All responses are `application/json; charset=utf-8`.
 Errors: `401` (missing/wrong token), `403` (non-extension origin), `400` (bad request),
 `404` (unknown endpoint or template id), `500` (internal).
 
-## Endpoints (all `GET`)
+## Endpoints
 
 ### `GET /ping`
 Connectivity + version check.
 ```json
-{ "app": "TextTemplateManager", "version": "0.9.11", "protocol": 1 }
+{ "app": "TextTemplateManager", "version": "1.0.1", "protocol": 2 }
 ```
 
 ### `GET /pastemodes`
@@ -83,6 +83,24 @@ template's own default.
 | Plaintext | `text/plain` | insert as plain text |
 | RTF | `application/rtf` | RTF source (mainly useful for clipboard) |
 
+### `POST /template`
+Create a new template in the **local** area (e.g. from the page selection). Send a JSON body with
+`Content-Type: application/json`:
+```json
+{ "content": "<p>selected text</p>", "name": "optional title" }
+```
+- `content` (**required**) — the template body, stored as-is. Templates hold HTML (the same format the
+  in-app editor saves), so send HTML; plain text is stored verbatim.
+- `name` (optional) — the title. Defaults to `New Template`. A name that already exists gets an
+  incrementing suffix (`New Template 2`, …), so the returned title may differ from what you sent.
+
+Returns the created template's id and final name:
+```json
+{ "id": "<guid>", "name": "New Template 2" }
+```
+`400` if `content` is missing or empty. The template appears in the app immediately and in the next
+`/tree`. (Available from `protocol` 2.)
+
 ## Example (extension background)
 
 ```js
@@ -93,6 +111,14 @@ const h = { "x-ttm-token": TOKEN };
 const tree  = await (await fetch(`${BASE}/tree`,  { headers: h })).json();
 const tpl   = await (await fetch(`${BASE}/template?id=${id}&mode=default`, { headers: h })).json();
 // tpl.content + tpl.contentType -> insert into the page
+
+// Create a template from the current selection:
+const created = await (await fetch(`${BASE}/template`, {
+  method: "POST",
+  headers: { ...h, "Content-Type": "application/json" },
+  body: JSON.stringify({ content: selectedHtml, name: "From browser" }),
+})).json();
+// created.id, created.name
 ```
 
 `manifest.json` needs host permission for the loopback origin:
