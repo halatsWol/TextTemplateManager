@@ -84,18 +84,23 @@ public sealed class BrowserConnector : IDisposable
 
     private async Task AcceptLoopAsync(TcpListener listener, CancellationToken ct)
     {
+        // Poll for connections rather than blocking in AcceptTcpClientAsync. A blocked accept can
+        // only be unblocked by closing the listener, which throws a (caught but noisy) exception on
+        // every disable. Waiting between polls lets Stop() cancel the token and the loop exit at the
+        // while-check with no exception — at the cost of up to ~50 ms to pick up a new connection.
         while (!ct.IsCancellationRequested)
         {
-            TcpClient client;
             try
             {
-                // No token here on purpose: Stop() unblocks the accept by closing the listener,
-                // which surfaces as ObjectDisposedException below — cleaner than the
-                // OperationCanceledException a cancellation token throws on every disable.
-                client = await listener.AcceptTcpClientAsync();
+                if (!listener.Pending())
+                {
+                    await Task.Delay(50);
+                    continue;
+                }
+                var client = await listener.AcceptTcpClientAsync();
+                _ = HandleClientAsync(client, ct);
             }
-            catch { break; }   // listener stopped / disposed on shutdown
-            _ = HandleClientAsync(client, ct);
+            catch { break; }   // listener stopped mid-poll (rare race) — exit quietly
         }
     }
 
