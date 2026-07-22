@@ -250,7 +250,7 @@
                                 </StackPanel>
                             </Grid>
 
-                            <TextBox Header="Tags" Text="{Binding TagsCsv, Mode=TwoWay}"/>
+                            <TextBox Header="Tags" Text="{Binding TagsCsv, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                             <ComboBox Header="Default Paste Mode"
                                       HorizontalAlignment="Stretch"

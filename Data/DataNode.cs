@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TextTemplateManager.Models;
 
@@ -232,14 +233,35 @@ public class DataNode
         nameof(Template.HasSingleKeyCrossAreaWarning),
     };
 
-    private async void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private CancellationTokenSource? _editSaveDebounce;
+
+    private void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (_isMoving || e.PropertyName == null || _nonPersistedProps.Contains(e.PropertyName)) return;
         if (sender is BaseItem item)
         {
             item.LastChange = DateTime.Now.ToString("yyyyMMddHHmmss");
-            await SaveDataAsync();
+            ScheduleEditSave();
         }
+    }
+
+    // Debounce the disk write for property edits: typing a title/tags/shortcut (and the editor's own
+    // debounced content changes) coalesce into one save a short moment after the last edit, instead of
+    // writing on every keystroke. Structural changes (add/delete/move) still call SaveDataAsync directly.
+    private void ScheduleEditSave()
+    {
+        _editSaveDebounce?.Cancel();
+        var cts = _editSaveDebounce = new CancellationTokenSource();
+        _ = SaveAfterDelayAsync(cts.Token);
+    }
+
+    private async Task SaveAfterDelayAsync(CancellationToken ct)
+    {
+        // No token on Task.Delay on purpose: passing it would throw TaskCanceledException on every
+        // superseding keystroke (caught, but a noisy first-chance exception while typing). Instead the
+        // delay always completes and we drop the save here if a newer edit has replaced it.
+        await Task.Delay(500);
+        if (!ct.IsCancellationRequested) await SaveDataAsync();
     }
 
     private async void OnChildrenCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
