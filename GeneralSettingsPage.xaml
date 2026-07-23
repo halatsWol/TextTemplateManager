@@ -69,6 +69,17 @@
             </Grid>
         </StackPanel>
 
+        <StackPanel Spacing="2">
+            <ToggleSwitch x:Name="HideCrossAreaWarningsToggle"
+                          Header="Hide cross-area shortcut warnings"
+                          IsOn="{x:Bind ViewModel.HideCrossAreaShortcutWarnings, Mode=TwoWay}"
+                          Toggled="HideCrossAreaWarnings_Toggled"/>
+            <TextBlock Text="Don't show the dismissible notice when the same shortcut is used in more than one area (local + sync, or across sync folders). Blocking same-area duplicates are still shown."
+                       TextWrapping="Wrap"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
+
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
 
         <StackPanel Spacing="8">

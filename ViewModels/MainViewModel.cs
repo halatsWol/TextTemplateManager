@@ -342,6 +342,8 @@ public partial class MainViewModel : ObservableObject
     public bool IsReadOnly(BaseItem item) => _dataNode.IsItemReadOnly(item);
     public string GetEffectiveMultiKey(Template t) => _dataNode.GetEffectiveMultiKey(t);
 
+    public Guid GetAreaKey(BaseItem item) => _dataNode.GetAreaKey(item);
+
     public BaseItem? FindParent(IEnumerable<BaseItem> items, BaseItem child)
     {
         foreach (var item in items)
@@ -700,6 +702,7 @@ public partial class MainViewModel : ObservableObject
             t.HasSingleKeyConflict = false;
             t.HasMultiKeyConflict = false;
             t.HasSingleKeyCrossAreaWarning = false;
+            t.HasMultiKeyCrossAreaWarning = false;
         }
 
         // Single-key conflicts are per-area; the same key in different areas is allowed.
@@ -723,15 +726,26 @@ public partial class MainViewModel : ObservableObject
                 if (!t.HasSingleKeyConflict)
                     t.HasSingleKeyCrossAreaWarning = true;
 
-        // Multi-key compared on the effective (prefixed) shortcut, so it's area-scoped.
-        var multiGroups = templates
+        // Multi-key on the effective (prefixed) shortcut, same rule as single-key: same key in the
+        // SAME area is a conflict; the same key across areas is allowed (local wins, then sync order).
+        var multiSameArea = templates
             .Where(t => !string.IsNullOrWhiteSpace(t.MultiKeyShortcut))
-            .GroupBy(t => _dataNode.GetEffectiveMultiKey(t).Trim(), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(t => (Area: _dataNode.GetAreaKey(t), Key: _dataNode.GetEffectiveMultiKey(t).Trim().ToUpperInvariant()))
             .Where(g => g.Count() > 1);
 
-        foreach (var g in multiGroups)
+        foreach (var g in multiSameArea)
             foreach (var t in g)
                 t.HasMultiKeyConflict = true;
+
+        var multiCrossArea = templates
+            .Where(t => !string.IsNullOrWhiteSpace(t.MultiKeyShortcut))
+            .GroupBy(t => _dataNode.GetEffectiveMultiKey(t).Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Select(t => _dataNode.GetAreaKey(t)).Distinct().Count() > 1);
+
+        foreach (var g in multiCrossArea)
+            foreach (var t in g)
+                if (!t.HasMultiKeyConflict)
+                    t.HasMultiKeyCrossAreaWarning = true;
     }
 
 

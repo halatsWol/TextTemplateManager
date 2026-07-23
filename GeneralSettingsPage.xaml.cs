@@ -191,6 +191,14 @@ public sealed partial class GeneralSettingsPage : Page
         _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
     }
 
+    private void HideCrossAreaWarnings_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel == null || sender is not ToggleSwitch ts) return;
+        ViewModel.HideCrossAreaShortcutWarnings = ts.IsOn;
+        _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
+        // The conflict panel re-evaluates when Settings closes (MainPage.CloseSettings).
+    }
+
     // True once a full modifier(s)+key combo is committed; reset when a new bare modifier starts one.
     private bool _hotkeyCommitted = true;
 

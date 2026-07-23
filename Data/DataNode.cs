@@ -232,6 +232,7 @@ public class DataNode
         nameof(Template.HasSingleKeyConflict),
         nameof(Template.HasMultiKeyConflict),
         nameof(Template.HasSingleKeyCrossAreaWarning),
+        nameof(Template.HasMultiKeyCrossAreaWarning),
     };
 
     private CancellationTokenSource? _editSaveDebounce;
@@ -381,15 +382,6 @@ public class DataNode
             .Where(t => string.Equals(t.SingleKeyShortcut, key, StringComparison.OrdinalIgnoreCase))
             .OrderBy(GetSourcePriority)
             .FirstOrDefault();
-    }
-
-    /// <summary>One winner per single key (highest priority), hiding lower-priority duplicates.</summary>
-    public IEnumerable<Template> WinningSingleKeyTemplates()
-    {
-        return AllItems
-            .Where(t => !string.IsNullOrEmpty(t.SingleKeyShortcut))
-            .GroupBy(t => t.SingleKeyShortcut, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.OrderBy(GetSourcePriority).First());
     }
 
     /// <summary>The multikey as it must be TYPED: prefix-namespaced in a sync folder (and-msg),

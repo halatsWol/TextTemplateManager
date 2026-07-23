@@ -187,7 +187,10 @@ namespace TextTemplateManager
 
         private void RefreshMultiKeyList(string searchFilter)
         {
-            var allShortcuts = DataNode.Instance.AllItems.Where(t => !string.IsNullOrEmpty(t.MultiKeyShortcut)).ToList();
+            var allShortcuts = DataNode.Instance.AllItems
+                .Where(t => !string.IsNullOrEmpty(t.MultiKeyShortcut))
+                .OrderBy(DataNode.Instance.GetSourcePriority)   // local first, then sync order
+                .ToList();
             foreach (var t in allShortcuts) t.EffectiveMultiKey = EffectiveMulti(t);
             StampSource(allShortcuts);
             MultiKeyList.ItemsSource = string.IsNullOrWhiteSpace(searchFilter)
@@ -198,8 +201,12 @@ namespace TextTemplateManager
 
         private void RefreshSingleKeyList(string searchFilter)
         {
-            // Winners only (local first, then sync order); duplicates hidden.
-            var all = DataNode.Instance.WinningSingleKeyTemplates().ToList();
+            // All single-key templates, local first then sync order — duplicates across areas are shown
+            // (a direct single-key press still resolves local-first via ResolveSingleKey).
+            var all = DataNode.Instance.AllItems
+                .Where(t => !string.IsNullOrWhiteSpace(t.SingleKeyShortcut))
+                .OrderBy(DataNode.Instance.GetSourcePriority)
+                .ToList();
             StampSource(all);
             SingleKeyList.ItemsSource = string.IsNullOrWhiteSpace(searchFilter)
                 ? all
@@ -210,7 +217,10 @@ namespace TextTemplateManager
         private void UpdateMultiKeyFilter(string shortcutBuffer)
         {
             string cleanKey = shortcutBuffer.TrimEnd('_');
-            var allShortcuts = DataNode.Instance.AllItems.Where(t => !string.IsNullOrEmpty(t.MultiKeyShortcut)).ToList();
+            var allShortcuts = DataNode.Instance.AllItems
+                .Where(t => !string.IsNullOrEmpty(t.MultiKeyShortcut))
+                .OrderBy(DataNode.Instance.GetSourcePriority)   // local first, then sync order
+                .ToList();
             foreach (var t in allShortcuts) t.EffectiveMultiKey = EffectiveMulti(t);
             StampSource(allShortcuts);
             MultiKeyList.ItemsSource = string.IsNullOrEmpty(cleanKey)

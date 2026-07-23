@@ -589,6 +589,7 @@ namespace TextTemplateManager
 
             SettingsOverlay.Visibility = Visibility.Collapsed;
             ViewModel.ReloadTree();   // full rebuild so sync-folder order changes are reflected
+            ShowShortcutConflicts();  // reflect the "hide cross-area warnings" setting
         }
 
         // ---- File association (.ttmdata) ----
@@ -1082,14 +1083,26 @@ namespace TextTemplateManager
                 .GroupBy(t => t.MultiKeyShortcut)
                 .ToList();
 
-            // Cross-area duplicates: informational note, not a blocking conflict.
+            // Cross-area duplicates: informational notes, not blocking conflicts.
             var crossAreaNotes = allTemplates
                 .Where(t => t.HasSingleKeyCrossAreaWarning)
                 .GroupBy(t => t.SingleKeyShortcut)
                 .ToList();
 
+            var multiCrossAreaNotes = allTemplates
+                .Where(t => t.HasMultiKeyCrossAreaWarning)
+                .GroupBy(t => t.MultiKeyShortcut)
+                .ToList();
+
+            // Setting: hide the dismissible cross-area notices (blocking same-area conflicts still show).
+            if (DataNode.Instance.CurrentSettings.HideCrossAreaShortcutWarnings)
+            {
+                crossAreaNotes.Clear();
+                multiCrossAreaNotes.Clear();
+            }
+
             bool hasErrors = singleConflicts.Any() || multiConflicts.Any();
-            bool hasNotes = crossAreaNotes.Any();
+            bool hasNotes = crossAreaNotes.Any() || multiCrossAreaNotes.Any();
 
             if (!hasErrors && !hasNotes)
             {
@@ -1105,8 +1118,9 @@ namespace TextTemplateManager
             if (hasErrors) _dismissedNotesSignature = null;
             bool onlyNotes = !hasErrors && hasNotes;
             _currentNotesSignature = string.Join("|",
-                crossAreaNotes.SelectMany(g => g.Select(t => g.Key + "~" + t.Title))
-                              .OrderBy(s => s, StringComparer.Ordinal));
+                crossAreaNotes.SelectMany(g => g.Select(t => "S:" + g.Key + "~" + t.Title))
+                    .Concat(multiCrossAreaNotes.SelectMany(g => g.Select(t => "M:" + g.Key + "~" + t.Title)))
+                    .OrderBy(s => s, StringComparer.Ordinal));
 
             // A dismissed note set stays hidden until it changes (or an error appears).
             if (onlyNotes && _dismissedNotesSignature == _currentNotesSignature)
@@ -1180,19 +1194,21 @@ namespace TextTemplateManager
             AddGroup("Single-Key Conflicts", singleConflicts);
             AddGroup("Multi-Key Conflicts", multiConflicts);
 
-            // Informational (non-blocking) notes for the same single key used across areas.
-            if (crossAreaNotes.Any())
+            // Informational (non-blocking) notes for the same key used across areas.
+            void AddNotes(string header, List<IGrouping<string, TextTemplateManager.Models.Template>> groups)
             {
+                if (!groups.Any()) return;
+
                 ConflictStack.Children.Add(new TextBlock
                 {
-                    Text = "Note — same single key in different areas (allowed; local wins, then sync order):",
+                    Text = header,
                     FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = ThemeBrush("TextFillColorSecondaryBrush", Microsoft.UI.Colors.Gray),
                     Margin = new Thickness(0, 8, 0, 4)
                 });
 
-                foreach (var g in crossAreaNotes)
+                foreach (var g in groups)
                     foreach (var t in g)
                         ConflictStack.Children.Add(new TextBlock
                         {
@@ -1201,6 +1217,9 @@ namespace TextTemplateManager
                             Margin = new Thickness(20, 0, 0, 0)
                         });
             }
+
+            AddNotes("Note — same single key in different areas (allowed; local wins, then sync order):", crossAreaNotes);
+            AddNotes("Note — same multi-key in different areas (allowed; local wins, then sync order):", multiCrossAreaNotes);
         }
 
 

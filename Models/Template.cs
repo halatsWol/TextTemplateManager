@@ -39,6 +39,11 @@ namespace TextTemplateManager.Models
         [property: JsonIgnore]
         private bool _hasSingleKeyCrossAreaWarning;
 
+        /// <summary>Same effective multikey used in another area — allowed, surfaced as a warning. Transient.</summary>
+        [ObservableProperty]
+        [property: JsonIgnore]
+        private bool _hasMultiKeyCrossAreaWarning;
+
         /// <summary>Display-only: the multikey as typed (sync-prefixed, e.g. "and-msg").</summary>
         [ObservableProperty]
         [property: JsonIgnore]
@@ -112,15 +117,31 @@ namespace TextTemplateManager.Models
             var otherTemplates = Owner.AllItems
                 .SelectManyRecursive(i => i.Children)
                 .OfType<Template>()
-                .Where(t => t != this);
+                .Where(t => t != this)
+                .ToList();
 
-            HasSingleKeyConflict = !string.IsNullOrWhiteSpace(SingleKeyShortcut) &&
-                                   otherTemplates.Any(t => string.Equals(t.SingleKeyShortcut, SingleKeyShortcut, StringComparison.OrdinalIgnoreCase));
+            Guid thisArea = Owner.GetAreaKey(this);
 
-            // Compare effective (prefixed) shortcuts, so same raw key in different folders is fine.
+            // Single-key: same key in the SAME area is a conflict; the same key in another area is
+            // allowed (local wins, then sync order) and only flagged as a warning.
+            bool hasSingle = !string.IsNullOrWhiteSpace(SingleKeyShortcut);
+            HasSingleKeyConflict = hasSingle && otherTemplates.Any(t =>
+                Owner.GetAreaKey(t) == thisArea &&
+                string.Equals(t.SingleKeyShortcut, SingleKeyShortcut, StringComparison.OrdinalIgnoreCase));
+            HasSingleKeyCrossAreaWarning = hasSingle && !HasSingleKeyConflict && otherTemplates.Any(t =>
+                Owner.GetAreaKey(t) != thisArea &&
+                string.Equals(t.SingleKeyShortcut, SingleKeyShortcut, StringComparison.OrdinalIgnoreCase));
+
+            // Multi-key compared on the effective (prefixed) shortcut, same rule as single-key: a
+            // same-area clash is a conflict, across areas it's an allowed warning.
             string thisEffective = Owner.GetEffectiveMultiKey(this);
-            HasMultiKeyConflict = !string.IsNullOrWhiteSpace(MultiKeyShortcut) &&
-                                  otherTemplates.Any(t => string.Equals(Owner.GetEffectiveMultiKey(t), thisEffective, StringComparison.OrdinalIgnoreCase));
+            bool hasMulti = !string.IsNullOrWhiteSpace(MultiKeyShortcut);
+            HasMultiKeyConflict = hasMulti && otherTemplates.Any(t =>
+                Owner.GetAreaKey(t) == thisArea &&
+                string.Equals(Owner.GetEffectiveMultiKey(t), thisEffective, StringComparison.OrdinalIgnoreCase));
+            HasMultiKeyCrossAreaWarning = hasMulti && !HasMultiKeyConflict && otherTemplates.Any(t =>
+                Owner.GetAreaKey(t) != thisArea &&
+                string.Equals(Owner.GetEffectiveMultiKey(t), thisEffective, StringComparison.OrdinalIgnoreCase));
         }
 
         public void ForceRevalidate() => ValidateShortcuts();
