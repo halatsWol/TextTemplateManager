@@ -18,19 +18,20 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New
 
-- **Browser extension now on Firefox Add-ons.** The companion extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) is now available for Firefox as well:
-    - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
-    - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
-    - Microsoft Edge — coming soon
-- **Create templates from the browser.** With the connector enabled, the companion extension can save selected text as a new template — it is added to your local templates.
+- **Use the same shortcut in more than one area.** The same single- or multi-key shortcut can now be used in both your local templates and synchronized folders (or across several sync folders). Quick Paste resolves it by priority — the local template first, then synchronized folders in order — and the shortcut list shows every match, local first. Multi-key shortcuts are compared on their effective (prefixed) form, so different folder prefixes still keep them apart.
+- **Hide cross-area shortcut warnings** (**Settings ▸ General**, off by default) suppresses the dismissible note about a shortcut being reused across areas. Blocking same-area conflicts are always shown.
 
 #### Changed
 
-- **Help ▸ About** now shows the connector API protocol version.
+- **Quick Paste opens instantly.** The window is kept ready between uses (and prepared shortly after launch), so it appears immediately and is ready for a single-key shortcut right away. Closing it hides it rather than tearing it down.
+- **Sync settings:** the reorder arrows are disabled at the ends of the list — the top source can't move up and the bottom can't move down.
+- **Smaller updates from 1.2 onward.** When you update from the version right before a release, the app can fetch a compact *delta* update — only what changed — instead of the whole installer, when one is available; larger version jumps use the full installer. The full installer is always available on the Releases page. (The size benefit begins with the first update after 1.2.)
 
 #### Fixes
 
-- **Single-key shortcuts no longer fire while you're typing in the Quick Paste search box.** The window opens ready for shortcuts, but once the search box (or the tree) has focus, letters only filter the list — the first letter of a search is no longer swallowed as a paste.
+- **Reliable autosave in the Title, Tags, and shortcut fields** — edits are saved a short moment after you stop typing, the same as the editor.
+- **Fixed a crash when reordering synchronized sources.**
+- **Hardened synchronization against rapid edits** — quickly reordering sources, or making several changes at once, no longer collides on the settings file or crashes.
 
 {{CHANGELOG}}
 

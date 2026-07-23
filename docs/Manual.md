@@ -168,18 +168,24 @@ set of everything outside synchronization (referred to as *local*).
   folders in the order configured in settings. Assigning the same single key twice **within the 
   same area** is a conflict and is not permitted; the application reports it and does not save the 
   duplicate.
-- A **multi-key** shortcut is namespaced by its folder's prefix, so identical shortcuts in 
-  different folders do not collide. A genuine duplicate within one area is reported and not saved.
+- A **multi-key** shortcut is compared on its *effective* form — a synchronized folder's prefix and 
+  separator are folded in first (so `MSG` in a folder prefixed `AND` becomes `AND-MSG`), which keeps 
+  otherwise-identical shortcuts in differently-prefixed folders apart. When two areas do resolve to 
+  the **same** effective shortcut — for example a local `ANDMSG` and a folder prefixed `AND` with the 
+  separator set to *none* holding `MSG` — it is treated just like a single-key cross-area duplicate: 
+  allowed, resolved local-first then sync order. A duplicate **within one area** is a conflict and is 
+  not saved.
 
-Cross-area single-key duplicates are permitted and are shown as an informational note rather than 
-an error. When you move a template into an area that already uses its shortcut, the application 
-resolves the clash automatically: a duplicate single-key shortcut is removed from the moved 
-template, and a duplicate multi-key shortcut receives a numeric suffix (for example, `MSG` 
+Cross-area duplicates (single- or multi-key) are permitted and are shown as an informational note 
+rather than an error. When you move a template into an area that already uses its shortcut, the 
+application resolves the clash automatically: a duplicate single-key shortcut is removed from the 
+moved template, and a duplicate multi-key shortcut receives a numeric suffix (for example, `MSG` 
 becomes `MSG1`).
 
 Any outstanding conflicts and notes are listed in a small panel in the top-right of the main 
 window. Same-area conflicts must be resolved, so the panel stays until they are; a panel showing 
-only cross-area notes can be dismissed with its **×** button.
+only cross-area notes can be dismissed with its **×** button, or hidden entirely with **Hide 
+cross-area shortcut warnings** in **Settings ▸ General**.
 
 ---
 
@@ -195,6 +201,9 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
 - **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and
   press the combination.
+- **Hide cross-area shortcut warnings** — suppress the dismissible note shown when the same shortcut
+  is used in more than one area (local and synchronized folders). Off by default; blocking same-area
+  conflicts are always shown. See *Keyboard shortcuts and conflicts*.
 - **Browser extensions (beta)** — enable a local connector for a companion browser extension (see
   *Browser extensions* below).
 - **File association** — **Set as default for .ttmdata** makes `.ttmdata` files open with this app
@@ -262,8 +271,9 @@ Each source offers the following options:
   `AND` turns the shortcut `MSG` into `AND-MSG`). The character joining the prefix and the shortcut is
   chosen at the top of the page (**Shortcut prefix separator**): `-`, `.`, or *none* (the prefix joins
   the shortcut directly, e.g. `ANDMSG`).
-- **Order** — the up and down arrows set the folder's priority. This priority determines which
-  template wins when a single key is shared across areas, and is applied immediately.
+- **Order** — the up and down arrows set the folder's priority (the up arrow is disabled on the top
+  row and the down arrow on the bottom row). This priority determines which template wins when a
+  shortcut is shared across areas, and is applied immediately.
 
 If a source's file cannot be found (for example, it has been moved or is temporarily offline), a
 warning icon is shown next to it. Click the icon to re-link the source to its file. The most recently
@@ -301,6 +311,12 @@ When a newer version is available, it is downloaded in the background and an **U
 appears in the top-right corner of the main window. You are prompted to install immediately or to 
 defer; deferring keeps the button available and prompts again on the next start. Installing closes 
 the application, applies the update silently, and reopens it.
+
+From version 1.2 onward, when you update from the version immediately before a release, the 
+application downloads a smaller **delta** update — only the files that changed — instead of the full 
+installer, when one is available. Larger version jumps, or releases without a matching delta, use the 
+full installer. The process is the same either way, and the full installer is always available on the 
+Releases page.
 
 ### Disabling updates by policy (administrators)
 

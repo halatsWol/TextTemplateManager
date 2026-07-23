@@ -31,11 +31,14 @@ was always reviewed and double-checked by me.
 - **Sync** — share a `.ttmdata` file across machines via a cloud folder (e.g. OneDrive); shown as a
   pinned folder, with per-source read-only and shortcut-prefix options. Open a `.ttmdata` file in
   Explorer to add it as a source.
-- **Area-aware shortcuts** — the same key can be reused across sync folders; it resolves by priority
-  (local first, then sync folders in order).
+- **Area-aware shortcuts** — the same single- or multi-key shortcut can be reused across areas (local
+  and sync folders); it resolves by priority (local first, then sync folders in order), and the Quick
+  Paste picker lists every match. A setting can hide the cross-area warnings.
 - **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.
 - **Backup / export** — export the whole tree or a single folder.
 - **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
+  From 1.2+, updating from the immediately previous version uses a smaller **delta** package when one
+  is available; the full installer is used otherwise.
 - **Browser connector (beta)** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list, paste, and create templates ([API docs](docs/BrowserConnectorApi.md)). Available on:
   - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
   - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
@@ -121,6 +124,16 @@ The workflow creates the release as a **draft** with the installer attached and 
 [`release.md`](release.md); review it on the Releases page and click **Publish release** when ready.
 The in-app auto-update only sees *published* releases, so users are not offered the update until you
 publish.
+
+### Delta updates (1.2+)
+
+Each release also publishes `manifest.json` (sha256 of every installed file) and `update.json`, which
+the app reads to choose between a smaller **delta** update and the full installer. The delta-aware
+client ships in 1.2; from the first release *after* 1.2, the workflow builds a delta installer
+(only the files changed since the previous release, guarded to install over exactly that version)
+alongside the full one. A client updating from exactly the previous version downloads the delta;
+bigger version jumps, or a release without a matching delta, fall back to the full installer. The
+full `Setup` `.exe` is always uploaded first so older clients keep selecting it.
 
 ---
 
