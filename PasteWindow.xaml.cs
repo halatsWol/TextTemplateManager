@@ -1,3 +1,4 @@
+using H.NotifyIcon;   // Window.Show()/Hide() extension methods (same as the main window uses)
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -61,7 +62,6 @@ namespace TextTemplateManager
 
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(780, 500));
             ConfigureWindow();
-            InstallAltEscHook();
 
             this.DispatcherQueue.TryEnqueue(() => LoadInitialData());
 
@@ -76,6 +76,49 @@ namespace TextTemplateManager
             UpdateBufferUI();
         }
 
+        /// <summary>Reveal the window for a hotkey press. Resets per-open state, arms the Alt+Esc hook,
+        /// then shows + foregrounds + focuses shortcut mode. The instance is reused (hidden between
+        /// uses), so the tree and WebView preview stay built and the window is instantly ready for a
+        /// single-key press instead of leaking that key to the app underneath while it cold-loads.</summary>
+        public void ShowForPaste()
+        {
+            ResetForShow();
+            InstallAltEscHook();
+            this.Show();
+            WindowHelper.SetForegroundWindow(_hwnd);   // input recipient before Activate
+            this.Activate();                           // Activated -> ForceWindowToFront + focus RootGrid
+        }
+
+        // Hide (not close) so the instance stays warm for the next open; drop the global hook while idle.
+        private void Dismiss()
+        {
+            RemoveAltEscHook();
+            this.Hide();
+        }
+
+        /// <summary>Warm the preview WebView ahead of first use (called shortly after app launch) so the
+        /// first hotkey open isn't cold. Safe before the window is ever shown; if the WebView can't
+        /// initialize until then, the Loaded handler picks it up and the setup still runs exactly once.</summary>
+        public void Prewarm() => _ = EnsurePreviewAsync();
+
+        // Clear whatever the previous session left so the window opens in the default shortcut mode.
+        private void ResetForShow()
+        {
+            _hasExecuted = false;
+            _isAltPressed = false;
+            _multiKeyBuffer = "";
+            _savedTab = null;
+
+            _isProcessing = true;              // don't let clearing the box re-run the filter
+            SearchBox.Text = "";
+            _isProcessing = false;
+            ShortcutTabs.SelectedItem = TabSingle;
+
+            UpdateAllFilters("");              // unfiltered tree + cleared preview
+            UpdateBufferUI();
+            RootGrid.Focus(FocusState.Programmatic);   // shortcut mode: a single key pastes immediately
+        }
+
         private void ConfigureWindow()
         {
             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -83,6 +126,11 @@ namespace TextTemplateManager
             var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
 
             appWindow.SetIcon("Assets/AppIcon.ico");
+
+            // The X hides the window (keeping it warm) instead of destroying it, like the main window.
+            // The app only really exits via the tray's Quit (Environment.Exit), which bypasses this.
+            appWindow.Closing += (s, e) => { e.Cancel = true; Dismiss(); };
+
             if (appWindow?.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
             {
                 p.IsResizable = true;
@@ -90,6 +138,7 @@ namespace TextTemplateManager
             }
 
             WindowHelper.SetWindowMinSize(hWnd, 520, 400);   // small floor, below the main window
+
             this.Closed += (s, e) =>
             {
                 WindowHelper.RemoveWindowHook(hWnd);
@@ -258,7 +307,7 @@ namespace TextTemplateManager
                 }
 
                 e.Handled = true;
-                this.Close();
+                Dismiss();   // shortcut mode already -> Esc hides (keep warm for next open)
                 return;
             }
 
@@ -536,7 +585,7 @@ namespace TextTemplateManager
             if (_hasExecuted) return;   // guard double-trigger
             _hasExecuted = true;
 
-            this.Close();   // return focus to the target app first
+            Dismiss();   // hide (keep warm); HandlePaste re-targets the captured app itself
             _ = PasteService.HandlePaste(item.Content, mode);
         }
 
@@ -632,11 +681,21 @@ namespace TextTemplateManager
         private bool _previewReady;
         private string _pendingPreviewHtml = "<p></p>";
 
-        private async void PreviewWebView_Loaded(object sender, RoutedEventArgs e)
+        private bool _previewConfigured;
+
+        private async void PreviewWebView_Loaded(object sender, RoutedEventArgs e) => await EnsurePreviewAsync();
+
+        // Idempotent: driven by the Loaded event and by Prewarm (which may run before the window is ever
+        // shown). EnsureCoreWebView2Async is safe to call repeatedly; the one-time setup + navigation
+        // guards on _previewConfigured so it runs exactly once whichever call reaches it first.
+        private async System.Threading.Tasks.Task EnsurePreviewAsync()
         {
             try
             {
                 await PreviewWebView.EnsureCoreWebView2Async();
+                if (_previewConfigured) return;
+                _previewConfigured = true;
+
                 var core = PreviewWebView.CoreWebView2;
                 core.Settings.AreDefaultContextMenusEnabled = false;
                 core.Settings.IsStatusBarEnabled = false;

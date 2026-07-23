@@ -93,6 +93,10 @@ namespace TextTemplateManager
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)
                 (MainWindow.Content as MainPage)?.HandleOpenTtmDataFile(fileArg);
+
+            // Prewarm the Quick Paste window while idle so the first hotkey open isn't cold (builds its
+            // UI + tree and starts the WebView2 preview). It stays hidden until the hotkey is pressed.
+            _uiDispatcher.TryEnqueue(DispatcherQueuePriority.Low, () => EnsurePasteWindow().Prewarm());
         }
 
         // ---- File association (.ttmdata) ----
@@ -138,16 +142,21 @@ namespace TextTemplateManager
 
             MainWindow.DispatcherQueue.TryEnqueue(() =>
             {
-                if (_pasteWindow == null)
-                {
-                    _pasteWindow = new PasteWindow();
-                    _pasteWindow.Closed += (s, e) => _pasteWindow = null;
-                }
-
-                IntPtr hWnd = WindowNative.GetWindowHandle(_pasteWindow);
-                WindowHelper.SetForegroundWindow(hWnd);   // input recipient before Activate
-                _pasteWindow.Activate();
+                // Reuse the warm instance (hidden between uses) so reopen is instant and immediately
+                // ready for a single-key press — no cold rebuild of the tree / WebView preview.
+                EnsurePasteWindow().ShowForPaste();
             });
+        }
+
+        // The single Quick Paste window, created once and kept warm (hidden between uses).
+        private PasteWindow EnsurePasteWindow()
+        {
+            if (_pasteWindow == null)
+            {
+                _pasteWindow = new PasteWindow();
+                _pasteWindow.Closed += (s, e) => _pasteWindow = null;   // recreate only if truly closed
+            }
+            return _pasteWindow;
         }
 
         public void UpdateGlobalHotkey(string hotkey)
