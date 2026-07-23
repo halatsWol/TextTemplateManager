@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using TextTemplateManager.Models;
 
@@ -33,6 +35,21 @@ public static class StorageService
     {
         MigrateLegacyFolder();   // rename the old plural folder before creating the new one
         EnsureDirectories();
+    }
+
+    // Serialize writes per file path so concurrent saves (e.g. rapid Sync-settings edits, which fire
+    // two writes per click) can't open the same file at once -> ERROR_SHARING_VIOLATION. Single-
+    // instance app, so an in-process lock per path suffices, and it isolates a slow/locked file (a
+    // retrying OneDrive source) from unrelated writes the way one global lock would not.
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _writeLocks =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static async Task WithWriteLock(string path, Func<Task> write)
+    {
+        var gate = _writeLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync();
+        try { await write(); }
+        finally { gate.Release(); }
     }
 
     // One-time migration: the data folder was historically named "TextTemplatesManager" (plural).
@@ -67,6 +84,9 @@ public static class StorageService
     /// <summary>Folder where downloaded update installers are staged.</summary>
     public static string GetInstallerDir() => Path.Combine(BaseDirectory, "installer");
 
+    /// <summary>Append-only log for otherwise-fatal unhandled exceptions.</summary>
+    public static string GetCrashLogPath() => Path.Combine(BaseDirectory, "crash.log");
+
     /// <summary>Load the sync config, or a new empty one if none exists.</summary>
     public static async Task<SyncSettings> LoadSyncSettingsAsync()
     {
@@ -86,25 +106,28 @@ public static class StorageService
     public static async Task SaveSyncSettingsAsync(SyncSettings settings)
     {
         string json = JsonSerializer.Serialize(settings, _options);
-        await File.WriteAllTextAsync(GetSyncSettingsPath(), json);
+        string path = GetSyncSettingsPath();
+        await WithWriteLock(path, () => File.WriteAllTextAsync(path, json));
     }
 
     /// <summary>Save the root Folder to path (local or sync location).</summary>
     public static async Task SaveAsync(string path, Folder root)
     {
         string json = JsonSerializer.Serialize(root, _options);
-
-        // Skip the write if the file already matches, so its modified-time doesn't churn.
-        if (File.Exists(path))
+        await WithWriteLock(path, async () =>
         {
-            string existing = await File.ReadAllTextAsync(path);
-            if (string.Equals(existing, json, StringComparison.Ordinal))
-                return;
-        }
+            // Skip the write if the file already matches, so its modified-time doesn't churn.
+            if (File.Exists(path))
+            {
+                string existing = await File.ReadAllTextAsync(path);
+                if (string.Equals(existing, json, StringComparison.Ordinal))
+                    return;
+            }
 
-        string tempPath = path + ".tmp";
-        await File.WriteAllTextAsync(tempPath, json);
-        File.Move(tempPath, path, overwrite: true);
+            string tempPath = path + ".tmp";
+            await File.WriteAllTextAsync(tempPath, json);
+            File.Move(tempPath, path, overwrite: true);
+        });
     }
 
     public static async Task<Folder?> LoadRootAsync(string filePath)
@@ -163,18 +186,20 @@ public static class StorageService
     public static async Task SaveSharedAsync(string path, Folder root)
     {
         string json = JsonSerializer.Serialize(root, _options);
-
-        string? existing = File.Exists(path) ? await ReadAllTextSharedAsync(path) : null;
-        if (string.Equals(existing, json, StringComparison.Ordinal)) return;
-
-        string tmp = path + ".tmp";
-        await File.WriteAllTextAsync(tmp, json);
-        for (int attempt = 0; attempt < 6; attempt++)
+        await WithWriteLock(path, async () =>
         {
-            try { File.Move(tmp, path, overwrite: true); return; }
-            catch (IOException) { await Task.Delay(200); }        // target locked -> retry
-        }
-        try { File.Delete(tmp); } catch { /* leave temp if even delete fails */ }
+            string? existing = File.Exists(path) ? await ReadAllTextSharedAsync(path) : null;
+            if (string.Equals(existing, json, StringComparison.Ordinal)) return;
+
+            string tmp = path + ".tmp";
+            await File.WriteAllTextAsync(tmp, json);
+            for (int attempt = 0; attempt < 6; attempt++)
+            {
+                try { File.Move(tmp, path, overwrite: true); return; }
+                catch (IOException) { await Task.Delay(200); }        // target locked -> retry
+            }
+            try { File.Delete(tmp); } catch { /* leave temp if even delete fails */ }
+        });
     }
 
     public static async Task<List<BaseItem>?> LoadAsync(string filePath)
@@ -197,7 +222,7 @@ public static class StorageService
     {
         // This handles the .ttmdata export to any user-selected path
         string json = JsonSerializer.Serialize(data, _options);
-        await File.WriteAllTextAsync(fullPath, json);
+        await WithWriteLock(fullPath, () => File.WriteAllTextAsync(fullPath, json));
     }
 
     public static async Task<Folder?> ImportBackupAsync(string fullPath)
@@ -213,8 +238,11 @@ public static class StorageService
 
     private static async Task SaveGenericAsync(string path, object obj)
     {
-        using FileStream createStream = File.Create(path);
-        await JsonSerializer.SerializeAsync(createStream, obj, _options);
+        await WithWriteLock(path, async () =>
+        {
+            using FileStream createStream = File.Create(path);
+            await JsonSerializer.SerializeAsync(createStream, obj, _options);
+        });
     }
 
 
@@ -238,6 +266,6 @@ public static class StorageService
     {
         string path = GetSettingsPath();
         string json = JsonSerializer.Serialize(settings, _options);
-        await File.WriteAllTextAsync(path, json);
+        await WithWriteLock(path, () => File.WriteAllTextAsync(path, json));
     }
 }

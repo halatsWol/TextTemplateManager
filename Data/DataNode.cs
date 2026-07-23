@@ -12,6 +12,7 @@ namespace TextTemplateManager.Data;
 public class DataNode
 {
     private readonly System.Threading.SemaphoreSlim _saveLock = new(1, 1);
+    private readonly System.Threading.SemaphoreSlim _syncApplyLock = new(1, 1);
     private readonly string _localDataPath;
     private bool _isInitialized = false;
     private bool _isMoving = false;
@@ -302,13 +303,22 @@ public class DataNode
     {
         if (!_isInitialized) return;
 
-        _isMoving = true;
-        try { await ApplySyncAsync(); }
-        finally { _isMoving = false; }
+        // Serialize re-applies. A manual reorder, an add/remove, and the 4s external-change poll can
+        // otherwise overlap and run two ApplySyncAsync at once, mutating RootFolder.Children (Clear +
+        // re-add) concurrently across their file-read awaits — a garbled tree or a crash. Callers
+        // await, so a re-apply that arrives mid-flight still runs once the current one finishes.
+        await _syncApplyLock.WaitAsync();
+        try
+        {
+            _isMoving = true;
+            try { await ApplySyncAsync(); }
+            finally { _isMoving = false; }
 
-        foreach (var item in RootFolder.Children) AttachChangeTracking(item);
-        TreeChanged?.Invoke();
-        await SaveDataAsync();
+            foreach (var item in RootFolder.Children) AttachChangeTracking(item);
+            TreeChanged?.Invoke();
+            await SaveDataAsync();
+        }
+        finally { _syncApplyLock.Release(); }
     }
 
     /// <summary>Polls the active sources' files and re-applies sync if any changed EXTERNALLY.

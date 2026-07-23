@@ -60,17 +60,26 @@ public partial class MainViewModel : ObservableObject
         // Re-project on sync re-apply; re-select if the refresh dropped the selection.
         _dataNode.TreeChanged += () => _ui?.TryEnqueue(() =>
         {
-            var prev = SelectedItem;
-            // A sync-folder reorder is the one refresh that needs a top-level Move. WinUI's TreeView
-            // crashes on an in-place Move of its bound root collection (the reason CloseSettings uses
-            // ReloadTree), so rebind the whole collection in that case; otherwise refresh in place to
-            // keep expansion state for the frequent content-only refreshes (sync poll, connector add).
-            if (RootOrderChanged())
-                ReloadTree();
-            else
-                ApplyFilter();
-            if (prev != null && !ReferenceEquals(SelectedItem, prev) && Flatten(AllItems).Contains(prev))
-                SelectedItem = prev;
+            try
+            {
+                var prev = SelectedItem;
+                // A sync-folder reorder is the one refresh that needs a top-level Move. WinUI's TreeView
+                // crashes on an in-place Move of its bound root collection (the reason CloseSettings uses
+                // ReloadTree), so rebind the whole collection in that case; otherwise refresh in place to
+                // keep expansion state for the frequent content-only refreshes (sync poll, connector add).
+                if (RootOrderChanged())
+                    ReloadTree();
+                else
+                    ApplyFilter();
+                if (prev != null && !ReferenceEquals(SelectedItem, prev) && Flatten(AllItems).Contains(prev))
+                    SelectedItem = prev;
+            }
+            catch (Exception ex)
+            {
+                // Runs on a fire-and-forget dispatcher callback, so an escape would be unhandled: never
+                // let a tree refresh take down the app — log and leave the current view in place.
+                System.Diagnostics.Debug.WriteLine($"[Tree] refresh failed: {ex.Message}");
+            }
         });
 
         _ = Task.Run(async () =>

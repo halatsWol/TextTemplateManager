@@ -32,6 +32,7 @@ namespace TextTemplateManager
         public App()
         {
             InitializeComponent();
+            UnhandledException += OnUnhandledException;
         }
 
         protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
@@ -184,6 +185,27 @@ namespace TextTemplateManager
         // TreeChanged/DataSaved can fire off the UI thread; marshal the snapshot rebuild back.
         private void RebuildConnectorSnapshot() =>
             _uiDispatcher?.TryEnqueue(() => { try { _connectorData?.Rebuild(); } catch { } });
+
+        // Last-resort net: an unhandled exception on the UI thread would terminate the app (async-void
+        // handlers make this easy to trip). Log it and keep running so the user doesn't lose their
+        // session; the crash log preserves the stack for diagnosis. Handled=true stops the shutdown.
+        private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            LogCrash("UnhandledException", e.Exception);
+            e.Handled = true;
+        }
+
+        private static void LogCrash(string source, Exception? ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[{source}] {ex}");
+            try
+            {
+                System.IO.File.AppendAllText(
+                    StorageService.GetCrashLogPath(),
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{source}] {ex}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch { /* logging must never throw */ }
+        }
 
         /// <summary>Quit: remove the tray icon, then hard-exit. Uses Environment.Exit because
         /// Application.Current.Exit()'s teardown throws a stowed exception (0xc000027b) here.
