@@ -59,6 +59,16 @@ jobs:
           # package.ps1 regenerates the manual PDF (Assets/Manual.pdf) — ship it as an asset too.
           Copy-Item "Assets/Manual.pdf" `
                     "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf"
+          # update.json: the client reads this to choose a delta matching its installed version, or
+          # the full installer. No deltas are produced yet (they are added from the first release
+          # after delta support ships); an empty list means every client takes the full installer.
+          # manifest.json (from package.ps1) is uploaded so a later release can diff against it.
+          $update = [ordered]@{
+            version = "${{ steps.ver.outputs.version }}"
+            full    = "TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
+            deltas  = @()
+          }
+          $update | ConvertTo-Json -Depth 4 | Set-Content "installer/update.json" -Encoding utf8
 
       - name: Render release notes from release.md
         shell: pwsh
@@ -89,10 +99,15 @@ jobs:
           # --draft: the release (and its installer) is uploaded but NOT published. Review it on
           # the Releases page and click "Publish release" when ready. Auto-update only sees
           # published releases, so clients won't be offered the update until you publish.
+          # NOTE: the full Setup .exe is listed first on purpose. Older clients (and the fallback
+          # path) pick the first .exe asset, and GitHub keeps upload order — so once delta .exe
+          # assets are added in a later release, the full installer must stay the first-uploaded .exe.
           $ghArgs = @(
             "${{ github.ref_name }}",
             "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe",
             "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
+            "installer/manifest.json",
+            "installer/update.json",
             "--title", "${{ github.ref_name }}",
             "--notes-file", "release-notes.md",
             "--draft"

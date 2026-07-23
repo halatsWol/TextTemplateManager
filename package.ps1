@@ -47,6 +47,22 @@ if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
     -p:PublishDir="$publishRel\"
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
+# File manifest (sha256 of every published file) — the enabler for computing a delta against the
+# previous release later. Published as a release asset; sorted for a stable, diffable file.
+Write-Host "==> Generating file manifest" -ForegroundColor Cyan
+$installerDir = Join-Path $root "installer"
+New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
+$prefixLen = $publishDir.Length + 1
+$files = [ordered]@{}
+Get-ChildItem -Path $publishDir -Recurse -File | Sort-Object FullName | ForEach-Object {
+    $rel = $_.FullName.Substring($prefixLen) -replace '\\', '/'
+    $files[$rel] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+$manifestPath = Join-Path $installerDir "manifest.json"
+[ordered]@{ version = $Version; files = $files } | ConvertTo-Json -Depth 4 |
+    Set-Content -LiteralPath $manifestPath -Encoding utf8
+Write-Host "==> Manifest: $manifestPath ($($files.Count) files)" -ForegroundColor Green
+
 Write-Host "==> Locating Inno Setup compiler (ISCC.exe)" -ForegroundColor Cyan
 $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",

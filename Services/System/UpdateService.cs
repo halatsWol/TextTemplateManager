@@ -65,8 +65,10 @@ public sealed class UpdateService
 
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
 
-        UpdateInfo? best = null;
+        JsonElement bestRel = default;
         ReleaseVer? bestVer = null;
+        string? bestTag = null;
+        string? fullUrl = null, fullAsset = null;
 
         foreach (var rel in doc.RootElement.EnumerateArray())
         {
@@ -84,11 +86,69 @@ public sealed class UpdateService
             var (url, asset) = FindInstallerAsset(rel);
             if (url == null) continue;                          // release has no installer asset
 
-            best = new UpdateInfo(ver.Numeric, tag ?? "", url, asset!);
-            bestVer = ver;
+            bestRel = rel; bestVer = ver; bestTag = tag; fullUrl = url; fullAsset = asset;
         }
 
-        return best;
+        if (bestVer == null || fullUrl == null) return null;
+
+        // Prefer a delta built for exactly this installed version (declared in the release's
+        // update.json), else the full installer. The download/run path is identical — a delta is
+        // just a smaller installer — so only the chosen asset differs here.
+        var (dlUrl, dlAsset) = await ResolveDownloadAsync(bestRel, fullUrl, fullAsset!);
+        return new UpdateInfo(bestVer.Numeric, bestTag ?? "", dlUrl, dlAsset);
+    }
+
+    /// <summary>Chooses the asset to download for a release: a delta whose <c>from</c> equals this
+    /// installed version (per the release's <c>update.json</c>) when available and present, otherwise
+    /// the full installer. Any missing metadata, mismatch, or error falls back to the full installer,
+    /// so a delta can never be applied to the wrong base from here.</summary>
+    private async Task<(string url, string asset)> ResolveDownloadAsync(JsonElement release, string fallbackUrl, string fallbackAsset)
+    {
+        string? updateJsonUrl = FindAssetUrl(release, "update.json");
+        if (updateJsonUrl == null) return (fallbackUrl, fallbackAsset);   // pre-1.2 release: full only
+
+        try
+        {
+            using var r = await Http.GetAsync(updateJsonUrl);
+            if (!r.IsSuccessStatusCode) return (fallbackUrl, fallbackAsset);
+            using var meta = JsonDocument.Parse(await r.Content.ReadAsStringAsync());
+            var root = meta.RootElement;
+
+            // The full installer named authoritatively by update.json (avoids picking a delta .exe
+            // as "the first .exe"); fall back to whatever FindInstallerAsset found otherwise.
+            string url = fallbackUrl, asset = fallbackAsset;
+            if (root.TryGetProperty("full", out var fj) && fj.GetString() is string full && full.Length > 0
+                && FindAssetUrl(release, full) is string fu)
+            {
+                url = fu; asset = full;
+            }
+
+            string? myVer = GetInstalledVersionString();
+            if (myVer != null && root.TryGetProperty("deltas", out var deltas) && deltas.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var d in deltas.EnumerateArray())
+                {
+                    string? from = d.TryGetProperty("from", out var f) ? f.GetString() : null;
+                    string? deltaAsset = d.TryGetProperty("asset", out var a) ? a.GetString() : null;
+                    if (string.Equals(from, myVer, StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(deltaAsset)
+                        && FindAssetUrl(release, deltaAsset) is string durl)
+                        return (durl, deltaAsset!);   // delta built for exactly this version
+                }
+            }
+            return (url, asset);
+        }
+        catch { return (fallbackUrl, fallbackAsset); }
+    }
+
+    private static string? FindAssetUrl(JsonElement release, string assetName)
+    {
+        if (release.TryGetProperty("assets", out var assets))
+            foreach (var a in assets.EnumerateArray())
+                if (string.Equals(a.GetProperty("name").GetString(), assetName, StringComparison.OrdinalIgnoreCase)
+                    && a.TryGetProperty("browser_download_url", out var u) && u.GetString() is string url)
+                    return url;
+        return null;
     }
 
     private static (string? url, string? name) FindInstallerAsset(JsonElement release)
@@ -160,6 +220,21 @@ public sealed class UpdateService
 
         var v = ParseRelease(info, ghPrerelease: false);
         return v != null && v.Numeric > new Version(0, 0, 0) ? v : null;
+    }
+
+    /// <summary>The installed version string exactly as embedded from the release tag (e.g. "1.2",
+    /// "1.2.0", "1.2-beta", "1.2.0-beta"), or null for a dev build. This is the raw key a delta's
+    /// <c>from</c> is matched against — kept verbatim (not numeric-normalized) so every tag shape
+    /// round-trips.</summary>
+    private static string? GetInstalledVersionString()
+    {
+        string info = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
+        int plus = info.IndexOf('+');
+        if (plus >= 0) info = info[..plus];
+        info = info.Trim();
+        if (info.Length == 0 || info.Contains("dev", StringComparison.OrdinalIgnoreCase)) return null;
+        return info;
     }
 
     private static readonly Regex NumberPart = new(@"\d+(?:\.\d+)*", RegexOptions.Compiled);
