@@ -61,7 +61,14 @@ public partial class MainViewModel : ObservableObject
         _dataNode.TreeChanged += () => _ui?.TryEnqueue(() =>
         {
             var prev = SelectedItem;
-            ApplyFilter();
+            // A sync-folder reorder is the one refresh that needs a top-level Move. WinUI's TreeView
+            // crashes on an in-place Move of its bound root collection (the reason CloseSettings uses
+            // ReloadTree), so rebind the whole collection in that case; otherwise refresh in place to
+            // keep expansion state for the frequent content-only refreshes (sync poll, connector add).
+            if (RootOrderChanged())
+                ReloadTree();
+            else
+                ApplyFilter();
             if (prev != null && !ReferenceEquals(SelectedItem, prev) && Flatten(AllItems).Contains(prev))
                 SelectedItem = prev;
         });
@@ -115,6 +122,22 @@ public partial class MainViewModel : ObservableObject
     {
         RootNodes = new ObservableCollection<BaseItem>();
         ApplyFilter();
+    }
+
+    /// <summary>True when the data model's top-level items match RootNodes as a set but in a
+    /// different order — the only refresh needing an in-place root Move, which the TreeView
+    /// mishandles. Add/remove (count differs) and filtering are refreshed in place safely.</summary>
+    private bool RootOrderChanged()
+    {
+        var desired = _dataNode.LocalItems;
+        if (desired.Count != RootNodes.Count) return false;
+        bool orderDiffers = false;
+        for (int i = 0; i < desired.Count; i++)
+        {
+            if (!RootNodes.Contains(desired[i])) return false; // membership differs -> in-place is safe
+            if (!ReferenceEquals(RootNodes[i], desired[i])) orderDiffers = true;
+        }
+        return orderDiffers;
     }
 
     public void ApplyFilter()
