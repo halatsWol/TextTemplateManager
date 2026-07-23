@@ -127,13 +127,18 @@ publish.
 
 ### Delta updates (1.2+)
 
-Each release also publishes `manifest.json` (sha256 of every installed file) and `update.json`, which
-the app reads to choose between a smaller **delta** update and the full installer. The delta-aware
-client ships in 1.2; from the first release *after* 1.2, the workflow builds a delta installer
-(only the files changed since the previous release, guarded to install over exactly that version)
-alongside the full one. A client updating from exactly the previous version downloads the delta;
-bigger version jumps, or a release without a matching delta, fall back to the full installer. The
-full `Setup` `.exe` is always uploaded first so older clients keep selecting it.
+Each release publishes `manifest.json` (sha256 of every installed file) and `update.json`, which the
+app reads to choose between a smaller **delta** update and the full installer. The delta-aware client
+shipped in 1.2. The release workflow builds the delta itself (`delta.iss` + `package-delta.ps1`: diff
+the previous release's `manifest.json`, package only the changed files with a version guard) alongside
+the full installer and folds it into `update.json`. A client updating from exactly the previous
+version downloads the delta; bigger jumps, or a release with no matching delta, fall back to the full
+installer. The full `Setup` `.exe` is uploaded first so older clients keep selecting it.
+
+To ship a **full-only** release (no delta), put `[skip-delta]` in the release commit message. This is
+used for the one-time AppId-migration release: `installer.iss` corrects a malformed AppId and silently
+uninstalls the old registration (templates/settings, in a separate folder, are untouched) — a delta
+can't do that, so everyone takes the full installer that release, and deltas resume the release after.
 
 ---
 

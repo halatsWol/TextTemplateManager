@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history + tags, so the delta step can find the previous release tag
 
       - name: Derive version from tag
         id: ver
@@ -59,16 +61,59 @@ jobs:
           # package.ps1 regenerates the manual PDF (Assets/Manual.pdf) — ship it as an asset too.
           Copy-Item "Assets/Manual.pdf" `
                     "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf"
-          # update.json: the client reads this to choose a delta matching its installed version, or
-          # the full installer. No deltas are produced yet (they are added from the first release
-          # after delta support ships); an empty list means every client takes the full installer.
-          # manifest.json (from package.ps1) is uploaded so a later release can diff against it.
+
+      - name: Build delta installer (if the previous release has a manifest)
+        id: delta
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Resilient: any missing prerequisite or failure -> skip the delta and publish full-only.
+          $tag = "${{ github.ref_name }}"
+          $to  = "${{ steps.ver.outputs.version }}"
+          # A release whose commit message contains [skip-delta] ships full-only. Use it for the AppId
+          # migration release: a delta can't uninstall+reinstall to swap the AppId, so everyone must
+          # take the full installer that release; deltas resume the release after.
+          $headMsg = (git log -1 --pretty=%B "$tag" 2>$null | Out-String)
+          if ($headMsg -match '\[skip-delta\]') { Write-Host "[skip-delta] present -> full-only release."; exit 0 }
+          $prevTag = (git describe --tags --abbrev=0 "$tag^" 2>$null)
+          if (-not $prevTag) { Write-Host "No previous tag — full-only release."; exit 0 }
+          $from = $prevTag -replace '^v', ''
+          Write-Host "Previous release: $prevTag (version $from)"
+          New-Item -ItemType Directory -Force prevrel | Out-Null
+          gh release download "$prevTag" -p manifest.json -D prevrel 2>$null
+          if (-not (Test-Path "prevrel/manifest.json")) {
+            Write-Host "No manifest.json on $prevTag (pre-1.2) — full-only release."; exit 0
+          }
+          try {
+            ./package-delta.ps1 -FromVersion $from -ToVersion $to -PrevManifest "prevrel/manifest.json"
+          } catch {
+            Write-Host "::warning::Delta build failed ($_) — publishing full installer only."; exit 0
+          }
+          if (Test-Path "installer/delta-info.json") {
+            $info = Get-Content "installer/delta-info.json" -Raw | ConvertFrom-Json
+            "built=true"           >> $env:GITHUB_OUTPUT
+            "from=$($info.from)"   >> $env:GITHUB_OUTPUT
+            "asset=$($info.asset)" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Write update.json
+        shell: pwsh
+        run: |
+          # The client reads this to pick a delta matching its installed version, else the full
+          # installer. deltas is empty unless the step above built one for the previous release.
+          $to = "${{ steps.ver.outputs.version }}"
+          $deltas = @()
+          if ("${{ steps.delta.outputs.built }}" -eq "true") {
+            $deltas = @([ordered]@{ from = "${{ steps.delta.outputs.from }}"; asset = "${{ steps.delta.outputs.asset }}" })
+          }
           $update = [ordered]@{
-            version = "${{ steps.ver.outputs.version }}"
-            full    = "TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
-            deltas  = @()
+            version = $to
+            full    = "TextTemplateManager-Setup-$to.exe"
+            deltas  = $deltas
           }
           $update | ConvertTo-Json -Depth 4 | Set-Content "installer/update.json" -Encoding utf8
+          Write-Host "----- update.json -----"; Get-Content "installer/update.json" -Raw
 
       - name: Render release notes from release.md
         shell: pwsh
@@ -99,12 +144,17 @@ jobs:
           # --draft: the release (and its installer) is uploaded but NOT published. Review it on
           # the Releases page and click "Publish release" when ready. Auto-update only sees
           # published releases, so clients won't be offered the update until you publish.
-          # NOTE: the full Setup .exe is listed first on purpose. Older clients (and the fallback
-          # path) pick the first .exe asset, and GitHub keeps upload order — so once delta .exe
-          # assets are added in a later release, the full installer must stay the first-uploaded .exe.
+          # The full Setup .exe MUST be listed first: older clients (and the fallback path) pick the
+          # first .exe asset and GitHub keeps upload order, so the full installer has to stay the
+          # first-uploaded .exe. The delta .exe (if any) goes second; non-.exe assets after.
           $ghArgs = @(
             "${{ github.ref_name }}",
-            "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe",
+            "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
+          )
+          if ("${{ steps.delta.outputs.built }}" -eq "true") {
+            $ghArgs += "installer/${{ steps.delta.outputs.asset }}"
+          }
+          $ghArgs += @(
             "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
             "installer/manifest.json",
             "installer/update.json",

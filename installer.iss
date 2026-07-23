@@ -16,7 +16,7 @@
 #define MyAppExeName "ttm.exe"
 
 [Setup]
-AppId={{9C4E7B2A-1F53-4A8D-B6E0-3D7C2F9A15E4}}
+AppId={{9C4E7B2A-1F53-4A8D-B6E0-3D7C2F9A15E4}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -80,3 +80,37 @@ Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\com
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall
+
+[Code]
+// One-time AppId migration. Releases up to 1.2 were built with a malformed AppId ("{GUID}}" — an
+// extra closing brace, from writing {{...}} in [Setup]), so they registered under the uninstall key
+// "{GUID}}_is1". This release uses the corrected AppId "{GUID}". Before installing, silently uninstall
+// any lingering old "{GUID}}" install so the user isn't left with two entries. Templates/settings live
+// in %LocalAppData%\Marflow Software\TextTemplateManager (a separate folder) and are NOT touched.
+const
+  OldUninstKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{9C4E7B2A-1F53-4A8D-B6E0-3D7C2F9A15E4}}_is1';
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Uninst: String;
+  ResultCode, Tries: Integer;
+begin
+  Result := '';   // best effort — never block the install on the migration
+  if RegQueryStringValue(HKCU, OldUninstKey, 'UninstallString', Uninst) and (Uninst <> '') then
+  begin
+    Uninst := RemoveQuotes(Uninst);
+    if FileExists(Uninst) then
+    begin
+      Exec(Uninst, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      // The Inno uninstaller relaunches from %temp% and returns early, so wait (up to ~30s) for the
+      // old uninstall key to disappear before the new files are written to the same folder.
+      Tries := 0;
+      while (Tries < 60) and RegKeyExists(HKCU, OldUninstKey) do
+      begin
+        Sleep(500);
+        Tries := Tries + 1;
+      end;
+    end;
+    RegDeleteKeyIncludingSubkeys(HKCU, OldUninstKey);   // drop a stale key if the uninstaller didn't
+  end;
+end;

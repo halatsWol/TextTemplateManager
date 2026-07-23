@@ -16,22 +16,10 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### New
+This is a maintenance release for the update system — no changes to the app itself.
 
-- **Use the same shortcut in more than one area.** The same single- or multi-key shortcut can now be used in both your local templates and synchronized folders (or across several sync folders). Quick Paste resolves it by priority — the local template first, then synchronized folders in order — and the shortcut list shows every match, local first. Multi-key shortcuts are compared on their effective (prefixed) form, so different folder prefixes still keep them apart.
-- **Hide cross-area shortcut warnings** (**Settings ▸ General**, off by default) suppresses the dismissible note about a shortcut being reused across areas. Blocking same-area conflicts are always shown.
-
-#### Changed
-
-- **Quick Paste opens instantly.** The window is kept ready between uses (and prepared shortly after launch), so it appears immediately and is ready for a single-key shortcut right away. Closing it hides it rather than tearing it down.
-- **Sync settings:** the reorder arrows are disabled at the ends of the list — the top source can't move up and the bottom can't move down.
-- **Smaller updates from 1.2 onward.** When you update from the version right before a release, the app can fetch a compact *delta* update — only what changed — instead of the whole installer, when one is available; larger version jumps use the full installer. The full installer is always available on the Releases page. (The size benefit begins with the first update after 1.2.)
-
-#### Fixes
-
-- **Reliable autosave in the Title, Tags, and shortcut fields** — edits are saved a short moment after you stop typing, the same as the editor.
-- **Fixed a crash when reordering synchronized sources.**
-- **Hardened synchronization against rapid edits** — quickly reordering sources, or making several changes at once, no longer collides on the settings file or crashes.
+- **Delta updates go live.** From the next release onward, updating from the version right before it downloads only the files that changed (a few MB) instead of the whole installer.
+- **This update is a full download.** It makes a one-time internal change to how the app registers with Windows — something a delta can't do — so everyone installs the full version this once. Your templates and settings are untouched, and the smaller delta updates begin with the next release.
 
 {{CHANGELOG}}
 
