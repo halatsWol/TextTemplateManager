@@ -43,6 +43,7 @@ namespace TextTemplateManager
             SourceList.ItemsSource = _sync.Sources;
             foreach (var s in _sync.Sources) Subscribe(s);
             _sync.Sources.CollectionChanged += Sources_CollectionChanged;
+            UpdateMoveAffordances();
 
             base.OnNavigatedTo(e);
         }
@@ -65,7 +66,9 @@ namespace TextTemplateManager
 
         private async void Source_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(SyncSource.IsFileMissing)) return; // computed, not persisted
+            // Computed/transient props: reflect in the UI but never persist or reconcile.
+            if (e.PropertyName is nameof(SyncSource.IsFileMissing)
+                or nameof(SyncSource.CanMoveUp) or nameof(SyncSource.CanMoveDown)) return;
             await SaveAsync();
 
             switch (e.PropertyName)
@@ -91,6 +94,7 @@ namespace TextTemplateManager
         {
             if (e.OldItems != null) foreach (SyncSource s in e.OldItems) Unsubscribe(s);
             if (e.NewItems != null) foreach (SyncSource s in e.NewItems) Subscribe(s);
+            UpdateMoveAffordances();
             await SaveAsync();
             if (e.Action != NotifyCollectionChangedAction.Move)
                 await DataNode.Instance.ReapplySyncAsync();   // add / remove -> refresh tree (Move handled by buttons)
@@ -186,6 +190,17 @@ namespace TextTemplateManager
             if (Source(sender) is not SyncSource s) return;
             int i = _sync.Sources.IndexOf(s);
             if (i >= 0 && i < _sync.Sources.Count - 1) { _sync.Sources.Move(i, i + 1); await ReapplyAsync(); }
+        }
+
+        // Grey out ↑ on the first row and ↓ on the last so priority can't be nudged past the ends.
+        private void UpdateMoveAffordances()
+        {
+            var sources = _sync.Sources;
+            for (int i = 0; i < sources.Count; i++)
+            {
+                sources[i].CanMoveUp = i > 0;
+                sources[i].CanMoveDown = i < sources.Count - 1;
+            }
         }
 
         private static async Task ReapplyAsync()

@@ -169,10 +169,12 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                            <Button Click="MoveUp_Click" Padding="6" ToolTipService.ToolTip="Move up">
+                            <Button Click="MoveUp_Click" Padding="6" ToolTipService.ToolTip="Move up"
+                                    IsEnabled="{x:Bind CanMoveUp, Mode=OneWay}">
                                 <FontIcon Glyph="&#xE70E;" FontSize="14"/>
                             </Button>
-                            <Button Click="MoveDown_Click" Padding="6" ToolTipService.ToolTip="Move down">
+                            <Button Click="MoveDown_Click" Padding="6" ToolTipService.ToolTip="Move down"
+                                    IsEnabled="{x:Bind CanMoveDown, Mode=OneWay}">
                                 <FontIcon Glyph="&#xE70D;" FontSize="14"/>
                             </Button>
                             <Button Click="Remove_Click" Padding="6" ToolTipService.ToolTip="Remove">

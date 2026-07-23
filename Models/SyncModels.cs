@@ -29,6 +29,16 @@ namespace TextTemplateManager.Models
         public bool IsFileMissing => !string.IsNullOrWhiteSpace(Path) && !File.Exists(Path);
 
         partial void OnPathChanged(string value) => OnPropertyChanged(nameof(IsFileMissing));
+
+        /// <summary>Reorder-arrow affordances, set by the Sync settings page from list position:
+        /// the top row can't move up, the bottom can't move down. Transient, not persisted.</summary>
+        [ObservableProperty]
+        [property: JsonIgnore]
+        private bool _canMoveUp = true;
+
+        [ObservableProperty]
+        [property: JsonIgnore]
+        private bool _canMoveDown = true;
     }
 
     /// <summary>Persisted sync configuration (sync.ttmsettings).</summary>
