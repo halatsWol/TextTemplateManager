@@ -168,7 +168,10 @@
                             <DataTemplate x:DataType="local:BaseItem">
                                 <TreeViewItem ItemsSource="{x:Bind ViewChildren, Mode=OneWay}"
                                               IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                              HorizontalContentAlignment="Stretch"
                                               RightTapped="Tree_RightTapped">
+                                    <!-- Background=Transparent so the whole row is hit-testable, not just the text. -->
+                                    <Grid Background="Transparent">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Grid VerticalAlignment="Center" Width="20" Height="20">
                                             <SymbolIcon Symbol="{x:Bind Icon}"/>
@@ -184,6 +187,7 @@
                                                   Visibility="{x:Bind SyncFileMissing, Converter={StaticResource BoolToVis}}"
                                                   ToolTipService.ToolTip="Sync file not found — showing cached copy"/>
                                     </StackPanel>
+                                    </Grid>
                                 </TreeViewItem>
                             </DataTemplate>
                         </TreeView.ItemTemplate>

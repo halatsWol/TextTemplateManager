@@ -67,14 +67,21 @@
                      PlaceholderText="Search..." 
                      TextChanged="SearchBox_TextChanged" />
 
-            <TreeView x:Name="TemplateTree" 
-                      Grid.Row="1" 
+            <TreeView x:Name="TemplateTree"
+                      Grid.Row="1"
                       Margin="5"
                       SelectionMode="Single"
                       SelectionChanged="TemplateTree_SelectionChanged"
                       CanDragItems="False"
                       CanReorderItems="False"
                       AllowDrop="False">
+                <TreeView.ItemContainerStyle>
+                    <!-- Stretch the row content so the whole width is hit-testable (with the
+                         Background=Transparent on the item Grid below), not just the text. -->
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <DataTemplate>
                         <!-- Background=Transparent so empty areas of the row are hit-testable
@@ -175,9 +182,18 @@
 
                 <Grid Grid.Row="1">
                     <ListView x:Name="SingleKeyList" SelectionMode="Single" IsTabStop="False">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="MinHeight" Value="0"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:Template">
-                                <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
+                                <!-- Background=Transparent so the whole row is hit-testable, not just the text. -->
+                                <Grid Padding="12,6" Background="Transparent" DoubleTapped="ShortcutItem_DoubleTapped">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="80"/>
                                         <ColumnDefinition Width="*"/>
@@ -197,9 +213,18 @@
                     </ListView>
 
                     <ListView x:Name="MultiKeyList" SelectionMode="Single" IsTabStop="False" Visibility="Collapsed">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="MinHeight" Value="0"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:Template">
-                                <Grid Padding="12,6" DoubleTapped="ShortcutItem_DoubleTapped">
+                                <!-- Background=Transparent so the whole row is hit-testable, not just the text. -->
+                                <Grid Padding="12,6" Background="Transparent" DoubleTapped="ShortcutItem_DoubleTapped">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="80"/>
                                         <ColumnDefinition Width="*"/>
