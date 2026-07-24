@@ -40,6 +40,12 @@ namespace TextTemplateManager
                 {
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
+                        // A paste is in flight (a double-click hides the window, then HandlePaste
+                        // brings the TARGET app to the front): don't yank Quick Paste back to the
+                        // front here, or the Ctrl+V lands in this window's search box and it gets
+                        // stuck. On a real open _hasExecuted is false (reset in ShowForPaste).
+                        if (_hasExecuted) return;
+
                         WindowHelper.ForceWindowToFront(_hwnd);
 
                         // Subclass the input child so the Alt-key WM_SYSCHAR ding is swallowed
@@ -595,8 +601,13 @@ namespace TextTemplateManager
             if (_hasExecuted) return;   // guard double-trigger
             _hasExecuted = true;
 
-            Dismiss();   // hide (keep warm); HandlePaste re-targets the captured app itself
-            _ = PasteService.HandlePaste(item.Content, mode);
+            // Defer out of the current input event so a mouse double-click finishes settling before we
+            // hide + paste. HandlePaste then waits for the target to be foreground before sending Ctrl+V.
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                Dismiss();   // hide (keep warm); HandlePaste re-targets the captured app itself
+                _ = PasteService.HandlePaste(item.Content, mode);
+            });
         }
 
         // Clears the in-progress multi-key entry. On a full reset (window lost focus) the held-ALT

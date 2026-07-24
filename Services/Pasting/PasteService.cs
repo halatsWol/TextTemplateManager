@@ -239,6 +239,16 @@ namespace TextTemplateManager.Services.Pasting
             await WaitForModifiersReleasedAsync();
             WindowHelper.ResetModifiers();
 
+            // The Quick Paste window's Hide() is asynchronous, so right after a mouse double-click it
+            // can still be the foreground window here — sending Ctrl+V then pastes into its own search
+            // box. Wait until the captured target is actually foreground again (re-asserting it each
+            // poll) before pasting. Best-effort with a short timeout so we never hang.
+            for (int i = 0; i < 25 && WindowHelper.GetForegroundWindow() != targetHwnd; i++)
+            {
+                WindowHelper.ForceWindowToFront(targetHwnd);
+                await Task.Delay(20);
+            }
+
             await Task.Delay(20);
             SimulatePaste();
 

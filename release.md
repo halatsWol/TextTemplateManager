@@ -16,10 +16,9 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-This is a maintenance release for the update system — no changes to the app itself.
+#### Fixes
 
-- **Delta updates go live.** From the next release onward, updating from the version right before it downloads only the files that changed (a few MB) instead of the whole installer.
-- **This update is a full download.** It makes a one-time internal change to how the app registers with Windows — something a delta can't do — so everyone installs the full version this once. Your templates and settings are untouched, and the smaller delta updates begin with the next release.
+- **Double-click paste in Quick Paste works again.** Double-clicking a template — in the tree or the shortcut list — now pastes it into your app, instead of the content landing in the Quick Paste search box.
 
 {{CHANGELOG}}
 
