@@ -240,6 +240,22 @@ to your local area. Only browser extensions may use it — an ordinary web page 
 application must be running. Developers can find the full API (endpoints, security, examples) via the
 **View API documentation** link in settings.
 
+**Content safety.** Because a browser selection can contain untrusted markup, everything the extension
+sends is cleaned before it becomes a template, and the content the connector hands back is cleaned the
+same way. It uses a strict allow-list followed by a deny-list hardening pass:
+
+- **Kept:** ordinary formatting — text, headings, **bold**/*italic*/underline/strikethrough, sub- and
+  superscript, lists, tables, blockquotes, code blocks, text colour and highlighting, and links.
+- **Code blocks are preserved exactly.** Code in any language — including HTML or JavaScript shown as
+  text inside a code block — passes through untouched; it is treated as text, never as live markup.
+- **Removed:** anything that could run or load from the network — `<script>`, `<style>`, embedded
+  frames/objects, **images and other media**, form controls, SVG/MathML, and HTML comments (dropped
+  with their contents); event-handler attributes (`onclick`, `onerror`, …); `javascript:`, `vbscript:`
+  and `data:` links (only `http`, `https`, `mailto`, `tel` and relative links are kept); and active or
+  remote CSS (only inert style properties such as colour, background colour, text alignment and width
+  survive). Links that open a new tab get `rel="noopener noreferrer"`. Any other unrecognised tag is
+  unwrapped — its text is kept, the tag is dropped.
+
 ### Sync
 
 Synchronization lets several people, or several of your own computers, share the same set of

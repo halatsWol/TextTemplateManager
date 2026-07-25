@@ -16,9 +16,21 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
+#### New & improved
+
+- **Copy from read-only synced templates.** When a synced folder has saving turned off, you can now select and copy text out of its templates — the content stays read-only (no editing, typing, or pasting into it).
+- **Click anywhere on a row.** In the template trees and the Quick Paste shortcut lists, clicking anywhere on a row selects it — not just the text label.
+- **Clearer resize handles.** The draggable dividers between panes now show a gripper so it's obvious you can drag them to resize.
+- **Tidier pastes.** Blank lines at the very top of a template are trimmed when it's pasted.
+
 #### Fixes
 
 - **Double-click paste in Quick Paste works again.** Double-clicking a template — in the tree or the shortcut list — now pastes it into your app, instead of the content landing in the Quick Paste search box.
+- **Read-only synced folders stay read-only.** When a synced folder has saving turned off, you can no longer add or delete templates and folders inside it.
+
+#### Security
+
+- **Stricter browser-connector content filtering.** Content created from — and served back to — the companion browser extension is now cleaned with a strict allow-list plus a deny-list hardening pass: only safe formatting survives, scripts and other active content are removed, and links are locked down. Code blocks are preserved intact. See the manual for the full list of what's kept and removed.
 
 {{CHANGELOG}}
 

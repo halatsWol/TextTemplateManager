@@ -39,7 +39,7 @@ was always reviewed and double-checked by me.
 - **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
   From 1.2+, updating from the immediately previous version uses a smaller **delta** package when one
   is available; the full installer is used otherwise.
-- **Browser connector (beta)** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list, paste, and create templates ([API docs](docs/BrowserConnectorApi.md)). Available on:
+- **Browser connector (beta)** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list, paste, and create templates ([API docs](docs/BrowserConnectorApi.md)). Content going in and out is sanitized (allow-list + deny-list) so only safe formatting survives — scripts, media, and unsafe links are stripped, while code blocks are preserved. Available on:
   - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
   - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
   - Microsoft Edge — coming soon

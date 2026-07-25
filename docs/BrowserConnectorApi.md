@@ -89,8 +89,10 @@ Create a new template in the **local** area (e.g. from the page selection). Send
 ```json
 { "content": "<p>selected text</p>", "name": "optional title" }
 ```
-- `content` (**required**) — the template body, stored as-is. Templates hold HTML (the same format the
-  in-app editor saves), so send HTML; plain text is stored verbatim.
+- `content` (**required**) — the template body. Templates hold HTML (the same format the in-app editor
+  saves), so send HTML; plain text is stored verbatim. The content is **sanitized** before it is stored
+  (see [Content sanitizing](#content-sanitizing)), so active/script markup is stripped — send the
+  formatting you want kept and don't rely on anything scriptable surviving.
 - `name` (optional) — the title. Defaults to `New Template`. A name that already exists gets an
   incrementing suffix (`New Template 2`, …), so the returned title may differ from what you sent.
 
@@ -127,6 +129,44 @@ const created = await (await fetch(`${BASE}/template`, {
 ```
 (Loopback is a secure context, so this works from an HTTPS page's extension without mixed-content
 issues. Match the port to the app setting.)
+
+## Content sanitizing
+
+Template HTML is untrusted (a page selection can carry attacker-controlled markup), so it is sanitized
+**both directions** — when a template is created via `POST /template` and when content is served by
+`GET /template`. Sanitizing is a two-stage, DOM-based process: a strict **allow-list**, then a
+**deny-list** hardening pass that also re-parses the result to catch anything a serialization round-trip
+could resurrect (mutation-XSS). Text nodes are never altered, so **code blocks pass through verbatim** —
+code in any language, including HTML/JS shown as escaped text inside `<pre>`/`<code>`, is preserved
+(only a *real* `<script>` element is dropped, not the string `<script>` shown as code).
+
+**Kept**
+
+- Block/inline formatting: `p`, `h1`–`h6`, `strong`/`b`, `em`/`i`, `u`, `s`, `del`, `ins`, `mark`,
+  `sub`, `sup`, `small`, `code`, `pre`, `blockquote`, `br`, `hr`, `ul`/`ol`/`li`, and tables
+  (`table`/`thead`/`tbody`/`tr`/`td`/`th`/`caption`/`colgroup`/`col`).
+- Links: `<a>` with `href` limited to `http`, `https`, `mailto`, `tel`, or relative/anchor URLs. A link
+  with a `target` gets `rel="noopener noreferrer"` added.
+- Inline `style` limited to inert properties (`color`, `background-color`, `text-align`, `width`,
+  `height`, `font-weight`, `font-style`, `text-decoration`, `vertical-align`).
+- Inert `class` and `data-*` attributes (so code-block language classes and panel markers round-trip).
+
+**Removed**
+
+- Active / remote-loading / legacy elements — removed **with their contents**: `script`, `style`,
+  `iframe`, `frame`, `object`, `embed`, `applet`, `form` (and inputs), `svg`, `math`, `img`/`picture`,
+  `video`/`audio`/`source`/`track`, `link`, `meta`, `base`, `noscript`, `template`, and parser-mode
+  legacy tags (`xmp`, `plaintext`, `listing`, `marquee`, …). **Images are not kept.**
+- HTML comments (a conditional-comment mutation-XSS vector).
+- Event-handler attributes (`onclick`, `onerror`, `onload`, … — anything starting with `on`).
+- Dangerous URL schemes anywhere a URL is expected: `javascript:`, `vbscript:`, `data:` and similar,
+  including entity-/whitespace-obfuscated forms (`jav&#x09;ascript:`).
+- Script-capable or remote CSS: `expression()`, `-moz-binding`, `behavior:`, `@import`, and any
+  `url(...)` — so inline styles can't fetch remotely (tracking) or execute.
+- Any other unrecognised tag is **unwrapped**: the tag is dropped but its text content is kept.
+
+The receiving extension should still insert content safely (e.g. as text, or through its own sanitizer)
+as defense in depth — a server-side sanitizer can't perfectly mirror the browser's HTML parser.
 
 ## Notes
 
