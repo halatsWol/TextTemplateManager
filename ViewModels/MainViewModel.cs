@@ -31,6 +31,8 @@ public partial class MainViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsNoSelection))]
     [NotifyPropertyChangedFor(nameof(IsSelectedReadOnly))]
     [NotifyPropertyChangedFor(nameof(IsSelectedEditable))]
+    [NotifyPropertyChangedFor(nameof(CanAddHere))]
+    [NotifyPropertyChangedFor(nameof(CanDeleteSelection))]
     private BaseItem? _selectedItem;
 
     public bool IsFolderSelected => SelectedItem is Folder;
@@ -38,6 +40,18 @@ public partial class MainViewModel : ObservableObject
 
     public bool IsSelectedReadOnly => SelectedItem != null && _dataNode.IsItemReadOnly(SelectedItem);
     public bool IsSelectedEditable => !IsSelectedReadOnly;
+
+    // Add lands in the selected folder (or the selected item's parent); it's blocked when that target
+    // is a read-only (save-off) sync folder. A null target means local root, which is always writable.
+    public bool CanAddHere
+    {
+        get { var target = AddTargetFolder(); return target == null || !_dataNode.IsItemReadOnly(target); }
+    }
+
+    // Delete is blocked for a read-only (save-off) sync item and for pinned sync roots (managed in
+    // Settings ▸ Sync).
+    public bool CanDeleteSelection =>
+        SelectedItem != null && !SelectedItem.IsSyncRoot && !_dataNode.IsItemReadOnly(SelectedItem);
 
     [ObservableProperty]
     private ObservableCollection<BaseItem> _rootNodes = new();
@@ -249,6 +263,7 @@ public partial class MainViewModel : ObservableObject
     private async Task AddTemplate()
     {
         Folder? parent = AddTargetFolder();
+        if (parent != null && _dataNode.IsItemReadOnly(parent)) return;   // save-off sync folder
         var siblings = parent?.Children ?? AllItems;
 
         var item = new Template
@@ -270,6 +285,7 @@ public partial class MainViewModel : ObservableObject
     private async Task AddFolder()
     {
         Folder? parent = AddTargetFolder();
+        if (parent != null && _dataNode.IsItemReadOnly(parent)) return;   // save-off sync folder
         var siblings = parent?.Children ?? AllItems;
 
         var item = new Folder
@@ -334,6 +350,7 @@ public partial class MainViewModel : ObservableObject
     private async Task DeleteItem()
     {
         if (SelectedItem == null) return;
+        if (SelectedItem.IsSyncRoot || _dataNode.IsItemReadOnly(SelectedItem)) return;   // save-off sync
         await _dataNode.DeleteItemAsync(SelectedItem);
         ApplyFilter();
         SelectedItem = null;

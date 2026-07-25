@@ -136,9 +136,12 @@
 
                     <!-- Buttons -->
                     <StackPanel Orientation="Horizontal" Spacing="4" Margin="10,10,10,5">
-                        <Button Content="&#xE710;" FontFamily="Segoe MDL2 Assets" Click="AddTemplate_Click" ToolTipService.ToolTip="Add Template"/>
-                        <Button Content="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Click="AddFolder_Click" ToolTipService.ToolTip="Add Folder"/>
-                        <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" Click="DeleteItem_Click" ToolTipService.ToolTip="Delete Item"/>
+                        <Button Content="&#xE710;" FontFamily="Segoe MDL2 Assets" Click="AddTemplate_Click" ToolTipService.ToolTip="Add Template"
+                                IsEnabled="{x:Bind ViewModel.CanAddHere, Mode=OneWay}"/>
+                        <Button Content="&#xE8B7;" FontFamily="Segoe MDL2 Assets" Click="AddFolder_Click" ToolTipService.ToolTip="Add Folder"
+                                IsEnabled="{x:Bind ViewModel.CanAddHere, Mode=OneWay}"/>
+                        <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" Click="DeleteItem_Click" ToolTipService.ToolTip="Delete Item"
+                                IsEnabled="{x:Bind ViewModel.CanDeleteSelection, Mode=OneWay}"/>
                     </StackPanel>
 
                     <!-- Search -->

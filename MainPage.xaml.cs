@@ -498,8 +498,9 @@ namespace TextTemplateManager
                 flyout.Items.Add(toRoot);
             }
 
-            // Sync-folder roots are managed in Settings ▸ Sync — no Delete here.
-            if (!item.IsSyncRoot)
+            // Sync-folder roots are managed in Settings ▸ Sync, and save-off (read-only) sync items
+            // can't be modified — no Delete for either.
+            if (!item.IsSyncRoot && !ViewModel.IsReadOnly(item))
             {
                 if (flyout.Items.Count > 0) flyout.Items.Add(new MenuFlyoutSeparator());
                 var del = new MenuFlyoutItem { Text = "Delete", Icon = new SymbolIcon(Symbol.Delete) };
@@ -516,7 +517,7 @@ namespace TextTemplateManager
         private async Task ConfirmAndDeleteAsync()
         {
             if (ViewModel.SelectedItem is not BaseItem item) return;
-            if (item.IsSyncRoot) return;   // sync folders are removed via Settings ▸ Sync
+            if (item.IsSyncRoot || ViewModel.IsReadOnly(item)) return;   // sync roots via Settings; save-off is read-only
 
             string? message = null;
 
