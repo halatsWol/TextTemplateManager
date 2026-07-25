@@ -108,6 +108,7 @@ namespace TextTemplateManager.Services.Pasting
             }
             html = VariableHelper.ProcessVariables(html);
             html = HtmlUtils.NormalizeColorsToHex(html);
+            html = HtmlUtils.StripLeadingEmptyLines(html);
             return (html, HtmlUtils.ToPlainText(html));
         }
 
@@ -217,6 +218,7 @@ namespace TextTemplateManager.Services.Pasting
             // paste targets (Word, Outlook, browsers) and some editors' paste sanitizers only
             // recognize hex colours.
             html = HtmlUtils.NormalizeColorsToHex(html);
+            html = HtmlUtils.StripLeadingEmptyLines(html);
             string plainText = HtmlUtils.ToPlainText(html);
 
             // 3. Build the clipboard payloads for this mode and write them to the OS clipboard

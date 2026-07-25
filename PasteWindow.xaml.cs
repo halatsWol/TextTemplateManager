@@ -26,6 +26,7 @@ namespace TextTemplateManager
         private string _multiKeyBuffer = "";
         private bool _isAltPressed = false;
         private bool _isProcessing = false;
+        private bool _closingForPaste = false;   // a paste is destroying the window (let the real close through)
         private IntPtr _inputSiteHwnd = IntPtr.Zero;   // WinUI content-input child, subclassed for the Alt-beep
         private IntPtr _hwnd = IntPtr.Zero;
 
@@ -40,7 +41,7 @@ namespace TextTemplateManager
                 {
                     this.DispatcherQueue.TryEnqueue(() =>
                     {
-                        // A paste is in flight (a double-click hides the window, then HandlePaste
+                        // A paste is in flight (a double-click closes the window, then HandlePaste
                         // brings the TARGET app to the front): don't yank Quick Paste back to the
                         // front here, or the Ctrl+V lands in this window's search box and it gets
                         // stuck. On a real open _hasExecuted is false (reset in ShowForPaste).
@@ -134,8 +135,14 @@ namespace TextTemplateManager
             appWindow.SetIcon("Assets/AppIcon.ico");
 
             // The X hides the window (keeping it warm) instead of destroying it, like the main window.
-            // The app only really exits via the tray's Quit (Environment.Exit), which bypasses this.
-            appWindow.Closing += (s, e) => { e.Cancel = true; Dismiss(); };
+            // A paste sets _closingForPaste so the real close goes through (App then rebuilds a fresh
+            // warm one). The app only really exits via the tray's Quit (Environment.Exit), which bypasses this.
+            appWindow.Closing += (s, e) =>
+            {
+                if (_closingForPaste) return;
+                e.Cancel = true;
+                Dismiss();
+            };
 
             if (appWindow?.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
             {
@@ -601,12 +608,18 @@ namespace TextTemplateManager
             if (_hasExecuted) return;   // guard double-trigger
             _hasExecuted = true;
 
-            // Defer out of the current input event so a mouse double-click finishes settling before we
-            // hide + paste. HandlePaste then waits for the target to be foreground before sending Ctrl+V.
+            string content = item.Content;   // capture before the window is torn down
+
+            // Defer out of the current input event so a mouse double-click finishes settling, then
+            // CLOSE (destroy) the window rather than hide it: a merely-hidden window can still be
+            // reactivated and swallow the Ctrl+V into its own search box — a closed one cannot. App
+            // rebuilds a fresh, prewarmed instance on Closed for the next hotkey.
             DispatcherQueue.TryEnqueue(() =>
             {
-                Dismiss();   // hide (keep warm); HandlePaste re-targets the captured app itself
-                _ = PasteService.HandlePaste(item.Content, mode);
+                RemoveAltEscHook();
+                _closingForPaste = true;
+                this.Close();
+                _ = PasteService.HandlePaste(content, mode);
             });
         }
 

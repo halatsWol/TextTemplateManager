@@ -148,15 +148,25 @@ namespace TextTemplateManager
             });
         }
 
-        // The single Quick Paste window, created once and kept warm (hidden between uses).
+        // The Quick Paste window, kept warm (hidden) between uses. A paste destroys it (so it can't
+        // steal the Ctrl+V) and OnPasteWindowClosed rebuilds a fresh prewarmed one; the X/Esc only hide.
         private PasteWindow EnsurePasteWindow()
         {
             if (_pasteWindow == null)
             {
                 _pasteWindow = new PasteWindow();
-                _pasteWindow.Closed += (s, e) => _pasteWindow = null;   // recreate only if truly closed
+                _pasteWindow.Closed += OnPasteWindowClosed;
             }
             return _pasteWindow;
+        }
+
+        // A paste closed (destroyed) the window: rebuild a fresh hidden, prewarmed instance for the next
+        // hotkey, mirroring the launch prewarm. Low priority so it never contends with the paste's
+        // foreground handoff; if the user reopens first, EnsurePasteWindow just prewarms that instance.
+        private void OnPasteWindowClosed(object sender, WindowEventArgs e)
+        {
+            _pasteWindow = null;
+            _uiDispatcher.TryEnqueue(DispatcherQueuePriority.Low, () => EnsurePasteWindow().Prewarm());
         }
 
         public void UpdateGlobalHotkey(string hotkey)

@@ -14,6 +14,12 @@ namespace TextTemplateManager.Helpers
         private static readonly Regex AnyTag = new(@"<[^>]+>", RegexOptions.Compiled);
         private static readonly Regex ManyNewlines = new(@"\n{3,}", RegexOptions.Compiled);
 
+        // A leading empty block: a <p>/<div> at the very start whose only content is whitespace,
+        // &nbsp;, or <br> tags — i.e. a blank line the user left above the real content.
+        private static readonly Regex LeadingEmptyBlock = new(
+            @"\A\s*<(p|div)(?:\s[^>]*)?>(?:\s|&nbsp;|&#160;| |<br\s*/?>)*</\1>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         // Matches rgb(…) / rgba(…) colour functions with 0-255 (or 0-1 alpha) components.
         private static readonly Regex RgbFunc = new(
             @"rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*[\d.]+\s*)?\)",
@@ -56,6 +62,23 @@ namespace TextTemplateManager.Helpers
             text = text.Replace("\r\n", "\n").Replace('\r', '\n');
             text = ManyNewlines.Replace(text, "\n\n");
             return text.Trim();
+        }
+
+        /// <summary>
+        /// Removes blank lines above the first real content: leading empty &lt;p&gt;/&lt;div&gt;
+        /// blocks (only whitespace/&nbsp;/&lt;br&gt;) and any leading whitespace. Content that is
+        /// entirely blank collapses to an empty string.
+        /// </summary>
+        public static string StripLeadingEmptyLines(string? html)
+        {
+            if (string.IsNullOrEmpty(html)) return html ?? string.Empty;
+
+            string result = html;
+            Match m;
+            while ((m = LeadingEmptyBlock.Match(result)).Success && m.Length > 0)
+                result = result.Substring(m.Length);
+
+            return result.TrimStart();
         }
 
         public static bool LooksLikeRtf(string? content)
