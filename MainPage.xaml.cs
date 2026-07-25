@@ -87,11 +87,15 @@ namespace TextTemplateManager
                     DispatcherQueue.TryEnqueue(() =>
                     {
                         PushTemplateToEditor();
-                        // Dim + block interaction for read-only synced items — covers the editor
-                        // and the folder-title box. (Grid is a Panel, so no IsEnabled.)
+                        // Read-only synced item: block editing of the metadata fields and dim them as
+                        // the cue, but keep the editor itself fully legible and interactive so its text
+                        // stays selectable/copyable (setEditable(false) blocks typing/paste; the editor
+                        // hides its own toolbar).
                         bool editable = ViewModel.IsSelectedEditable;
-                        TemplatePanel.IsHitTestVisible = editable;
-                        TemplatePanel.Opacity = editable ? 1.0 : 0.6;
+                        TemplateTitleBox.IsHitTestVisible = editable;
+                        TemplateTitleBox.Opacity = editable ? 1.0 : 0.6;
+                        TemplateMetaPanel.IsHitTestVisible = editable;
+                        TemplateMetaPanel.Opacity = editable ? 1.0 : 0.6;
                         FolderPanel.IsHitTestVisible = editable;
                         FolderPanel.Opacity = editable ? 1.0 : 0.6;
 

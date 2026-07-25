@@ -397,7 +397,12 @@ window.editorApi = {
     getContent() { return getCleanHtml() },
     focus() { editor.commands.focus() },
     setTheme(dark) { document.body.classList.toggle('dark', !!dark) },
-    setEditable(on) { editor.setEditable(!!on) },
+    setEditable(on) {
+        editor.setEditable(!!on)
+        // Read-only (save-off sync): setEditable(false) already blocks typing/paste; the class hides
+        // the toolbar so its buttons can't edit either, while the text stays selectable for copying.
+        document.body.classList.toggle('readonly', !on)
+    },
 }
 
 // ---- Toolbar ------------------------------------------------------------------

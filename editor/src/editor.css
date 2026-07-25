@@ -327,6 +327,14 @@ body {
     line-height: 1.5;
 }
 
+/* Read-only (save-off sync template): hide the toolbar so nothing can edit, but keep the content
+   selectable so parts can still be copied out (Ctrl+C / right-click Copy). */
+body.readonly #toolbar { display: none; }
+body.readonly .ProseMirror {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
 .ProseMirror p {
     margin: 0 0 8px 0;
 }

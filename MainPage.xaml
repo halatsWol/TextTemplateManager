@@ -211,7 +211,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBox Header="Title"
+                        <TextBox x:Name="TemplateTitleBox" Header="Title"
                                  Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <Border Grid.Row="1"
@@ -223,7 +223,7 @@
                             <WebView2 x:Name="EditorWebView" Loaded="EditorWebView_Loaded"/>
                         </Border>
 
-                        <StackPanel Grid.Row="2" Spacing="10">
+                        <StackPanel x:Name="TemplateMetaPanel" Grid.Row="2" Spacing="10">
                             <Grid ColumnSpacing="10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
