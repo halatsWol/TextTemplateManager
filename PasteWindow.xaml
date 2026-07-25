@@ -109,12 +109,19 @@
             </TreeView>
         </Grid>
 
-        <controls:GridSplitter Grid.Column="1" 
-                                Width="8" 
-                                ResizeBehavior="BasedOnAlignment" 
+        <!-- Splitter: the gripper glyph shows you can click & drag here to resize. It is
+             IsHitTestVisible=False so drags pass through to the GridSplitter beneath. -->
+        <controls:GridSplitter Grid.Column="1"
+                                Width="8"
+                                ResizeBehavior="BasedOnAlignment"
                                 ResizeDirection="Columns"
+                                IsThumbVisible="False"
                                 Background="Transparent"
                                 Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+        <FontIcon Grid.Column="1" Glyph="&#xE784;" FontSize="14" FontFamily="Segoe MDL2 Assets"
+                  IsHitTestVisible="False"
+                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
         <Grid Grid.Column="2" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <Grid.RowDefinitions>
@@ -141,13 +148,19 @@
                 </Border>
             </Grid>
 
-            <controls:GridSplitter Grid.Row="1" 
-                                   Height="8" 
+            <controls:GridSplitter Grid.Row="1"
+                                   Height="8"
                                    HorizontalAlignment="Stretch"
                                    ResizeBehavior="PreviousAndNext"
                                    ResizeDirection="Rows"
+                                   IsThumbVisible="False"
                                    Background="Transparent"
                                    Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+            <!-- Gripper glyph: click & drag affordance; IsHitTestVisible=False so the splitter gets the drag. -->
+            <FontIcon Grid.Row="1" Glyph="&#xE76F;" FontSize="14" FontFamily="Segoe MDL2 Assets"
+                      IsHitTestVisible="False"
+                      Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
             <!-- Bottom group: the shortcut buffer bar is a FIXED height; the shortcut list below
                  flexes. The splitter resizes this whole group vs. the preview, so dragging the
