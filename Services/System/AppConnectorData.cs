@@ -36,8 +36,11 @@ public sealed class AppConnectorData : IConnectorDataSource
     {
         if (!_snap.Templates.TryGetValue(id, out var t)) return null;
         PasteMode m = ParseMode(mode, t.Default);
-        var (content, contentType) = PasteService.RenderForMode(t.Content, m);
-        return new TemplateContentDto(id, t.Name, m.ToString(), contentType, content);
+        // Outgoing content is allow-list sanitized before rendering so nothing active can ride a
+        // connector reply back into the browser — even if a template's stored HTML predates the
+        // incoming sanitizer or was edited in-app from a pasted web selection.
+        var (content, contentType) = PasteService.RenderForMode(HtmlSanitizer.Sanitize(t.Content), m);
+        return new TemplateContentDto(id, PlainName(t.Name), m.ToString(), contentType, content);
     }
 
     /// <summary>Creates a template in the local area with the given content and returns its id/name.
@@ -77,6 +80,15 @@ public sealed class AppConnectorData : IConnectorDataSource
         return tcs.Task.GetAwaiter().GetResult();
     }
 
+    // A label served in a connector reply: strip control chars and cap length so a title can't carry
+    // control/formatting bytes out. (Empty stays empty here — unlike CleanName's new-item fallback.)
+    private static string PlainName(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return s ?? "";
+        string cleaned = new string(s.Where(c => !char.IsControl(c)).ToArray()).Trim();
+        return cleaned.Length > 200 ? cleaned[..200] : cleaned;
+    }
+
     // A plain-text title from the (untrusted) name field: no control chars, trimmed, length-capped.
     private static string CleanName(string? name)
     {
@@ -113,11 +125,11 @@ public sealed class AppConnectorData : IConnectorDataSource
             if (item is Template t)
             {
                 templates[id] = new TemplateEntry(t.Title, t.Content, t.DefaultPasteMode);
-                list.Add(new ConnectorNodeDto(id, t.Title, "template", t.DefaultPasteMode.ToString(), source, null));
+                list.Add(new ConnectorNodeDto(id, PlainName(t.Title), "template", t.DefaultPasteMode.ToString(), source, null));
             }
             else if (item is Folder f)
             {
-                list.Add(new ConnectorNodeDto(id, f.Title, "folder", null, source, BuildNodes(f.Children, templates)));
+                list.Add(new ConnectorNodeDto(id, PlainName(f.Title), "folder", null, source, BuildNodes(f.Children, templates)));
             }
         }
         return list;
