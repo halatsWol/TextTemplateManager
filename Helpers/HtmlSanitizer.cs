@@ -47,6 +47,9 @@ namespace TextTemplateManager.Helpers
             "link", "meta", "base", "title", "head", "form", "input", "button", "select", "option",
             "optgroup", "textarea", "frame", "frameset", "svg", "math", "canvas", "video", "audio",
             "source", "track", "img", "picture", "map", "area", "portal",
+            // Legacy raw-text / parser-mode tags: a browser treats their contents as literal text, so
+            // they must be dropped whole, never unwrapped (which could expose that text as live markup).
+            "xmp", "plaintext", "listing", "noembed", "noframes",
         };
 
         // Attributes allowed on any element: inert and formatting-only.
