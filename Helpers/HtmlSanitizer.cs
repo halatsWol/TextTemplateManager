@@ -148,9 +148,22 @@ namespace TextTemplateManager.Helpers
                 string an = attr.Name.ToLowerInvariant();
 
                 if (!IsAttrAllowed(tag, an)) { attr.Remove(); continue; }
-                if (an == "style" && DangerousStyle.IsMatch(attr.Value ?? "")) { attr.Remove(); continue; }
+                if (an == "style")
+                {
+                    // Rebuild the style from an allow-list of inert CSS properties: drops url()
+                    // (remote fetch / tracking), expression()/-moz-binding (legacy script), and any
+                    // value with quotes/angle brackets (attribute break-out). Empty -> drop the attr.
+                    string cleaned = SanitizeStyle(attr.Value);
+                    if (cleaned.Length == 0) attr.Remove(); else attr.Value = cleaned;
+                    continue;
+                }
                 if (an == "href" && !IsAllowedUrl(attr.Value)) { attr.Remove(); continue; }
             }
+
+            // A link that opens a new browsing context gets rel="noopener noreferrer" so the opened
+            // page can't script this one back through window.opener (reverse tab-nabbing).
+            if (tag == "a" && el.Attributes.Contains("target"))
+                EnsureSafeRel(el);
         }
 
         private static bool IsAttrAllowed(string tag, string attr)
@@ -174,6 +187,55 @@ namespace TextTemplateManager.Helpers
             if (slash >= 0 && slash < colon) return true;        // ':' is in the path, not a scheme
 
             return AllowedSchemes.Any(s => v.StartsWith(s, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Inline CSS properties kept in a style attribute — inert formatting only; covers everything
+        // the editor emits (color / highlight background-color / text-align / column width).
+        private static readonly HashSet<string> SafeStyleProps = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "color", "background-color", "text-align", "width", "height",
+            "font-weight", "font-style", "text-decoration", "text-decoration-line", "vertical-align",
+        };
+
+        // Rebuild a style value from only the allow-listed declarations, dropping any whose value could
+        // fetch remotely, execute, or break out of the attribute.
+        private static string SanitizeStyle(string? style)
+        {
+            if (string.IsNullOrWhiteSpace(style)) return "";
+
+            var kept = new List<string>();
+            foreach (var decl in style.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                int colon = decl.IndexOf(':');
+                if (colon <= 0) continue;
+                string prop = decl.Substring(0, colon).Trim().ToLowerInvariant();
+                string val = decl.Substring(colon + 1).Trim();
+                if (val.Length == 0 || !SafeStyleProps.Contains(prop) || HasUnsafeStyleValue(val)) continue;
+                kept.Add($"{prop}: {val}");
+            }
+            return string.Join("; ", kept);
+        }
+
+        private static bool HasUnsafeStyleValue(string val)
+        {
+            // Quotes/angle brackets/backslashes could break the attribute or smuggle markup; braces and
+            // comments could hide extra rules. rgb()/#hex/keywords/lengths need none of these.
+            if (val.IndexOfAny(new[] { '"', '\'', '<', '>', '\\', '{', '}' }) >= 0) return true;
+            string v = val.ToLowerInvariant();
+            return v.Contains("url(") || v.Contains("expression") || v.Contains("javascript:")
+                || v.Contains("vbscript:") || v.Contains("-moz-binding") || v.Contains("behavior:")
+                || v.Contains("@import") || v.Contains("/*");
+        }
+
+        private static void EnsureSafeRel(HtmlNode a)
+        {
+            var tokens = (a.GetAttributeValue("rel", "") ?? "")
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.ToLowerInvariant())
+                .ToList();
+            if (!tokens.Contains("noopener")) tokens.Add("noopener");
+            if (!tokens.Contains("noreferrer")) tokens.Add("noreferrer");
+            a.SetAttributeValue("rel", string.Join(" ", tokens));
         }
 
         // ---- Stage 2: deny-list hardening ----
