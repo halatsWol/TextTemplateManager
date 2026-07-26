@@ -17,8 +17,8 @@
 #endif
 
 [Setup]
-; Same AppId as the full installer, so it updates the same install + uninstall entry (and bumps
-; its DisplayVersion to MyAppVersion).
+; Same AppId and DefaultDirName as the full installer so the delta overlays the SAME install folder
+; and the [Code] guard can read the full install's uninstall key.
 AppId={{9C4E7B2A-1F53-4A8D-B6E0-3D7C2F9A15E4}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -31,8 +31,15 @@ DisableWelcomePage=yes
 DisableDirPage=yes
 DisableReadyPage=yes
 
-UninstallDisplayName={#MyAppName}
-UninstallDisplayIcon={app}\{#MyAppExeName}
+; The delta only overlays the changed files onto an existing install — it must NOT own the uninstall
+; entry. A normal Inno install rewrites the uninstall log + Add/Remove-Programs registry with only the
+; files IT installs, so after a delta Windows showed the delta's ~8 MB (not the ~280 MB app) and
+; uninstalling removed only the patched files. Uninstallable=no leaves the full install's unins000
+; authoritative: it still lists every file and the real size, so uninstall removes the whole app.
+; (DisplayVersion is refreshed on that existing key in [Registry] below. A file the delta ADDS that the
+; base never logged is still removed on uninstall, because the full installer's [UninstallDelete] wipes
+; the whole {app} folder.)
+Uninstallable=no
 
 SetupIconFile=Assets\AppIcon.ico
 
@@ -57,12 +64,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 #include "installer\delta-files.iss"
 
 [Registry]
-; Re-assert the .ttmdata association (idempotent; path is unchanged). No autostart task here — the
-; app manages its own login entry, and existing shortcuts from the full install are left in place.
-Root: HKCU; Subkey: "Software\Classes\.ttmdata"; ValueType: string; ValueName: ""; ValueData: "TextTemplateManager.ttmdata"; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata"; ValueType: string; ValueName: ""; ValueData: "Text Template Manager data"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
-Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+; The full install owns the Add/Remove-Programs entry (real size + uninstaller); the delta must not
+; recreate it. Only refresh DisplayVersion on that existing key so Windows shows the new version. The
+; leading "{{" is an escaped literal brace, so this targets ...\Uninstall\{9C4E7B2A-...}_is1 — the same
+; key the [Code] guard reads. No .ttmdata association changes (paths are unchanged and the full install
+; already registered them), and no uninsdelete flags, since this installer has no uninstaller of its own.
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Uninstall\{{9C4E7B2A-1F53-4A8D-B6E0-3D7C2F9A15E4}_is1"; ValueType: string; ValueName: "DisplayVersion"; ValueData: "{#MyAppVersion}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall

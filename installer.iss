@@ -78,6 +78,13 @@ Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata"; ValueType: s
 Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 
+[UninstallDelete]
+; Remove the entire install folder on uninstall, not just the files in the uninstall log. A delta
+; update overlays files without touching this uninstaller's log, so a file a delta ADDS wouldn't
+; otherwise be logged for removal — this wipes the whole folder so nothing is left behind. Safe because
+; {app} holds only the app payload; user data lives in %LocalAppData%\Marflow Software (a separate tree).
+Type: filesandordirs; Name: "{app}"
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall
 

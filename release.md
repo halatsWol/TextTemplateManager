@@ -12,6 +12,8 @@ Download **`TextTemplateManager-Setup-{{VERSION}}.exe`** from the assets below a
 
 Already have it installed? The app offers this update automatically, or you can trigger it from **Help ▸ Check for Updates**.
 
+> **Note — full download:** This version is delivered as the full installer rather than a smaller incremental (delta) update, because it ships an improved uninstaller that every installation should have. Smaller delta updates resume with the next release.
+
 > **Note — Remote Desktop (RDP):** If Text Template Manager runs on both your local computer and a remote computer you connect to over RDP, the global Quick Paste hotkey always opens Quick Paste on the **local** computer — Windows delivers a registered global hotkey locally, so it never reaches the remote session. Give each machine a **different** Quick Paste hotkey, or run only one instance, to avoid the clash.
 
 ### What's new in this release
@@ -22,6 +24,7 @@ Already have it installed? The app offers this update automatically, or you can 
 - **Click anywhere on a row.** In the template trees and the Quick Paste shortcut lists, clicking anywhere on a row selects it — not just the text label.
 - **Clearer resize handles.** The draggable dividers between panes now show a gripper so it's obvious you can drag them to resize.
 - **Tidier pastes.** Blank lines at the very top of a template are trimmed when it's pasted.
+- **Cleaner uninstall.** Uninstalling now removes the entire application folder, leaving nothing behind.
 
 #### Fixes
 
