@@ -12,6 +12,8 @@ Download **`TextTemplateManager-Setup-{{VERSION}}.exe`** from the assets below a
 
 Already have it installed? The app offers this update automatically, or you can trigger it from **Help ▸ Check for Updates**.
 
+> **Note — update size:** Some updates download more than usual because they include a refreshed bundled .NET runtime, which is delivered in full for reliability. These runtime refreshes aren't listed separately in the notes, so an occasionally larger update is expected.
+
 > **Note — Remote Desktop (RDP):** If Text Template Manager runs on both your local computer and a remote computer you connect to over RDP, the global Quick Paste hotkey always opens Quick Paste on the **local** computer — Windows delivers a registered global hotkey locally, so it never reaches the remote session. Give each machine a **different** Quick Paste hotkey, or run only one instance, to avoid the clash.
 
 ### What's new in this release
