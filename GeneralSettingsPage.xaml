@@ -8,9 +8,20 @@
     <StackPanel Spacing="25" Padding="20">
         <TextBlock Text="General Settings" Style="{StaticResource TitleTextBlockStyle}"/>
 
-        <ToggleSwitch Header="Run at Windows Login"
-                      IsOn="{x:Bind ViewModel.RunAtStartup, Mode=TwoWay}"
-                      Toggled="RunAtStartup_Toggled"/>
+        <StackPanel Spacing="2">
+            <ToggleSwitch x:Name="StartupToggle"
+                          Header="Run at Windows Login"
+                          Toggled="RunAtStartup_Toggled"/>
+            <ToggleSwitch x:Name="StartHiddenToggle"
+                          Header="Start hidden in the system tray"
+                          Margin="24,0,0,0"
+                          Toggled="StartHidden_Toggled"/>
+            <TextBlock Text="Launch minimized to the tray at sign-in instead of opening the window. The Quick Paste hotkey and tray icon still work."
+                       TextWrapping="Wrap"
+                       Margin="24,0,0,0"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </StackPanel>
 
         <StackPanel Spacing="10">
             <ToggleSwitch x:Name="AutoUpdateToggle"

@@ -12,28 +12,14 @@ Download **`TextTemplateManager-Setup-{{VERSION}}.exe`** from the assets below a
 
 Already have it installed? The app offers this update automatically, or you can trigger it from **Help ▸ Check for Updates**.
 
-> **Note — full download:** This version is delivered as the full installer rather than a smaller incremental (delta) update, because it ships an improved uninstaller that every installation should have. Smaller delta updates resume with the next release.
-
 > **Note — Remote Desktop (RDP):** If Text Template Manager runs on both your local computer and a remote computer you connect to over RDP, the global Quick Paste hotkey always opens Quick Paste on the **local** computer — Windows delivers a registered global hotkey locally, so it never reaches the remote session. Give each machine a **different** Quick Paste hotkey, or run only one instance, to avoid the clash.
 
 ### What's new in this release
 
 #### New & improved
 
-- **Copy from read-only synced templates.** When a synced folder has saving turned off, you can now select and copy text out of its templates — the content stays read-only (no editing, typing, or pasting into it).
-- **Click anywhere on a row.** In the template trees and the Quick Paste shortcut lists, clicking anywhere on a row selects it — not just the text label.
-- **Clearer resize handles.** The draggable dividers between panes now show a gripper so it's obvious you can drag them to resize.
-- **Tidier pastes.** Blank lines at the very top of a template are trimmed when it's pasted.
-- **Cleaner uninstall.** Uninstalling now removes the entire application folder, leaving nothing behind.
-
-#### Fixes
-
-- **Double-click paste in Quick Paste works again.** Double-clicking a template — in the tree or the shortcut list — now pastes it into your app, instead of the content landing in the Quick Paste search box.
-- **Read-only synced folders stay read-only.** When a synced folder has saving turned off, you can no longer add or delete templates and folders inside it.
-
-#### Security
-
-- **Stricter browser-connector content filtering.** Content created from — and served back to — the companion browser extension is now cleaned with a strict allow-list plus a deny-list hardening pass: only safe formatting survives, scripts and other active content are removed, and links are locked down. Code blocks are preserved intact. See the manual for the full list of what's kept and removed.
+- **Start hidden in the tray.** Autostart can now launch the app minimized to the system tray at sign-in instead of opening its window — the Quick Paste hotkey and tray icon keep working. Turn it on with **Settings ▸ General ▸ Run at Windows Login ▸ Start hidden in the system tray**.
+- **Autostart stays in sync with Windows.** Turning **Run at Windows Login** on or off now matches the on/off state in Windows' own Startup Apps list, and your choice is remembered if you reinstall.
 
 {{CHANGELOG}}
 

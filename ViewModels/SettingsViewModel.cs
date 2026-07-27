@@ -38,7 +38,5 @@ public partial class SettingsViewModel : ObservableObject
     private async Task SaveSettings()
     {
         await StorageService.SaveSettingsAsync(Settings);
-        // Autostart via the HKCU Run key (see StartupManager).
-        Services.System.StartupManager.SetEnabled(Settings.RunAtStartup);
     }
 }

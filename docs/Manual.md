@@ -195,7 +195,9 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 
 ### General
 
-- **Run at Windows login** — start the app automatically when you sign in.
+- **Run at Windows login** — start the app automatically when you sign in. When on, **Start hidden in the
+  system tray** appears below it: enable that to launch minimized to the tray (no window) at sign-in — the
+  Quick Paste hotkey and tray icon still work. This matches the on/off state in Windows' own **Startup Apps** list.
 - **Automatic updates** — check for new releases; **Allow beta updates** also offers pre-release
   versions (off by default). See *Updates*.
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).

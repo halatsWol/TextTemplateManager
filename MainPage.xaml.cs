@@ -588,9 +588,8 @@ namespace TextTemplateManager
 
         private async void CloseSettings()
         {
-            // Persist app settings + reconcile the OS autostart entry (the old window's Save step).
+            // Persist app settings (autostart is registry-only now — see StartupManager).
             await StorageService.SaveSettingsAsync(DataNode.Instance.CurrentSettings);
-            Services.System.StartupManager.SetEnabled(DataNode.Instance.CurrentSettings.RunAtStartup);
 
             SettingsOverlay.Visibility = Visibility.Collapsed;
             ViewModel.ReloadTree();   // full rebuild so sync-folder order changes are reflected

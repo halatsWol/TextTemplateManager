@@ -30,6 +30,7 @@ public sealed partial class GeneralSettingsPage : Page
             ViewModel = settings;
         }
         HotkeyTextBox.Text = FormatHotkey(ViewModel?.PasteWindowHotkey);
+        InitStartupUi();
         InitUpdatePolicyUi();
         RefreshConnectorUi();
         ApiDocLink.NavigateUri = new Uri(ApiDocUrl());   // point at the doc for the installed version
@@ -182,13 +183,31 @@ public sealed partial class GeneralSettingsPage : Page
     private static string FormatHotkey(string? hotkey)
         => string.IsNullOrEmpty(hotkey) || hotkey == "None" ? "" : hotkey;
 
+    // ---- Autostart (registry-only; see StartupManager) ----
+    private bool _startupLoading;
+
+    private void InitStartupUi()
+    {
+        _startupLoading = true;
+        StartupToggle.IsOn = TextTemplateManager.Services.System.StartupManager.IsEnabled();
+        StartHiddenToggle.IsOn = TextTemplateManager.Services.System.StartupManager.IsHiddenEnabled();
+        StartHiddenToggle.IsEnabled = StartupToggle.IsOn;   // "start hidden" is meaningless without autostart
+        _startupLoading = false;
+    }
+
     private void RunAtStartup_Toggled(object sender, RoutedEventArgs e)
     {
-        // Apply + persist immediately (also fires once on load — idempotent).
-        if (ViewModel == null || sender is not ToggleSwitch ts) return;
-        ViewModel.RunAtStartup = ts.IsOn;
-        TextTemplateManager.Services.System.StartupManager.SetEnabled(ts.IsOn);
-        _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
+        if (_startupLoading) return;
+        bool on = StartupToggle.IsOn;
+        TextTemplateManager.Services.System.StartupManager.SetEnabled(on, StartHiddenToggle.IsOn);
+        StartHiddenToggle.IsEnabled = on;
+    }
+
+    private void StartHidden_Toggled(object sender, RoutedEventArgs e)
+    {
+        // Only reachable while autostart is on — rewrite the Run entry with/without the hidden flag.
+        if (_startupLoading) return;
+        TextTemplateManager.Services.System.StartupManager.SetEnabled(true, StartHiddenToggle.IsOn);
     }
 
     private void HideCrossAreaWarnings_Toggled(object sender, RoutedEventArgs e)

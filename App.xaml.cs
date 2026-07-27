@@ -44,7 +44,11 @@ namespace TextTemplateManager
             string? fileArg = GetTtmDataArg();
             if (!_singleInstance.TryAcquire())
             {
-                SingleInstance.SendToRunningInstance(fileArg ?? ActivateSignal);
+                // A redundant hidden autostart (no file) shouldn't surface the running window — just exit.
+                if (fileArg != null)
+                    SingleInstance.SendToRunningInstance(fileArg);
+                else if (!IsHiddenLaunch())
+                    SingleInstance.SendToRunningInstance(ActivateSignal);
                 Environment.Exit(0);
                 return;
             }
@@ -88,7 +92,11 @@ namespace TextTemplateManager
                 }
             };
 
-            MainWindow.Activate();
+            // A hidden autostart (Windows login with --hidden) stays in the tray: skip Activate so the
+            // window is never shown. A .ttmdata to open overrides this and surfaces the window below.
+            bool startHidden = IsHiddenLaunch() && fileArg == null;
+            if (!startHidden)
+                MainWindow.Activate();
 
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)
@@ -113,6 +121,15 @@ namespace TextTemplateManager
                 }
             }
             return null;
+        }
+
+        // True when this process was launched with the hidden-start flag (the autostart entry appends it).
+        private static bool IsHiddenLaunch()
+        {
+            foreach (var a in Environment.GetCommandLineArgs())
+                if (string.Equals(a, StartupManager.HiddenFlag, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
         }
 
         // Another launch reached the running instance: surface the window and open its file (if any).

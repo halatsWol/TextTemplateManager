@@ -89,16 +89,8 @@ public class DataNode
             finally { _isMoving = false; }
         }
 
-        // First run: seed RunAtStartup from the OS autostart entry rather than defaulting it on.
-        // Thereafter the settings file wins and the OS entry is reconciled to it.
-        bool settingsExisted = File.Exists(StorageService.GetSettingsPath());
+        // Autostart is registry-only now (see StartupManager) — nothing to seed or reconcile here.
         CurrentSettings = await StorageService.LoadSettingsAsync();
-        if (!settingsExisted)
-        {
-            CurrentSettings.RunAtStartup = Services.System.StartupManager.IsEnabled();
-            await StorageService.SaveSettingsAsync(CurrentSettings);
-        }
-        Services.System.StartupManager.SetEnabled(CurrentSettings.RunAtStartup);
 
         CurrentSyncSettings = await StorageService.LoadSyncSettingsAsync();
         // Valid separators are '-', '.', or "" (none); migrate any legacy value (e.g. '_') so
