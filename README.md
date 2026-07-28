@@ -43,7 +43,8 @@ was always reviewed and double-checked by me.
   - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
   - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
   - Microsoft Edge — coming soon
-- **Run at login** (optionally hidden in the system tray), configurable global hotkey, and an in-app **Manual** (PDF).
+- **Run at login** (optionally hidden in the system tray), configurable global hotkey, 
+- in-app **Manual** (PDF).
 
 ---
 
