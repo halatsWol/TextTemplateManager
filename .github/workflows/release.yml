@@ -51,7 +51,22 @@ jobs:
 
       - name: Build installer
         shell: pwsh
-        run: ./package.ps1 -Version ${{ steps.ver.outputs.version }}
+        run: |
+          # Enter the MSVC x64 developer environment so NativeAOT (the cleanup utility) links reliably,
+          # independent of what's on PATH. Uses VS's own shipped DevShell module (no third-party action);
+          # falls back to package.ps1's vswhere-on-PATH fix if VS can't be located.
+          $repo = $PWD
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+          if ($vsPath) {
+            Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+            Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64' | Out-Null
+            Set-Location $repo
+            Write-Host "MSVC dev environment ready ($vsPath)."
+          } else {
+            Write-Host "::warning::VS C++ tools not located via vswhere; relying on package.ps1 PATH fallback."
+          }
+          ./package.ps1 -Version ${{ steps.ver.outputs.version }}
 
       - name: Name the assets with the version
         shell: pwsh
@@ -61,6 +76,9 @@ jobs:
           # package.ps1 regenerates the manual PDF (Assets/Manual.pdf) — ship it as an asset too.
           Copy-Item "Assets/Manual.pdf" `
                     "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf"
+          # Standalone cleanup utility (also bundled inside the app). package.ps1 built it into installer\.
+          Copy-Item "installer/TextTemplateManager-CleanupUtility.exe" `
+                    "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
 
       - name: Build delta installer (if the previous release has a manifest)
         id: delta
@@ -154,6 +172,9 @@ jobs:
           if ("${{ steps.delta.outputs.built }}" -eq "true") {
             $ghArgs += "installer/${{ steps.delta.outputs.asset }}"
           }
+          # Cleanup utility (an .exe, but listed after the full Setup so the first-.exe fallback still
+          # resolves to the installer, never this).
+          $ghArgs += "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
           $ghArgs += @(
             "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
             "installer/manifest.json",

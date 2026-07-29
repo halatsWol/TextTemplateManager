@@ -62,6 +62,9 @@ Name: "autostart"; Description: "Start {#MyAppName} automatically when I sign in
 
 [Files]
 Source: "publish\win-x64\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Standalone cleanup utility (also uploaded as its own release asset). Built by package.ps1 into installer\.
+; Kept out of publish\win-x64 so it stays out of the delta manifest; [UninstallDelete] removes it with {app}.
+Source: "installer\TextTemplateManager-CleanupUtility.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

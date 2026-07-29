@@ -63,6 +63,21 @@ $manifestPath = Join-Path $installerDir "manifest.json"
     Set-Content -LiteralPath $manifestPath -Encoding utf8
 Write-Host "==> Manifest: $manifestPath ($($files.Count) files)" -ForegroundColor Green
 
+# Cleanup utility: a standalone NativeAOT exe, bundled in {app} by installer.iss AND shipped as its own
+# asset. Built AFTER the manifest and NOT placed in publish\win-x64, so it stays out of the delta manifest
+# (it rarely changes; it persists across delta updates and is wiped by the full uninstaller's UninstallDelete).
+Write-Host "==> Building cleanup utility (NativeAOT)" -ForegroundColor Cyan
+# NativeAOT's linker step calls vswhere unqualified; make sure it's on PATH for a local build.
+$vsInstaller = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+if (Test-Path (Join-Path $vsInstaller 'vswhere.exe')) { $env:PATH = "$vsInstaller;$env:PATH" }
+$cleanupProj = Join-Path $root "tools\CleanupUtility\CleanupUtility.csproj"
+& dotnet publish $cleanupProj -c Release -r win-x64 -p:Version=$Version
+if ($LASTEXITCODE -ne 0) { throw "cleanup utility build failed" }
+$cleanupExe = Join-Path $root "tools\CleanupUtility\bin\Release\net8.0-windows\win-x64\publish\TextTemplateManager-CleanupUtility.exe"
+if (-not (Test-Path $cleanupExe)) { throw "cleanup utility exe not found: $cleanupExe" }
+Copy-Item $cleanupExe (Join-Path $installerDir "TextTemplateManager-CleanupUtility.exe") -Force
+Write-Host "==> Cleanup utility: installer\TextTemplateManager-CleanupUtility.exe" -ForegroundColor Green
+
 Write-Host "==> Locating Inno Setup compiler (ISCC.exe)" -ForegroundColor Cyan
 $iscc = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
