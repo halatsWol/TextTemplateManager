@@ -189,8 +189,9 @@ begin
     // Auto-update: never disturb an established on/off state — only seed the record when it's missing.
     if not hadApproved then
     begin
-      if hadRun then WriteApproved(2)   // legacy user who had autostart on (Run value, no marker) -> keep on
-      else WriteApproved(3);            // fresh silent install -> default off
+      if hadRun then WriteApproved(2)                                  // legacy user who had autostart on -> keep on
+      else if WizardIsTaskSelected('autostart') then WriteApproved(2)  // fresh silent install: honor /TASKS=autostart
+      else WriteApproved(3);                                           // fresh silent install -> default off
     end;
   end
   else
