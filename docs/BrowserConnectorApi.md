@@ -6,7 +6,7 @@ text. It is meant for building a context-menu "insert template" extension.
 
 ## Enabling & pairing
 
-- The user enables it in **Settings ▸ General ▸ Browser extensions (beta)** (off by default).
+- The user enables it in **Settings ▸ General ▸ Browser extensions** (off by default).
 - On first enable, the app generates a random **token** and shows it in settings. The user copies
   it into the extension. Every request must send it as the `x-ttm-token` header.
 - The server binds **loopback only** (`127.0.0.1`), default port **47615** (configurable in settings).

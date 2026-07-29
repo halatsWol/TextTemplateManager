@@ -206,7 +206,7 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 - **Hide cross-area shortcut warnings** — suppress the dismissible note shown when the same shortcut
   is used in more than one area (local and synchronized folders). Off by default; blocking same-area
   conflicts are always shown. See *Keyboard shortcuts and conflicts*.
-- **Browser extensions (beta)** — enable a local connector for a companion browser extension (see
+- **Browser extensions** — enable a local connector for a companion browser extension (see
   *Browser extensions* below).
 - **File association** — **Set as default for .ttmdata** makes `.ttmdata` files open with this app
   (opening one adds it as a sync source — see the **Sync** tab). Use it if another program took the
@@ -214,7 +214,7 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 
 ![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
 
-#### Browser extensions (beta)
+#### Browser extensions
 
 The browser connector lets a companion browser extension (Chrome, Edge, or Firefox) list your
 templates, paste them from the browser, and create new templates from selected text. It is **off by
@@ -223,8 +223,8 @@ default**; turn it on with **Browser extensions** on this tab.
 The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect), available on:
 
 - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+- [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm)
 - [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
-- Microsoft Edge Add-ons — coming soon
 
 When enabled, the application runs a small local service (`127.0.0.1` — loopback only, never exposed
 to the network) that the extension talks to. Pairing is by **token**:
@@ -336,26 +336,13 @@ installer, when one is available. Larger version jumps, or releases without a ma
 full installer. The process is the same either way, and the full installer is always available on the 
 Releases page.
 
-### Disabling updates by policy (administrators)
+### For administrators
 
-Updates can be centrally restricted with a registry value that the application only ever **reads** — 
-it never writes it — so it can be locked down via Group Policy or a deployment script and users 
-cannot change it in the app. Set a `DWORD` named `allowUpdate` under 
-`Software\MarflowSoftware\TextTemplateManager` in `HKEY_LOCAL_MACHINE` (machine-wide) or 
-`HKEY_CURRENT_USER` (per-user):
-
-| Value | Effect |
-| --- | --- |
-| `0` (or absent) | Updates and beta updates allowed — normal behavior. |
-| `1` | Stable updates allowed; **beta updates blocked** (the *Allow beta updates* switch is off and disabled). |
-| `2` | **All update checks disabled** (the *Automatically check for updates* switch is off and disabled, and no manual or automatic check runs). |
-
-`HKEY_LOCAL_MACHINE` takes precedence over `HKEY_CURRENT_USER` when both are set. When a policy is 
-in effect, a note appears under the update switches in **Settings ▸ General**.
-
-This restricts only the application's built-in updating — the automatic checks and the in-app 
-**Help ▸ Check for Updates**. It does not block installing a newer version by hand: downloading and 
-running a setup executable still upgrades the application normally.
+Update behavior can be locked down centrally (a registry policy the app only reads), the Setup
+executable accepts command-line options for silent/scripted deployment, and a separate cleanup
+utility can force-remove an installation. These topics are covered in the **Administrator &
+Deployment Guide** (`TextTemplateManager-AdminManual-<version>.pdf`), attached to each release on the
+[Releases page](https://github.com/halatsWol/TextTemplateManager/releases).
 
 ---
 

@@ -94,7 +94,7 @@
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
 
         <StackPanel Spacing="8">
-            <TextBlock Text="Browser extensions (beta)" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock Text="Browser extensions" Style="{StaticResource BodyStrongTextBlockStyle}"/>
             <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        Text="Lets a companion browser extension list and paste your templates over a local (127.0.0.1) connection. Off by default; paste the token below into the extension to pair it."/>
             <ToggleSwitch x:Name="ConnectorToggle" Header="Enable browser connector" Toggled="Connector_Toggled"/>
@@ -106,8 +106,9 @@
                     <HyperlinkButton Content="Chrome Web Store"
                                      NavigateUri="https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi"
                                      Padding="0"/>
-                    <TextBlock Text="Microsoft Edge — coming soon" Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <HyperlinkButton Content="Microsoft Edge Add-ons"
+                                     NavigateUri="https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm"
+                                     Padding="0"/>
                     <HyperlinkButton Content="Firefox Add-ons"
                                      NavigateUri="https://addons.mozilla.org/addon/ttm-connect/"
                                      Padding="0"/>

@@ -20,10 +20,18 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New & improved
 
-- **Start hidden in the tray.** Autostart can now launch the app minimized to the system tray at sign-in instead of opening its window — the Quick Paste hotkey and tray icon keep working. Turn it on with **Settings ▸ General ▸ Run at Windows Login ▸ Start hidden in the system tray**.
-- **Autostart stays in sync with Windows.** Turning **Run at Windows Login** on or off now matches the on/off state in Windows' own Startup Apps list, and your choice is remembered if you reinstall.
+- **Cleanup utility.** A standalone cleanup / force-uninstall tool now ships with the app (and as a separate download). It fully removes an installation — including one left broken by a failed install or uninstall — and can optionally delete your data too. Run it from the install folder or the Releases page.
+- **Microsoft Edge extension.** The companion browser extension is now available for Microsoft Edge, joining Chrome and Firefox.
 
 {{CHANGELOG}}
+
+### Browser extension
+
+Pair Text Template Manager with the companion **TTM-Connect** extension to list and paste your templates from your browser:
+
+- [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
+- [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm)
+- [Firefox Add-ons](https://addons.mozilla.org/addon/ttm-connect/)
 
 ---
 
