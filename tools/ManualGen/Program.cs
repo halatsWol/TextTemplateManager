@@ -6,17 +6,18 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-// Build-time generator: renders docs/Manual.md to a PDF next to the app exe.
-// Args: <input.md> <output.pdf> [version]
+// Build-time generator: renders a Markdown doc to a PDF.
+// Args: <input.md> <output.pdf> [version] [subtitle]
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("usage: ManualGen <input.md> <output.pdf> [version]");
+    Console.Error.WriteLine("usage: ManualGen <input.md> <output.pdf> [version] [subtitle]");
     return 1;
 }
 
 string input = args[0];
 string output = args[1];
 string version = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]) ? args[2] : "0.0.0-dev";
+string subtitle = args.Length >= 4 && !string.IsNullOrWhiteSpace(args[3]) ? args[3] : "User Manual";
 if (!File.Exists(input))
 {
     Console.Error.WriteLine($"ManualGen: input not found: {input}");
@@ -50,7 +51,7 @@ Document.Create(container =>
         {
             // Cover / title block (once, at the top of the first page).
             col.Item().Text("Text Template Manager").FontSize(26).Bold().FontColor(Colors.Grey.Darken4);
-            col.Item().Text("User Manual").FontSize(14).FontColor(Colors.Grey.Darken1);
+            col.Item().Text(subtitle).FontSize(14).FontColor(Colors.Grey.Darken1);
             col.Item().PaddingTop(6).Text($"Version {version}   ·   Marflow Software")
                 .FontSize(10).FontColor(Colors.Grey.Darken1);
             col.Item().PaddingTop(12).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);

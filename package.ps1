@@ -37,6 +37,13 @@ Write-Host "==> Generating manual (version $Version)" -ForegroundColor Cyan
     (Join-Path $root "docs\Manual.md") (Join-Path $root "Assets\Manual.pdf") $Version
 if ($LASTEXITCODE -ne 0) { throw "manual generation failed" }
 
+# Admin/deployment guide — a separate PDF shipped as a release asset only (NOT bundled in the app, so
+# it goes to installer\ rather than Assets\).
+Write-Host "==> Generating admin manual (version $Version)" -ForegroundColor Cyan
+& dotnet run --project (Join-Path $root "tools\ManualGen\ManualGen.csproj") -c Release -- `
+    (Join-Path $root "docs\AdminManual.md") (Join-Path $root "installer\TextTemplateManager-AdminManual.pdf") $Version "Administrator & Deployment Guide"
+if ($LASTEXITCODE -ne 0) { throw "admin manual generation failed" }
+
 Write-Host "==> Publishing unpackaged, self-contained (Release / win-x64)" -ForegroundColor Cyan
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 & dotnet publish $proj -c Release -p:Platform=x64 -r win-x64 --self-contained true `

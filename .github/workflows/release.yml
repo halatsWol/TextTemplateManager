@@ -79,6 +79,9 @@ jobs:
           # Standalone cleanup utility (also bundled inside the app). package.ps1 built it into installer\.
           Copy-Item "installer/TextTemplateManager-CleanupUtility.exe" `
                     "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
+          # Administrator & Deployment Guide PDF (release asset only; not bundled in the app).
+          Copy-Item "installer/TextTemplateManager-AdminManual.pdf" `
+                    "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf"
 
       - name: Build delta installer (if the previous release has a manifest)
         id: delta
@@ -177,6 +180,7 @@ jobs:
           $ghArgs += "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
           $ghArgs += @(
             "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
+            "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf",
             "installer/manifest.json",
             "installer/update.json",
             "--title", "${{ github.ref_name }}",
