@@ -157,6 +157,19 @@ static void RenderBlock(ColumnDescriptor col, Block block)
             col.Item().PaddingTop(6).PaddingLeft(12).Column(inner => RenderBlocks(inner, q));
             break;
 
+        case CodeBlock code:
+            // Fenced or indented code block: monospace, one line per row, in a lightly shaded box.
+            // (LeafBlock.Inline is null for code blocks — their text lives in .Lines — so the default
+            // case below would drop them entirely.)
+            string codeText = code.Lines.ToString().Replace("\r\n", "\n").TrimEnd('\n');
+            col.Item().PaddingTop(6).Background(Colors.Grey.Lighten4).Border(0.5f)
+               .BorderColor(Colors.Grey.Lighten2).Padding(6).Column(cc =>
+               {
+                   foreach (var line in codeText.Split('\n'))
+                       cc.Item().Text(line.Length == 0 ? " " : line).FontFamily("Consolas").FontSize(9.5f);
+               });
+            break;
+
         default:
             if (block is LeafBlock leaf && leaf.Inline != null)
                 col.Item().PaddingTop(6).Text(t => RenderInline(t, leaf.Inline, default));
