@@ -9,6 +9,9 @@
     <!-- Local/dev default. Release builds override it from the git tag via -p:Version=X.Y.Z
          (see package.ps1 and .github/workflows/release.yml). -->
     <Version>0.0.0-dev</Version>
+    <!-- Release date (yyyy-MM-dd), stamped by package.ps1 / CI via -p:ReleaseDate=...; empty for
+         local/dev builds (About then shows "dev build"). Baked into an assembly-metadata attribute below. -->
+    <ReleaseDate></ReleaseDate>
     <!-- Keep InformationalVersion clean (no +<git-hash>) so the About dialog shows just the version. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Company>Marflow Software</Company>
@@ -64,6 +67,11 @@
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <!-- Bake the release date into an assembly-metadata attribute the About dialog reads. -->
+  <ItemGroup Condition="'$(ReleaseDate)' != ''">
+    <AssemblyMetadata Include="ReleaseDate" Value="$(ReleaseDate)" />
   </ItemGroup>
 
   <!-- The manual generator is a standalone build tool; keep its sources out of the app build. -->

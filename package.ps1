@@ -46,8 +46,10 @@ if ($LASTEXITCODE -ne 0) { throw "admin manual generation failed" }
 
 Write-Host "==> Publishing unpackaged, self-contained (Release / win-x64)" -ForegroundColor Cyan
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
+$releaseDate = [DateTime]::UtcNow.ToString('yyyy-MM-dd')   # stamped into the About dialog
 & dotnet publish $proj -c Release -p:Platform=x64 -r win-x64 --self-contained true `
     -p:Version=$Version `
+    -p:ReleaseDate=$releaseDate `
     -p:WindowsPackageType=None `
     -p:WindowsAppSDKSelfContained=true `
     -p:PublishTrimmed=false `
