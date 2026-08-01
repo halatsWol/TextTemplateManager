@@ -8,25 +8,48 @@
     <StackPanel Spacing="25" Padding="20">
         <TextBlock Text="General Settings" Style="{StaticResource TitleTextBlockStyle}"/>
 
-        <StackPanel Spacing="2">
-            <ToggleSwitch x:Name="StartupToggle"
-                          Header="Run at Windows Login"
-                          Toggled="RunAtStartup_Toggled"/>
-            <ToggleSwitch x:Name="StartHiddenToggle"
-                          Header="Start hidden in the system tray"
-                          Margin="24,0,0,0"
-                          Toggled="StartHidden_Toggled"/>
-            <TextBlock Text="Launch minimized to the tray at sign-in instead of opening the window. The Quick Paste hotkey and tray icon still work."
-                       TextWrapping="Wrap"
-                       Margin="24,0,0,0"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <StackPanel Spacing="8">
+            <TextBlock Text="Startup" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="StartupToggle"
+                              Header="Run at Windows login"
+                              Toggled="RunAtStartup_Toggled"/>
+                <ToggleSwitch x:Name="StartHiddenToggle"
+                              Header="Start hidden in the system tray"
+                              Margin="24,0,0,0"
+                              Toggled="StartHidden_Toggled"/>
+                <TextBlock Text="Launch minimized to the tray at sign-in instead of opening the window. The Quick Paste hotkey and tray icon still work."
+                           TextWrapping="Wrap"
+                           Margin="24,0,0,0"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
         </StackPanel>
 
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
         <StackPanel Spacing="10">
-            <ToggleSwitch x:Name="AutoUpdateToggle"
-                          Header="Automatically check for updates"
-                          Toggled="AutoUpdate_Toggled"/>
+            <TextBlock Text="Updates" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="AutoUpdateToggle"
+                              Header="Automatically check for updates"
+                              Toggled="AutoUpdate_Toggled"/>
+                <TextBlock Text="Downloads an update when one is found. With this off, the app still tells you an update is available but won't download it automatically."
+                           TextWrapping="Wrap"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="AutoInstallToggle"
+                              Header="Install updates automatically"
+                              Toggled="AutoInstall_Toggled"/>
+                <TextBlock Text="Install a downloaded update without asking, at a moment when the app isn't in use. Off = you confirm each install."
+                           TextWrapping="Wrap"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
 
             <StackPanel Spacing="2">
                 <ToggleSwitch x:Name="BetaToggle"

@@ -143,6 +143,10 @@ public sealed partial class GeneralSettingsPage : Page
         AutoUpdateToggle.IsOn = updatesAllowed && ViewModel.AutoCheckUpdates;
         AutoUpdateToggle.IsEnabled = updatesAllowed;
 
+        // Auto-install only matters while updates are allowed and auto-check (auto-download) is on.
+        AutoInstallToggle.IsOn = ViewModel.AutoInstallUpdates;
+        AutoInstallToggle.IsEnabled = updatesAllowed && AutoUpdateToggle.IsOn;
+
         BetaToggle.IsOn = betaAllowed && ViewModel.AllowBetaUpdates;
         BetaToggle.IsEnabled = betaAllowed && AutoUpdateToggle.IsOn;
 
@@ -161,8 +165,16 @@ public sealed partial class GeneralSettingsPage : Page
     {
         if (_updatePolicyLoading || ViewModel == null) return;
         ViewModel.AutoCheckUpdates = AutoUpdateToggle.IsOn;
-        // Beta only matters while auto-update is on (and policy permits it).
+        // Auto-install and beta only matter while auto-update is on (and policy permits it).
+        AutoInstallToggle.IsEnabled = UpdatePolicy.UpdatesAllowed && AutoUpdateToggle.IsOn;
         BetaToggle.IsEnabled = UpdatePolicy.BetaAllowed && AutoUpdateToggle.IsOn;
+        _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
+    }
+
+    private void AutoInstall_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_updatePolicyLoading || ViewModel == null) return;
+        ViewModel.AutoInstallUpdates = AutoInstallToggle.IsOn;
         _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
     }
 

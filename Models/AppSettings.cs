@@ -6,8 +6,12 @@ namespace TextTemplateManager.Models;
 
 public partial class AppSettings : ObservableObject
 {
-    // Auto-update: check GitHub releases periodically and offer to install a newer version.
+    // Auto-update: check GitHub releases periodically and download a newer version when found. With this
+    // off the app still detects and notifies about an update, but doesn't download it automatically.
     [ObservableProperty] private bool _autoCheckUpdates = true;
+    // When on, a downloaded update is installed automatically at a safe moment (app not in use), no prompt.
+    // Off (default): the user confirms each install. Only relevant while AutoCheckUpdates is on.
+    [ObservableProperty] private bool _autoInstallUpdates = false;
     // When on, pre-release/beta versions (GitHub pre-releases, or tags with beta/preview/unstable/prev)
     // are also offered. Off by default — only stable releases are offered.
     [ObservableProperty] private bool _allowBetaUpdates = false;
