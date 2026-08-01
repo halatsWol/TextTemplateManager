@@ -92,7 +92,7 @@ Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\com
 Type: filesandordirs; Name: "{app}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall
+Filename: "{app}\{#MyAppExeName}"; Parameters: "{code:RelaunchParams}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall
 
 [Code]
 // One-time AppId migration. Releases up to 1.2 were built with a malformed AppId ("{GUID}}" — an
@@ -108,6 +108,17 @@ const
 
 var
   gTasksInit: Boolean;
+
+// An unattended (auto-)update passes /HIDDENRELAUNCH=1 so the app comes back to the tray instead of
+// popping its window over whatever the user is doing. A user-driven install relaunches visibly, because
+// the user asked for the update and expects the app back. Mirrors StartupManager.HiddenFlag.
+function RelaunchParams(Param: String): String;
+begin
+  if ExpandConstant('{param:HIDDENRELAUNCH|0}') = '1' then
+    Result := '--hidden'
+  else
+    Result := '';
+end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
