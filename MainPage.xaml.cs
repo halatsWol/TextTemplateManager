@@ -1017,6 +1017,7 @@ namespace TextTemplateManager
             if (WindowHelper.GetIdleSeconds() < SafeIdleSeconds) return;
             if (ForegroundNow()) return;
             if ((Application.Current as App)?.PasteWindowVisible == true) return;
+            if (!StorageService.WritesQuiet()) return;   // a sync poll is mid-write; try again next tick
 
             _pendingAutoInstallPath = null;
             _notifier?.ShowInstalling(_readyVersionLabel ?? "");
@@ -1188,6 +1189,12 @@ namespace TextTemplateManager
                 _saveTimer?.Stop();
                 await ViewModel.SaveCurrentStateAsync();
             }
+
+            // Let anything still writing finish. The installer closes the app, so a sync write cut off
+            // here is what leaves a truncated file or a cloud conflict copy behind. Capped — a source
+            // that is permanently stuck must not block the update forever.
+            for (int i = 0; i < 25 && StorageService.WritesInFlight; i++)
+                await Task.Delay(100);
 
             if (UpdateService.LaunchInstaller(installerPath, relaunchHidden))
             {

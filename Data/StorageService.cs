@@ -44,12 +44,37 @@ public static class StorageService
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _writeLocks =
         new(StringComparer.OrdinalIgnoreCase);
 
+    private static int _writesInFlight;
+    private static long _lastWriteTicks;
+
+    /// <summary>True while any persisted write is queued or running. Every write goes through the lock
+    /// below, so this covers sync files, templates and settings alike.</summary>
+    public static bool WritesInFlight => Volatile.Read(ref _writesInFlight) > 0;
+
+    /// <summary>True when nothing has been written for <paramref name="quietMs"/>. The auto-update path
+    /// requires this before it ends the process: a sync write interrupted partway is exactly how a file
+    /// ends up truncated or duplicated as a cloud conflict copy. A single idle instant isn't enough —
+    /// the sync poll writes without any user input, so the quiet period is what makes it meaningful.</summary>
+    public static bool WritesQuiet(int quietMs = 2000) =>
+        !WritesInFlight && Environment.TickCount64 - Interlocked.Read(ref _lastWriteTicks) >= quietMs;
+
     private static async Task WithWriteLock(string path, Func<Task> write)
     {
-        var gate = _writeLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync();
-        try { await write(); }
-        finally { gate.Release(); }
+        // Counted before the wait, so a write queued behind a slow one (a retrying OneDrive target)
+        // still reads as work in progress.
+        Interlocked.Increment(ref _writesInFlight);
+        try
+        {
+            var gate = _writeLocks.GetOrAdd(path, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync();
+            try { await write(); }
+            finally { gate.Release(); }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lastWriteTicks, Environment.TickCount64);
+            Interlocked.Decrement(ref _writesInFlight);
+        }
     }
 
     // One-time migration: the data folder was historically named "TextTemplatesManager" (plural).
