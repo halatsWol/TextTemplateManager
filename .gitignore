@@ -46,6 +46,10 @@ packages/
 # ---- Node (bundled TipTap editor build) ----
 editor/node_modules/
 editor/npm-debug.log*
+# Verbatim copy of editor/src/editor.html, rewritten by build.mjs on every build. The source is the
+# file worth reviewing; the copy is not. (editor.bundle.js/editor.css stay committed — see the note
+# at the bottom.)
+Assets/editor/editor.html
 
 # ---- Secrets ----
 # Self-signed MSIX signing key — regenerate locally; don't publish it.
@@ -59,5 +63,7 @@ $RECYCLE.BIN/
 .DS_Store
 
 # NOTE: these are intentionally NOT ignored (committed as build inputs/fallbacks):
-#   Assets/editor/**          - prebuilt editor bundle the app inlines at build
+#   Assets/editor/editor.bundle.js, editor.css, preview.html
+#                           - prebuilt editor assets the app inlines at build (editor.html is
+#                             ignored above; run `node build.mjs` in /editor after a fresh clone)
 #   Assets/Manual.pdf       - fallback manual (regenerated from docs/Manual.md at build)
