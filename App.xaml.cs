@@ -124,7 +124,7 @@ namespace TextTemplateManager
         }
 
         // True when this process was launched with the hidden-start flag (the autostart entry appends it).
-        private static bool IsHiddenLaunch()
+        public static bool IsHiddenLaunch()
         {
             foreach (var a in Environment.GetCommandLineArgs())
                 if (string.Equals(a, StartupManager.HiddenFlag, StringComparison.OrdinalIgnoreCase))
@@ -142,6 +142,27 @@ namespace TextTemplateManager
                     (MainWindow.Content as MainPage)?.HandleOpenTtmDataFile(message);
             });
         }
+
+        /// <summary>True while the Quick Paste window is on screen. It is kept warm but hidden between
+        /// uses, so this is "the user is mid-paste" — never a moment to close the app for an update.</summary>
+        public bool PasteWindowVisible
+        {
+            get
+            {
+                try
+                {
+                    return _pasteWindow != null
+                        && WindowHelper.IsWindowVisible(WindowNative.GetWindowHandle(_pasteWindow));
+                }
+                catch { return false; }
+            }
+        }
+
+        /// <summary>Tray balloon — the fallback channel when toast notifications aren't registered.</summary>
+        public void ShowTrayBalloon(string title, string message) => _trayService?.ShowBalloon(title, message);
+
+        /// <summary>Bring the main window up from the tray (e.g. the user pressed a toast's "Open app").</summary>
+        public static void SurfaceMainWindow() => ShowMainWindow();
 
         // Restore + foreground the main window (it may be hidden in the tray). Mirrors the tray's Open.
         private static void ShowMainWindow()
@@ -249,6 +270,8 @@ namespace TextTemplateManager
         public void Shutdown()
         {
             _isClosingFromTray = true;
+            // Unpackaged toast registration is process-wide COM state; release it before the hard exit.
+            try { (MainWindow?.Content as MainPage)?.ShutdownUpdates(); } catch { }
             try { _connector?.Stop(); } catch { }
             try { _singleInstance?.Dispose(); } catch { }
             try { _trayService?.Dispose(); } catch { }

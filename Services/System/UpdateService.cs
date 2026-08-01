@@ -164,8 +164,9 @@ public sealed class UpdateService
         return (null, null);
     }
 
-    /// <summary>Downloads the installer to the appdata installer folder (skips if already present),
-    /// clearing older installers first. Returns the local path.</summary>
+    /// <summary>Downloads the installer to the appdata installer folder (skips if already present) and
+    /// clears superseded installers once the new one is safely in place. Returns the local path.
+    /// Asset names carry the version, so an existing file always belongs to the release it is named for.</summary>
     public async Task<string?> EnsureDownloadedAsync(UpdateInfo info)
     {
         string dir = StorageService.GetInstallerDir();
@@ -175,30 +176,66 @@ public sealed class UpdateService
         if (File.Exists(path) && new FileInfo(path).Length > 0)
             return path;
 
-        foreach (var old in Directory.EnumerateFiles(dir, "*.exe"))
-            try { File.Delete(old); } catch { /* best effort */ }
-
         using var resp = await Http.GetAsync(info.DownloadUrl, HttpCompletionOption.ResponseHeadersRead);
         resp.EnsureSuccessStatusCode();
+        long? expected = resp.Content.Headers.ContentLength;
 
         string tmp = path + ".part";
         await using (var fs = File.Create(tmp))
             await resp.Content.CopyToAsync(fs);
-        File.Move(tmp, path, overwrite: true);
 
+        // Size is the only integrity signal available (GitHub publishes no asset digest). Without it a
+        // truncated download would be cached as valid forever and every install attempt would fail.
+        long got = new FileInfo(tmp).Length;
+        if (expected is long want && got != want)
+        {
+            try { File.Delete(tmp); } catch { }
+            throw new IOException($"download incomplete ({got}/{want} bytes)");
+        }
+
+        File.Move(tmp, path, overwrite: true);
+        CleanInstallerDir(dir, keep: info.AssetName);   // only now — never delete an installer still pending
         return path;
     }
 
-    /// <summary>Runs the installer silently (progress bar, no prompts). The installer closes the
-    /// running app, updates, and relaunches it. The caller should exit right after this.</summary>
-    public static bool LaunchInstaller(string installerPath)
+    /// <summary>Deletes installers and interrupted partial downloads from the installer folder, except
+    /// <paramref name="keep"/>. Deliberately called only once a replacement is in place (or nothing is
+    /// pending at all), so an armed unattended install can't have its installer deleted out from under it.</summary>
+    public static void CleanInstallerDir(string dir, string? keep)
     {
         try
         {
+            foreach (var f in Directory.EnumerateFiles(dir))
+            {
+                string name = Path.GetFileName(f);
+                if (keep != null && string.Equals(name, keep, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    && !name.EndsWith(".part", StringComparison.OrdinalIgnoreCase)) continue;
+                try { File.Delete(f); } catch { /* best effort */ }
+            }
+        }
+        catch { }
+    }
+
+    /// <summary>Runs the installer silently (progress bar, no prompts). The installer closes the
+    /// running app, updates, and relaunches it. The caller should exit right after this.
+    /// <paramref name="relaunchHidden"/> makes the relaunch go straight to the tray — used for an
+    /// unattended install, so an update never pops a window over what the user is doing.</summary>
+    public static bool LaunchInstaller(string installerPath, bool relaunchHidden = false)
+    {
+        if (!File.Exists(installerPath))
+        {
+            Debug.WriteLine($"[Update] installer missing: {installerPath}");
+            return false;
+        }
+        try
+        {
+            string args = "/SILENT /SP- /NOCANCEL /NORESTART /SUPPRESSMSGBOXES";
+            if (relaunchHidden) args += " /HIDDENRELAUNCH=1";
             Process.Start(new ProcessStartInfo(installerPath)
             {
                 UseShellExecute = true,
-                Arguments = "/SILENT /SP- /NOCANCEL /NORESTART /SUPPRESSMSGBOXES",
+                Arguments = args,
             });
             return true;
         }
@@ -208,6 +245,10 @@ public sealed class UpdateService
             return false;
         }
     }
+
+    /// <summary>The installed release version exactly as embedded from the tag, or "" for a dev build.
+    /// Used to tell whether an update attempt actually changed the running version.</summary>
+    public static string InstalledVersionString() => GetInstalledVersionString() ?? "";
 
     /// <summary>The installed release version (numeric + pre-release flag), or null for a dev build.</summary>
     private static ReleaseVer? GetInstalledVersion()

@@ -81,6 +81,18 @@ namespace TextTemplateManager.Services.System
             });
         }
 
+        /// <summary>Balloon fallback for when Windows App SDK toasts aren't available. It goes through
+        /// Shell_NotifyIcon, which needs no notification COM registration, so it still reaches the user
+        /// when <see cref="UpdateNotifier"/> failed to register.</summary>
+        public void ShowBalloon(string title, string message)
+        {
+            _dispatcher.TryEnqueue(() =>
+            {
+                try { _trayIcon.ShowNotification(title, message, H.NotifyIcon.Core.NotificationIcon.Info); }
+                catch { /* notifications are never worth breaking the app over */ }
+            });
+        }
+
         public void Dispose()
         {
             _trayIcon?.Dispose();

@@ -81,7 +81,7 @@
                 </MenuBarItem>
                 <MenuBarItem Title="Help">
                     <MenuFlyoutItem Text="Open Manual" Icon="Library" Click="OpenManual_Click"/>
-                    <MenuFlyoutItem Text="Check for Updates" Icon="Refresh" Click="CheckForUpdates_Click"/>
+                    <MenuFlyoutItem x:Name="CheckForUpdatesMenuItem" Text="Check for Updates" Icon="Refresh" Click="CheckForUpdates_Click"/>
                     <MenuFlyoutItem Text="Go to GitHub" Click="GoToGitHub_Click">
                         <MenuFlyoutItem.Icon>
                             <FontIcon Glyph="&#xE774;"/>
@@ -102,9 +102,24 @@
                     <TextBlock Text="Saved" FontSize="12" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
+                <!-- Update status: one of downloading indicator / "Update available" / "Update now". -->
+                <StackPanel x:Name="UpdateBusyIndicator" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Center" Visibility="Collapsed">
+                    <ProgressRing IsActive="True" Width="16" Height="16"/>
+                    <TextBlock x:Name="UpdateBusyText" Text="Downloading update…" FontSize="12"
+                               VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+                <Button x:Name="UpdateAvailableButton" Visibility="Collapsed" Click="UpdateAvailableButton_Click"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        ToolTipService.ToolTip="Download and install the available update">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE896;" FontSize="14" Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
+                        <TextBlock Text="Update available"/>
+                    </StackPanel>
+                </Button>
                 <Button x:Name="UpdateButton" Visibility="Collapsed" Click="UpdateButton_Click"
                         Style="{StaticResource AccentButtonStyle}"
-                        ToolTipService.ToolTip="Install the available update">
+                        ToolTipService.ToolTip="Install the downloaded update">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <FontIcon Glyph="&#xE896;" FontSize="14"/>
                         <TextBlock Text="Update now"/>

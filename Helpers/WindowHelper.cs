@@ -53,7 +53,34 @@ namespace TextTemplateManager.Helpers
         public static extern bool IsIconic(IntPtr hWnd);
 
         [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
         public static extern uint GetDpiForWindow(IntPtr hWnd);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetTickCount();
+
+        /// <summary>Seconds since the last keyboard/mouse input anywhere in this session (0 if unavailable).
+        /// Both values are 32-bit tick counts, so the unchecked subtraction stays correct across the
+        /// ~49-day wrap that a plain comparison would get wrong.</summary>
+        public static uint GetIdleSeconds()
+        {
+            var lii = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
+            if (!GetLastInputInfo(ref lii)) return 0;
+            return unchecked(GetTickCount() - lii.dwTime) / 1000u;
+        }
 
         [DllImport("user32.dll")]
         public static extern IntPtr SetActiveWindow(IntPtr hWnd);
