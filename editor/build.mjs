@@ -18,10 +18,9 @@ await esbuild.build({
   logLevel: 'info',
 })
 
-// Copied verbatim — no cache-busting query needed. MainPage inlines editor.css and editor.bundle.js
-// into this HTML before handing it to WebView2, so the asset URLs are stripped and never fetched.
-// A timestamped ?v= only made the committed output differ on every build.
-cpSync(resolve(here, 'src', 'editor.html'), resolve(outDir, 'editor.html'))
+// editor.html is deliberately NOT copied here: the .csproj takes it straight from src/ (it needs no
+// build step, and MainPage inlines the css/bundle into it anyway, so the old ?v= cache-buster was
+// stripped before WebView2 ever saw it). src/editor.html is the only copy.
 cpSync(resolve(here, 'src', 'editor.css'), resolve(outDir, 'editor.css'))
 cpSync(resolve(here, 'src', 'preview.html'), resolve(outDir, 'preview.html'))
 console.log('Editor bundled to', outDir)

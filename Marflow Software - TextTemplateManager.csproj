@@ -117,7 +117,13 @@
 
   <!-- Bundled TipTap editor assets (built from /editor via `npm run build`). -->
   <ItemGroup>
-    <Content Include="Assets\editor\**\*.*">
+    <!-- editor.html is excluded here and taken from editor\src below: build.mjs only copies it
+         verbatim, so it isn't committed, and without this a fresh clone would build an app whose
+         editor pane can't load (MainPage reads all three files at init). -->
+    <Content Include="Assets\editor\**\*.*" Exclude="Assets\editor\editor.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="editor\src\editor.html" Link="Assets\editor\editor.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
