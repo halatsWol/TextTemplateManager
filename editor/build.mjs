@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild'
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -18,14 +18,10 @@ await esbuild.build({
   logLevel: 'info',
 })
 
-// Cache-bust the asset URLs so WebView2 doesn't serve a stale bundle/css after a rebuild.
-const version = Date.now()
-let html = readFileSync(resolve(here, 'src', 'editor.html'), 'utf8')
-html = html
-  .replace('editor.css', `editor.css?v=${version}`)
-  .replace('editor.bundle.js', `editor.bundle.js?v=${version}`)
-writeFileSync(resolve(outDir, 'editor.html'), html)
-
+// Copied verbatim — no cache-busting query needed. MainPage inlines editor.css and editor.bundle.js
+// into this HTML before handing it to WebView2, so the asset URLs are stripped and never fetched.
+// A timestamped ?v= only made the committed output differ on every build.
+cpSync(resolve(here, 'src', 'editor.html'), resolve(outDir, 'editor.html'))
 cpSync(resolve(here, 'src', 'editor.css'), resolve(outDir, 'editor.css'))
 cpSync(resolve(here, 'src', 'preview.html'), resolve(outDir, 'preview.html'))
-console.log('Editor bundled to', outDir, 'v' + version)
+console.log('Editor bundled to', outDir)
