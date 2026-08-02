@@ -82,14 +82,28 @@ The `.ttmdata` backup/sync format is associated per-user:
 
 The app checks GitHub Releases and updates itself in place. Each release publishes the full installer
 `TextTemplateManager-Setup-<version>.exe`, a `manifest.json` (SHA-256 of every installed file), an
-`update.json` (version, full-installer name, and any delta), and — when applicable — a **delta**
-installer `TextTemplateManager-Update-<from>-to-<to>.exe` containing only the files changed since the
-immediately previous release.
+`update.json` (version, full-installer name, and the list of deltas), and — when applicable — one or
+more **delta** installers `TextTemplateManager-Update-<from>-to-<to>.exe`, each containing only the
+files changed between that specific base version and this release.
 
-A client updating from exactly the previous version takes the smaller delta when one is available;
-larger version jumps, or a release without a matching delta, fall back to the full installer. A
-release that bundles a refreshed .NET runtime produces a larger delta (the whole runtime changed) —
-this is expected and not itemised in the release notes.
+A release carries a delta for **every earlier version in the same series**, so a client is not limited
+to updating from the release immediately before it:
+
+| Release | Deltas published for |
+|---|---|
+| `1.3.2` | `1.3.0`, `1.3.1` — every earlier version of the 1.3 series |
+| `1.3.9` | every 1.3 version from `1.3.0` to `1.3.8` |
+| `1.4.0` | every `1.3.*` version — the whole preceding series |
+| `1.4.1` | `1.4.0` — the 1.4 series has only just started |
+
+A client picks the delta whose `from` matches its installed version exactly; anything older, or a
+release with no matching delta, falls back to the full installer, which always works. Each delta also
+refuses to run on the wrong base, so a mismatched download cannot be applied.
+
+A release that bundles a refreshed .NET runtime rewrites nearly every file, which would make each
+delta almost as large as the full installer. Deltas that would save less than about 30% are dropped at
+build time, and those base versions take the full installer instead — expected, and not itemised in
+the release notes.
 
 ### Unattended installation on the client
 

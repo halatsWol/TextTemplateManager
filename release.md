@@ -24,6 +24,7 @@ Already have it installed? The app offers this update automatically, or you can 
 - **Install updates automatically.** A new option under **Settings ▸ General ▸ Updates**. Off by default, so nothing changes unless you turn it on. With it on, a downloaded update installs on its own at a genuinely quiet moment — a few minutes with no keyboard or mouse activity, no Quick Paste window open, and nothing being saved — or otherwise the next time the app starts. It never interrupts you mid-task, and the app returns to the tray afterwards if that is where it was.
 - **Settings reorganised.** **Startup** and **Updates** are now separate sections rather than one mixed list.
 - **Release date in About.** **Help ▸ About** now shows the date the version was built.
+- **Smaller updates from more versions.** Previously only the release immediately before this one could download the small delta update; anyone further behind got the full installer. A release now carries a delta for every earlier version in its series, so updating from any 1.3 version downloads only what changed. Nothing to configure — it just means a smaller download more often.
 
 #### Fixes
 

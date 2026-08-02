@@ -348,11 +348,12 @@ The setting is off by default; with it off you are always asked before anything 
 update repeatedly fails to install, automatic attempts stop and you are asked to handle it yourself, 
 rather than the same update being retried indefinitely.
 
-From version 1.2 onward, when you update from the version immediately before a release, the 
-application downloads a smaller **delta** update — only the files that changed — instead of the full 
-installer, when one is available. Larger version jumps, or releases without a matching delta, use the 
-full installer. The process is the same either way, and the full installer is always available on the 
-Releases page.
+From version 1.2 onward the application downloads a smaller **delta** update — only the files that 
+changed — instead of the full installer, when one applies to the version you are running. A release 
+carries a delta for every earlier version in the same series: updating to 1.3.9 works from any 1.3 
+version, and the first release of a new series (1.4.0) can be reached from any 1.3 version. Older 
+jumps, and releases without a matching delta, use the full installer. The process is the same either 
+way, and the full installer is always available on the Releases page.
 
 ### For administrators
 

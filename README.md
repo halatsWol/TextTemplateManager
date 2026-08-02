@@ -41,8 +41,9 @@ was always reviewed and double-checked by me.
   Installing is confirmed by default; **Install updates automatically** (opt-in) installs at a quiet
   moment instead — no input for several minutes, no Quick Paste open, nothing being saved — or at the
   next start. Updates can be restricted by registry policy (see the Administrator guide).
-  From 1.2+, updating from the immediately previous version uses a smaller **delta** package when one
-  is available; the full installer is used otherwise.
+  From 1.2+, a smaller **delta** package is used when one applies — every release carries deltas for
+  the whole version series it belongs to (1.3.9 is reachable from any 1.3.x, and 1.4.0 from any 1.3.x);
+  the full installer is used otherwise.
 - **Browser connector** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list, paste, and create templates ([API docs](docs/BrowserConnectorApi.md)). Content going in and out is sanitized (allow-list + deny-list) so only safe formatting survives — scripts, media, and unsafe links are stripped, while code blocks are preserved. Available on:
   - [Chrome Web Store](https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi)
   - [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm)
