@@ -42,7 +42,25 @@ public sealed class UpdateNotifier
             mgr.Register();
             _registered = true;
         }
-        catch { /* notifications unavailable — the in-app UI still works */ }
+        catch (Exception ex)
+        {
+            // Notifications stay unavailable and the app carries on (the in-app UI and the tray balloon
+            // fallback both still work) — but record why. Swallowing this silently made a toast that never
+            // appears impossible to diagnose anywhere the debugger isn't attached.
+            Log($"registration failed: {ex.GetType().Name} 0x{ex.HResult:X8} {ex.Message}");
+        }
+    }
+
+    private static void Log(string message)
+    {
+        global::System.Diagnostics.Debug.WriteLine($"[Notifications] {message}");
+        try
+        {
+            global::System.IO.File.AppendAllText(
+                TextTemplateManager.Data.StorageService.GetCrashLogPath(),
+                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [Notifications] {message}{Environment.NewLine}");
+        }
+        catch { /* logging must never throw */ }
     }
 
     public void Unregister()

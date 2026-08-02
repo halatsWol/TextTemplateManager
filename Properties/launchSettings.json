@@ -1,8 +1,10 @@
 {
+  // Only the unpackaged profile: the app ships as a per-user Inno installer and never as MSIX, and the
+  // csproj sets WindowsPackageType=None, which the MsixPackage profile cannot deploy. Keeping that
+  // profile around would just be a trap — selecting it fails to deploy, and running with package
+  // identity sends AppNotificationManager.Register() down the packaged path, which needs a COM
+  // activator this app has no reason to declare.
   "profiles": {
-    "Marflow Software - TextTemplateManager (Package)": {
-      "commandName": "MsixPackage"
-    },
     "Marflow Software - TextTemplateManager (Unpackaged)": {
       "commandName": "Project"
     }
