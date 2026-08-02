@@ -83,13 +83,22 @@ jobs:
           Copy-Item "installer/TextTemplateManager-AdminManual.pdf" `
                     "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf"
 
-      - name: Build delta installer (if the previous release has a manifest)
+      - name: Build delta installers (one per supported base version)
         id: delta
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Resilient: any missing prerequisite or failure -> skip the delta and publish full-only.
+          # Every base a user could still be running in the current line gets its own delta, so a
+          # patch release is reachable from anywhere in its minor series rather than only from the
+          # release immediately before it:
+          #   1.3.2  <- 1.3.0, 1.3.1          (patch release: its own minor line)
+          #   1.4.0  <- every 1.3.*           (new minor: the whole previous line)
+          #   1.4.1  <- 1.4.0                 (the 1.4 line has only started)
+          # Anything older than that falls back to the full installer, which always works.
+          #
+          # Resilient throughout: any missing prerequisite or failure drops that one delta (or all of
+          # them) and still publishes the full installer.
           $tag = "${{ github.ref_name }}"
           $to  = "${{ steps.ver.outputs.version }}"
           # A release whose commit message contains [skip-delta] ships full-only. Use it for the AppId
@@ -97,36 +106,83 @@ jobs:
           # take the full installer that release; deltas resume the release after.
           $headMsg = (git log -1 --pretty=%B "$tag" 2>$null | Out-String)
           if ($headMsg -match '\[skip-delta\]') { Write-Host "[skip-delta] present -> full-only release."; exit 0 }
-          $prevTag = (git describe --tags --abbrev=0 "$tag^" 2>$null)
-          if (-not $prevTag) { Write-Host "No previous tag — full-only release."; exit 0 }
-          $from = $prevTag -replace '^v', ''
-          Write-Host "Previous release: $prevTag (version $from)"
-          New-Item -ItemType Directory -Force prevrel | Out-Null
-          gh release download "$prevTag" -p manifest.json -D prevrel 2>$null
-          if (-not (Test-Path "prevrel/manifest.json")) {
-            Write-Host "No manifest.json on $prevTag (pre-1.2) — full-only release."; exit 0
+
+          function Split-Ver([string]$v) {
+            $n = [regex]::Match($v, '^\d+(\.\d+)*').Value
+            if (-not $n) { return $null }
+            $p = $n.Split('.')
+            [pscustomobject]@{
+              Major = [int]$p[0]
+              Minor = $(if ($p.Count -gt 1) { [int]$p[1] } else { 0 })
+              Patch = $(if ($p.Count -gt 2) { [int]$p[2] } else { 0 })
+            }
           }
-          try {
-            ./package-delta.ps1 -FromVersion $from -ToVersion $to -PrevManifest "prevrel/manifest.json"
-          } catch {
-            Write-Host "::warning::Delta build failed ($_) — publishing full installer only."; exit 0
+
+          $cur = Split-Ver $to
+          if (-not $cur) { Write-Host "Unparseable version '$to' — full-only release."; exit 0 }
+
+          $all = @(git tag --list 'v*' | ForEach-Object {
+            $t = $_.Trim()
+            if ($t -and $t -ne $tag) {
+              $v = $t -replace '^v', ''
+              $s = Split-Ver $v
+              if ($s) { [pscustomobject]@{ Tag = $t; Version = $v; Major = $s.Major; Minor = $s.Minor; Patch = $s.Patch } }
+            }
+          })
+
+          if ($cur.Patch -gt 0) {
+            $bases = @($all | Where-Object { $_.Major -eq $cur.Major -and $_.Minor -eq $cur.Minor -and $_.Patch -lt $cur.Patch })
+          } else {
+            $prev = @($all | Where-Object { $_.Major -lt $cur.Major -or ($_.Major -eq $cur.Major -and $_.Minor -lt $cur.Minor) } |
+                     Sort-Object Major, Minor | Select-Object -Last 1)
+            $bases = if ($prev) { @($all | Where-Object { $_.Major -eq $prev[0].Major -and $_.Minor -eq $prev[0].Minor }) } else { @() }
           }
-          if (Test-Path "installer/delta-info.json") {
+          $bases = @($bases | Sort-Object Major, Minor, Patch)
+          if ($bases.Count -eq 0) { Write-Host "No earlier release in scope — full-only release."; exit 0 }
+          Write-Host "Delta bases: $($bases.Version -join ', ')"
+
+          $full = "installer/TextTemplateManager-Setup-$to.exe"
+          $fullSize = (Get-Item $full).Length
+          $built = @()
+          foreach ($b in $bases) {
+            $dir = "prevrel/$($b.Version)"
+            New-Item -ItemType Directory -Force $dir | Out-Null
+            gh release download $b.Tag -p manifest.json -D $dir 2>$null
+            if (-not (Test-Path "$dir/manifest.json")) {
+              Write-Host "No manifest.json on $($b.Tag) (pre-1.2) — skipping that base."; continue
+            }
+            try {
+              ./package-delta.ps1 -FromVersion $b.Version -ToVersion $to -PrevManifest "$dir/manifest.json"
+            } catch {
+              Write-Host "::warning::Delta from $($b.Version) failed ($_) — skipping that base."; continue
+            }
             $info = Get-Content "installer/delta-info.json" -Raw | ConvertFrom-Json
-            "built=true"           >> $env:GITHUB_OUTPUT
-            "from=$($info.from)"   >> $env:GITHUB_OUTPUT
-            "asset=$($info.asset)" >> $env:GITHUB_OUTPUT
+            $size = (Get-Item "installer/$($info.asset)").Length
+            # A delta that saves little isn't worth publishing — a release that refreshes the bundled
+            # .NET runtime rewrites nearly everything, and one near-full-size delta per base would
+            # multiply the release assets for no benefit. Those bases take the full installer.
+            if ($size -ge $fullSize * 0.7) {
+              Write-Host "Delta from $($b.Version) is $([int]($size/1MB)) MB vs $([int]($fullSize/1MB)) MB full — dropping it."
+              Remove-Item "installer/$($info.asset)" -Force
+              continue
+            }
+            Write-Host "Delta from $($b.Version): $([int]($size/1MB)) MB"
+            $built += [ordered]@{ from = $info.from; asset = $info.asset }
           }
+
+          ConvertTo-Json -InputObject @($built) -Depth 4 | Set-Content "installer/deltas.json" -Encoding utf8
+          Write-Host "Built $($built.Count) delta(s)."
 
       - name: Write update.json
         shell: pwsh
         run: |
-          # The client reads this to pick a delta matching its installed version, else the full
-          # installer. deltas is empty unless the step above built one for the previous release.
+          # The client reads this to pick the delta whose "from" matches its installed version, else the
+          # full installer. One entry per base the step above managed to build; empty means full-only.
           $to = "${{ steps.ver.outputs.version }}"
           $deltas = @()
-          if ("${{ steps.delta.outputs.built }}" -eq "true") {
-            $deltas = @([ordered]@{ from = "${{ steps.delta.outputs.from }}"; asset = "${{ steps.delta.outputs.asset }}" })
+          if (Test-Path "installer/deltas.json") {
+            $deltas = @(Get-Content "installer/deltas.json" -Raw | ConvertFrom-Json |
+                        ForEach-Object { [ordered]@{ from = $_.from; asset = $_.asset } })
           }
           $update = [ordered]@{
             version = $to
@@ -167,13 +223,15 @@ jobs:
           # published releases, so clients won't be offered the update until you publish.
           # The full Setup .exe MUST be listed first: older clients (and the fallback path) pick the
           # first .exe asset and GitHub keeps upload order, so the full installer has to stay the
-          # first-uploaded .exe. The delta .exe (if any) goes second; non-.exe assets after.
+          # first-uploaded .exe. The delta .exes (any number) follow; non-.exe assets after.
           $ghArgs = @(
             "${{ github.ref_name }}",
             "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
           )
-          if ("${{ steps.delta.outputs.built }}" -eq "true") {
-            $ghArgs += "installer/${{ steps.delta.outputs.asset }}"
+          if (Test-Path "installer/deltas.json") {
+            foreach ($d in (Get-Content "installer/deltas.json" -Raw | ConvertFrom-Json)) {
+              $ghArgs += "installer/$($d.asset)"
+            }
           }
           # Cleanup utility (an .exe, but listed after the full Setup so the first-.exe fallback still
           # resolves to the installer, never this).
