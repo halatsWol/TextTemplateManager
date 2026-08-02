@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Must match the app's TFM to reference it. UseWinUI stays off: these tests exercise the
+         non-UI logic only, so the test host needs no WinUI bootstrap. -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <!-- The app project is a WinExe; referencing it would otherwise drag in its entry point. -->
+    <OutputType>Library</OutputType>
+    <!-- Referencing the app pulls in WindowsAppSDK, which otherwise injects a module initializer that
+         boots the Windows App Runtime. In a test host that has no package identity it throws
+         REGDB_E_CLASSNOTREG before any test runs. These tests touch no WinUI type, so opt out. -->
+    <WindowsAppSdkAutoInitialize>false</WindowsAppSdkAutoInitialize>
+    <!-- The referenced app assembly still carries its own bootstrap module initializer, which runs the
+         moment any of its types load. Deploy the Windows App Runtime next to the tests so that
+         bootstrap resolves locally instead of failing with REGDB_E_CLASSNOTREG. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Would otherwise be compiled in here and clash with the app's own NativeMethods (CS0436). -->
+    <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Marflow Software - TextTemplateManager.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -82,6 +82,15 @@
     <Page Remove="tools\**" />
   </ItemGroup>
 
+  <!-- Same for the test project: it lives under this project's directory, so the default globs would
+       otherwise compile its sources — and its generated GlobalUsings — into the app. -->
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <Content Remove="tests\**" />
+    <None Remove="tests\**" />
+    <Page Remove="tests\**" />
+  </ItemGroup>
+
   <!-- Manual PDF, generated from docs/Manual.md, shipped next to the exe. Remove from the
        default None glob first, then include as copied Content (same pattern as the image assets). -->
   <ItemGroup>
@@ -114,6 +123,10 @@
     <Exec ContinueOnError="true"
           Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\tools\ManualGen\ManualGen.csproj&quot; -c Release -- &quot;$(MSBuildProjectDirectory)\docs\Manual.md&quot; &quot;$(MSBuildProjectDirectory)\Assets\Manual.pdf&quot; &quot;$(Version)&quot;" />
   </Target>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TextTemplateManager.Tests" />
+  </ItemGroup>
 
   <!-- Bundled TipTap editor assets (built from /editor via `npm run build`). -->
   <ItemGroup>

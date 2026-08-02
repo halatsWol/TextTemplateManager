@@ -14,10 +14,24 @@ namespace TextTemplateManager.Data;
 public static class StorageService
 {
     // Path: %localappdata%\Marflow Software\TextTemplateManager\
-    private static readonly string BaseDirectory = Path.Combine(
+    private static readonly string DefaultBaseDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Marflow Software",
         "TextTemplateManager");
+
+    /// <summary>Env var that redirects the whole data root. Set by the test suite so tests can never
+    /// touch real templates, settings or staged installers; unset everywhere else.</summary>
+    public const string DataDirOverrideVariable = "TTM_DATA_DIR";
+
+    private static readonly string BaseDirectory = ResolveBaseDirectory();
+    private static readonly bool IsRedirected =
+        !string.Equals(BaseDirectory, DefaultBaseDirectory, StringComparison.OrdinalIgnoreCase);
+
+    private static string ResolveBaseDirectory()
+    {
+        string? overridden = Environment.GetEnvironmentVariable(DataDirOverrideVariable);
+        return string.IsNullOrWhiteSpace(overridden) ? DefaultBaseDirectory : Path.GetFullPath(overridden);
+    }
 
     private static readonly string DataFileName = "data.ttmdata";
     private static readonly string SettingsFileName = "settings.ttmsettings";
@@ -82,6 +96,9 @@ public static class StorageService
     // sync config. Runs before EnsureDirectories, so the destination doesn't exist yet.
     private static void MigrateLegacyFolder()
     {
+        // Never migrate into a redirected root — that would move the user's real data into a test
+        // (or portable) folder. The migration only makes sense for the real default location.
+        if (IsRedirected) return;
         try
         {
             string legacy = Path.Combine(

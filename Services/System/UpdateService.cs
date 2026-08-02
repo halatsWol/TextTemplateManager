@@ -28,7 +28,8 @@ public sealed class UpdateService
     public sealed record UpdateInfo(Version Version, string Tag, string DownloadUrl, string AssetName);
 
     // A comparable release version: numeric part plus whether it is a pre-release/beta.
-    private sealed record ReleaseVer(Version Numeric, bool Prerelease) : IComparable<ReleaseVer>
+    // internal (not private) so the test suite can exercise the ordering rules directly.
+    internal sealed record ReleaseVer(Version Numeric, bool Prerelease) : IComparable<ReleaseVer>
     {
         public int CompareTo(ReleaseVer? other)
         {
@@ -141,7 +142,7 @@ public sealed class UpdateService
         catch { return (fallbackUrl, fallbackAsset); }
     }
 
-    private static string? FindAssetUrl(JsonElement release, string assetName)
+    internal static string? FindAssetUrl(JsonElement release, string assetName)
     {
         if (release.TryGetProperty("assets", out var assets))
             foreach (var a in assets.EnumerateArray())
@@ -151,7 +152,7 @@ public sealed class UpdateService
         return null;
     }
 
-    private static (string? url, string? name) FindInstallerAsset(JsonElement release)
+    internal static (string? url, string? name) FindInstallerAsset(JsonElement release)
     {
         if (release.TryGetProperty("assets", out var assets))
             foreach (var a in assets.EnumerateArray())
@@ -284,7 +285,7 @@ public sealed class UpdateService
     /// The leading numeric part (1–4 dotted components, padded to at least 3 for comparison) is the
     /// version; pre-release is decided by <paramref name="ghPrerelease"/> or a beta/preview/unstable/
     /// prev marker in the name, unless the name explicitly says "stable".</summary>
-    private static ReleaseVer? ParseRelease(string? s, bool ghPrerelease)
+    internal static ReleaseVer? ParseRelease(string? s, bool ghPrerelease)
     {
         if (string.IsNullOrWhiteSpace(s)) return null;
 
