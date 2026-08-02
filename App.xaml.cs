@@ -88,7 +88,9 @@ namespace TextTemplateManager
                 {
                     e.Cancel = true;
                     MainWindow.Hide();
-                    (MainWindow.Content as MainPage)?.ClearSearch();   // reopen with a fresh search
+                    // Reopen in a clean state rather than wherever the window was left.
+                    (MainWindow.Content as MainPage)?.ClearSearch();
+                    (MainWindow.Content as MainPage)?.CloseSettingsIfOpen();
                 }
             };
 

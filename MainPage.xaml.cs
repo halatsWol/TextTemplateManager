@@ -617,6 +617,14 @@ namespace TextTemplateManager
 
         private void SettingsNav_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args) => CloseSettings();
 
+        /// <summary>Leaves the Settings view if it is open. Called when the window is hidden to the tray so
+        /// that reopening lands on the template list, rather than resuming wherever Settings was left —
+        /// and so its normal teardown (persist, reload the tree, refresh conflicts) still runs.</summary>
+        public void CloseSettingsIfOpen()
+        {
+            if (SettingsOverlay.Visibility == Visibility.Visible) CloseSettings();
+        }
+
         private async void CloseSettings()
         {
             // Persist app settings (autostart is registry-only now — see StartupManager).
