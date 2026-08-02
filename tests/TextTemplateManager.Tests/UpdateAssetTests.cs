@@ -50,6 +50,43 @@ public class UpdateAssetTests
     }
 
     [Fact]
+    public void A_release_carrying_several_deltas_still_offers_the_full_installer_first()
+    {
+        // A release now ships one delta per earlier version in its series. Clients older than 1.2 know
+        // nothing about update.json and simply take the first .exe, so the full installer must stay
+        // ahead of every delta in upload order — otherwise those clients would be handed a delta they
+        // cannot apply.
+        var rel = Release(
+            ("TextTemplateManager-Setup-1.3.9.exe", "https://example/full.exe"),
+            ("TextTemplateManager-Update-1.3.0-to-1.3.9.exe", "https://example/d0.exe"),
+            ("TextTemplateManager-Update-1.3.1-to-1.3.9.exe", "https://example/d1.exe"),
+            ("TextTemplateManager-Update-1.3.8-to-1.3.9.exe", "https://example/d8.exe"),
+            ("TextTemplateManager-CleanupUtility-1.3.9.exe", "https://example/cleanup.exe"));
+
+        var (url, name) = UpdateService.FindInstallerAsset(rel);
+
+        Assert.Equal("https://example/full.exe", url);
+        Assert.Equal("TextTemplateManager-Setup-1.3.9.exe", name);
+    }
+
+    [Fact]
+    public void Every_published_delta_is_resolvable_by_name()
+    {
+        // Each base version's delta has to be findable individually — that is how a 1.2+ client turns
+        // the "from" entry it matched in update.json into a download URL.
+        var rel = Release(
+            ("TextTemplateManager-Setup-1.3.9.exe", "https://example/full.exe"),
+            ("TextTemplateManager-Update-1.3.0-to-1.3.9.exe", "https://example/d0.exe"),
+            ("TextTemplateManager-Update-1.3.1-to-1.3.9.exe", "https://example/d1.exe"));
+
+        Assert.Equal("https://example/d0.exe", UpdateService.FindAssetUrl(rel, "TextTemplateManager-Update-1.3.0-to-1.3.9.exe"));
+        Assert.Equal("https://example/d1.exe", UpdateService.FindAssetUrl(rel, "TextTemplateManager-Update-1.3.1-to-1.3.9.exe"));
+        // A base with no delta published (too old, or dropped for poor savings) resolves to nothing,
+        // which is what sends that client to the full installer.
+        Assert.Null(UpdateService.FindAssetUrl(rel, "TextTemplateManager-Update-1.2.2-to-1.3.9.exe"));
+    }
+
+    [Fact]
     public void Non_exe_assets_are_ignored()
     {
         var rel = Release(
