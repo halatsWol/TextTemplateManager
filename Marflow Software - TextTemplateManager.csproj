@@ -29,6 +29,11 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
 	<WindowsAppSDKTargetsSelfContained>true</WindowsAppSDKTargetsSelfContained>
+    <!-- The app only ever ships unpackaged (per-user Inno installer, never MSIX), and package.ps1 already
+         publishes with this. Setting it here too makes a Debug/F5 run match what ships — notably for
+         AppNotificationManager.Register(), whose HKCU COM-server registration only happens on the
+         unpackaged path; without it a dev run fails with "No COM servers are registered for this app". -->
+    <WindowsPackageType>None</WindowsPackageType>
     <Nullable>enable</Nullable>
 	<ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
