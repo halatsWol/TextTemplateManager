@@ -198,8 +198,9 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 - **Run at Windows login** — start the app automatically when you sign in. When on, **Start hidden in the
   system tray** appears below it: enable that to launch minimized to the tray (no window) at sign-in — the
   Quick Paste hotkey and tray icon still work. This matches the on/off state in Windows' own **Startup Apps** list.
-- **Automatic updates** — check for new releases; **Allow beta updates** also offers pre-release
-  versions (off by default). See *Updates*.
+- **Automatic updates** — check for new releases and download them in the background. **Install updates
+  automatically** installs a downloaded update without asking, at a quiet moment (off by default), and
+  **Allow beta updates** also offers pre-release versions (off by default). See *Updates*.
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
 - **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and
   press the combination.
@@ -325,10 +326,27 @@ and periodically thereafter, and you can also check on demand from **Help ▸ Ch
 By default only stable releases are offered; enable **Allow beta updates** in **Settings ▸ General** 
 to also receive pre-release (beta / preview) versions.
 
-When a newer version is available, it is downloaded in the background and an **Update now** button 
-appears in the top-right corner of the main window. You are prompted to install immediately or to 
-defer; deferring keeps the button available and prompts again on the next start. Installing closes 
-the application, applies the update silently, and reopens it.
+When a newer version is available, it is downloaded in the background and the top-right corner of the 
+main window shows what is happening — *Downloading update…* while it fetches, then an **Update now** 
+button once it is ready. The **Help ▸ Check for Updates** entry also carries a small marker while an 
+update is waiting. You are prompted to install immediately or to defer; deferring keeps the button 
+available. Installing closes the application, applies the update silently, and reopens it.
+
+If the window is closed to the system tray when an update becomes ready, a Windows notification appears 
+instead, with **Install now** on it — so an update is never announced somewhere you cannot see it.
+
+### Installing updates automatically
+
+With **Install updates automatically** enabled in **Settings ▸ General ▸ Updates**, a downloaded update 
+installs without asking. It waits for a genuinely quiet moment first: several minutes with no keyboard 
+or mouse activity anywhere, no Quick Paste window on screen, and nothing being saved — so an update 
+never interrupts what you are doing. If no such moment comes, it installs the next time the application 
+starts. When the application was running only in the tray, it returns to the tray afterwards rather than 
+opening its window.
+
+The setting is off by default; with it off you are always asked before anything is installed. If an 
+update repeatedly fails to install, automatic attempts stop and you are asked to handle it yourself, 
+rather than the same update being retried indefinitely.
 
 From version 1.2 onward, when you update from the version immediately before a release, the 
 application downloads a smaller **delta** update — only the files that changed — instead of the full 

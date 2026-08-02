@@ -91,6 +91,17 @@ larger version jumps, or a release without a matching delta, fall back to the fu
 release that bundles a refreshed .NET runtime produces a larger delta (the whole runtime changed) —
 this is expected and not itemised in the release notes.
 
+### Unattended installation on the client
+
+Installing a downloaded update always requires the user to confirm, unless they enable *Install updates
+automatically* in **Settings > General > Updates** (off by default; there is no policy value for it).
+When enabled, the client installs only at a quiet moment — no keyboard or mouse input session-wide for
+several minutes, no Quick Paste window on screen, and no data write in progress — or otherwise at the
+next application start. Staged installers live in the user's data folder and are removed once superseded.
+
+If an update repeatedly fails to apply, the client stops retrying it automatically after a small number
+of attempts and prompts the user instead, so a bad release cannot put a machine into a reinstall loop.
+
 ### Controlling updates by policy
 
 Updates can be restricted centrally with a registry value the application only ever **reads** (it

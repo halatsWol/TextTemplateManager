@@ -36,7 +36,11 @@ was always reviewed and double-checked by me.
   Paste picker lists every match. A setting can hide the cross-area warnings.
 - **Paste modes** — Auto, HTML/Jira, HTML, RTF, Markdown, Plaintext. Callout panels adapt to each mode: native panels in Jira, colored boxes in HTML/RTF, a labeled quote in Markdown.
 - **Backup / export** — export the whole tree or a single folder.
-- **Auto-update** — checks GitHub Releases and installs a newer version silently (opt-out in settings).
+- **Auto-update** — checks GitHub Releases, downloads a newer version in the background, and shows its
+  state in the top-right corner, or as a Windows notification when the window is closed to the tray.
+  Installing is confirmed by default; **Install updates automatically** (opt-in) installs at a quiet
+  moment instead — no input for several minutes, no Quick Paste open, nothing being saved — or at the
+  next start. Updates can be restricted by registry policy (see the Administrator guide).
   From 1.2+, updating from the immediately previous version uses a smaller **delta** package when one
   is available; the full installer is used otherwise.
 - **Browser connector** — an opt-in local API a companion browser extension ([TTM-Connect](https://github.com/halatsWol/TTM-Connect)) can call to list, paste, and create templates ([API docs](docs/BrowserConnectorApi.md)). Content going in and out is sanitized (allow-list + deny-list) so only safe formatting survives — scripts, media, and unsafe links are stripped, while code blocks are preserved. Available on:

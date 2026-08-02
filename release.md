@@ -20,8 +20,16 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New & improved
 
-- **Cleanup utility.** A standalone cleanup / force-uninstall tool now ships with the app (and as a separate download). It fully removes an installation — including one left broken by a failed install or uninstall — and can optionally delete your data too. Run it from the install folder or the Releases page.
-- **Microsoft Edge extension.** The companion browser extension is now available for Microsoft Edge, joining Chrome and Firefox.
+- **Reworked update experience.** Updates now tell you where you can actually see them. The top-right corner shows the current state — checking, downloading, or ready to install — and the **Check for Updates** menu entry carries a small marker while one is waiting. When the window is closed to the tray, you get a Windows notification instead, with **Install now** on it.
+- **Install updates automatically.** A new option under **Settings ▸ General ▸ Updates**. Off by default, so nothing changes unless you turn it on. With it on, a downloaded update installs on its own at a genuinely quiet moment — a few minutes with no keyboard or mouse activity, no Quick Paste window open, and nothing being saved — or otherwise the next time the app starts. It never interrupts you mid-task, and the app returns to the tray afterwards if that is where it was.
+- **Settings reorganised.** **Startup** and **Updates** are now separate sections rather than one mixed list.
+- **Release date in About.** **Help ▸ About** now shows the date the version was built.
+
+#### Fixes
+
+- An update can no longer install while data is being written, which could leave a synchronized file half-written or produce a cloud conflict copy.
+- Closing the window to the tray now leaves the Settings view, so reopening from the tray lands on your templates instead of resuming in Settings.
+- The Administrator & Deployment Guide PDF now shows its command examples, which were previously dropped.
 
 {{CHANGELOG}}
 
