@@ -25,10 +25,16 @@ using Windows.UI.Core;
 using UpdatePolicy = TextTemplateManager.Services.System.UpdatePolicy;
 using UpdateService = TextTemplateManager.Services.System.UpdateService;
 using BrowserConnector = TextTemplateManager.Services.System.BrowserConnector;
+// Aliased rather than a plain using: the namespace ends in ".System", which would shadow System.* here.
+using UpdateCoordinator = TextTemplateManager.Services.System.UpdateCoordinator;
+using IUpdateHost = TextTemplateManager.Services.System.IUpdateHost;
+using UpdateStatusKind = TextTemplateManager.Services.System.UpdateStatusKind;
+using UpdateTrigger = TextTemplateManager.Services.System.UpdateTrigger;
+using UpdateNote = TextTemplateManager.Services.System.UpdateNote;
 
 namespace TextTemplateManager
 {
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage : Page, IUpdateHost
     {
         public MainViewModel ViewModel { get; }
         private Timer _saveTimer;
@@ -39,32 +45,16 @@ namespace TextTemplateManager
         private string? _dismissedNotesSignature;   // cross-area note set the user dismissed (null = none)
         private string _currentNotesSignature = "";
 
-        // Auto-update
+        // Auto-update. The state machine itself is UpdateCoordinator (no WinUI, so it is testable);
+        // this class supplies it with the window, dialogs and notifications via IUpdateHost.
         private readonly UpdateService _updater = new();
+        private UpdateCoordinator? _updates;
         private Microsoft.UI.Dispatching.DispatcherQueueTimer? _updateTimer;
         private Microsoft.UI.Dispatching.DispatcherQueueTimer? _idleTimer;
-        private string? _readyInstallerPath;
-        private string? _readyVersionLabel;      // release tag shown to the user (e.g. "0.9.6-beta")
-        private string? _knownTag;               // release tag currently known (detected or downloaded)
-        private bool _updateBusy;
-        private string? _pendingAutoInstallPath; // downloaded update armed for an unattended install
-        private bool _autoInstallBlocked;        // attempts exhausted — the user has to decide
         private bool _dialogOpen;                // only one ContentDialog may be open at a time
         private Services.System.UpdateNotifier? _notifier;
 
-        // An unattended install waits for real idle: no input anywhere in the session for this long. The
-        // window being in the background is not enough — this app lives in the tray, so that is its normal
-        // state and would mean installing while the user works in another app.
-        private const uint SafeIdleSeconds = 300;
         private const int IdlePollSeconds = 60;
-
-        private enum UpdateStatusKind { None, Downloading, Available, Ready }
-
-        // What set a check going. Only a click on visible UI (User) may raise dialogs; Auto is silent and
-        // Toast came from a notification button while the window is hidden, so it reports back the same way.
-        private enum UpdateTrigger { Auto, User, Toast }
-
-        private enum UpdateNote { DownloadAvailable, InstallReady, AutoInstallFailed }
 
 
 
@@ -160,61 +150,31 @@ namespace TextTemplateManager
             _notifier = new Services.System.UpdateNotifier(DispatcherQueue, OnNotificationAction);
             _notifier.Register();
 
+            _updates = new UpdateCoordinator(this) { LaunchedHidden = App.IsHiddenLaunch() };
+
             // An install a previous session armed but never got to runs now — at launch, before any work
-            // is in flight — rather than interrupting the session later. The rest is still armed below:
-            // if the installer won't start, this session must keep checking like any other.
-            ResumeDeferredInstall();
+            // is in flight. Enqueued so it leaves the constructor's stack before shutting the app down
+            // again; the rest is still armed below, since a failed launch must keep checking as usual.
+            DispatcherQueue.TryEnqueue(() => _ = _updates.ResumeDeferredInstallAsync());
 
             _idleTimer = DispatcherQueue.CreateTimer();
             _idleTimer.Interval = TimeSpan.FromSeconds(IdlePollSeconds);
-            _idleTimer.Tick += (s, e) => { if (!_updateBusy) _ = TryAutoInstallAsync(); };
+            _idleTimer.Tick += (s, e) => { if (!_updates.Busy) _ = _updates.TryAutoInstallAsync(); };
             _idleTimer.Start();
 
             DataNode.Instance.CurrentSettings.PropertyChanged += Settings_UpdatePrefsChanged;
 
             _updateTimer = DispatcherQueue.CreateTimer();
             _updateTimer.Interval = TimeSpan.FromMinutes(10);
-            _updateTimer.Tick += (s, e) => _ = RunUpdateCheckAsync(UpdateTrigger.Auto);
+            _updateTimer.Tick += (s, e) => _ = _updates.RunCheckAsync(UpdateTrigger.Auto);
             _updateTimer.Start();
-            _ = RunUpdateCheckAsync(UpdateTrigger.Auto);
+            _ = _updates.RunCheckAsync(UpdateTrigger.Auto);
         }
 
         /// <summary>Called on exit — release the notification registration the unpackaged app created.</summary>
         public void ShutdownUpdates()
         {
             try { _notifier?.Unregister(); } catch { }
-        }
-
-        /// <summary>Picks up an unattended install armed in an earlier session that exited before a safe
-        /// moment came. Runs regardless of how this launch happened — a login autostart or the user opening
-        /// the app — because startup is the least disruptive point to swap the app out.</summary>
-        private void ResumeDeferredInstall()
-        {
-            var state = Services.System.UpdateState.Load();
-            if (state == null) return;
-
-            // The running version is no longer the one the attempt started from: the update applied.
-            if (!string.Equals(state.FromVersion, UpdateService.InstalledVersionString(), StringComparison.OrdinalIgnoreCase))
-            {
-                Services.System.UpdateState.Clear();
-                UpdateService.CleanInstallerDir(StorageService.GetInstallerDir(), keep: null);
-                return;
-            }
-
-            // Same version after an attempt means the install didn't take. Stop at the cap and let the check
-            // below surface it to the user, instead of reinstalling on every single launch forever.
-            if (state.Exhausted) { _autoInstallBlocked = true; return; }
-            if (!DataNode.Instance.CurrentSettings.AutoInstallUpdates) return;
-
-            string path = System.IO.Path.Combine(StorageService.GetInstallerDir(), state.Asset);
-            if (!System.IO.File.Exists(path)) { Services.System.UpdateState.Clear(); return; }
-
-            _readyVersionLabel = DisplayTag(state.Tag);
-            _knownTag = state.Tag;
-            _readyInstallerPath = path;
-            // Off the constructor's stack before shutting the app down again.
-            DispatcherQueue.TryEnqueue(() => _ = InstallUpdateAsync(
-                path, unattended: true, flush: false, relaunchHidden: App.IsHiddenLaunch()));
         }
 
         private void Template_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -874,172 +834,31 @@ namespace TextTemplateManager
         }
 
         // ---- Auto-update ----
+        //
+        // The decisions live in UpdateCoordinator, which is free of WinUI so it can be tested. This class
+        // is the adapter that lends it a window, dialogs, notifications and the Win32 probes.
 
-        private async void CheckForUpdates_Click(object sender, RoutedEventArgs e) => await RunUpdateCheckAsync(UpdateTrigger.User);
+        private async void CheckForUpdates_Click(object sender, RoutedEventArgs e) =>
+            await _updates!.RunCheckAsync(UpdateTrigger.User);
 
         private async void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_readyInstallerPath != null && _readyVersionLabel != null)
-                await PromptInstallAsync(_readyVersionLabel, _readyInstallerPath, _autoInstallBlocked);
+            if (_updates is { ReadyInstallerPath: string path, ReadyVersionLabel: string label })
+                await _updates.PromptAndInstallAsync(label, path, _updates.AutoInstallBlocked);
         }
-
-        // Tag as shown to the user — drop a leading "v" so it reads "Version 0.9.6-beta".
-        private static string DisplayTag(string tag) => string.IsNullOrWhiteSpace(tag) ? "" : tag.TrimStart('v', 'V');
 
         // "Update available" (shown only when auto-download is off): download now, then offer to install.
-        private async void UpdateAvailableButton_Click(object sender, RoutedEventArgs e) => await RunUpdateCheckAsync(UpdateTrigger.User);
+        private async void UpdateAvailableButton_Click(object sender, RoutedEventArgs e) =>
+            await _updates!.RunCheckAsync(UpdateTrigger.User);
 
-        private async Task RunUpdateCheckAsync(UpdateTrigger trigger)
-        {
-            // Enterprise policy (registry) can hard-disable updates for everyone: no check, no indicators.
-            bool byUser = trigger == UpdateTrigger.User;
-            if (!UpdatePolicy.UpdatesAllowed)
-            {
-                if (byUser) await ShowMessageAsync("Check for Updates", "Updates are disabled by your organization.");
-                return;
-            }
-            if (_updateBusy) return;
-            SetUpdateBusy(true);
-            try
-            {
-                var settings = DataNode.Instance.CurrentSettings;
-                bool allowBeta = settings.AllowBetaUpdates && UpdatePolicy.BetaAllowed;
-
-                UpdateService.UpdateInfo? info;
-                try { info = await _updater.CheckAsync(allowBeta); }
-                catch { if (byUser) await ShowMessageAsync("Check for Updates", "Could not reach the update server."); return; }
-
-                if (info == null)
-                {
-                    _knownTag = null; _readyInstallerPath = null; _readyVersionLabel = null;
-                    _pendingAutoInstallPath = null; _autoInstallBlocked = false;
-                    Services.System.UpdateState.Clear();
-                    UpdateService.CleanInstallerDir(StorageService.GetInstallerDir(), keep: null);
-                    if (_notifier != null) await _notifier.ClearAsync();
-                    SetUpdateStatus(UpdateStatusKind.None);
-                    if (byUser) await ShowMessageAsync("You're up to date", $"Version {AppVersion()} is the latest.");
-                    return;
-                }
-
-                // Compare tags, not numbers: a stable release and its own beta share a numeric version, so
-                // a numeric comparison would treat the stable follow-up as already seen and never announce it.
-                bool firstSeen = !string.Equals(_knownTag, info.Tag, StringComparison.OrdinalIgnoreCase);
-                if (firstSeen) _pendingAutoInstallPath = null;
-                _knownTag = info.Tag;
-
-                // Read "we gave up on installing this one" off disk rather than trusting a field: it has to
-                // survive a restart, and a fresh process must not quietly earn the release another attempt.
-                _autoInstallBlocked = Services.System.UpdateState.Load() is { Exhausted: true } spent
-                                      && string.Equals(spent.Tag, info.Tag, StringComparison.OrdinalIgnoreCase);
-                string versionLabel = DisplayTag(info.Tag);
-                _readyVersionLabel = versionLabel;
-
-                // Asset names carry the version, so a file already sitting there belongs to exactly this release.
-                string localPath = System.IO.Path.Combine(StorageService.GetInstallerDir(), info.AssetName);
-                bool haveLocal = System.IO.File.Exists(localPath) && new System.IO.FileInfo(localPath).Length > 0;
-
-                // Auto-download off: detect and surface only — but never discard an installer already on disk
-                // for this release, or a manual download would be thrown away by the next background check.
-                if (trigger == UpdateTrigger.Auto && !settings.AutoCheckUpdates)
-                {
-                    _readyInstallerPath = haveLocal ? localPath : null;
-                    SetUpdateStatus(haveLocal ? UpdateStatusKind.Ready : UpdateStatusKind.Available);
-                    if (firstSeen)
-                        await AnnounceAsync(haveLocal ? UpdateNote.InstallReady : UpdateNote.DownloadAvailable,
-                                            versionLabel, haveLocal ? localPath : null);
-                    return;
-                }
-
-                if (!haveLocal) SetUpdateStatus(UpdateStatusKind.Downloading);   // no busy flicker for a cached file
-                string? path;
-                try { path = await _updater.EnsureDownloadedAsync(info); }
-                catch
-                {
-                    SetUpdateStatus(UpdateStatusKind.None);
-                    if (byUser) await ShowMessageAsync("Update", "Found an update but couldn't download it.");
-                    return;
-                }
-                if (path == null) { SetUpdateStatus(UpdateStatusKind.None); return; }
-
-                _readyInstallerPath = path;
-                SetUpdateStatus(UpdateStatusKind.Ready);
-
-                if (byUser) { await PromptInstallAsync(versionLabel, path, autoFailed: false); return; }
-
-                if (settings.AutoInstallUpdates && !_autoInstallBlocked)
-                {
-                    ArmAutoInstall(path, info.Tag);
-                    await TryAutoInstallAsync();     // go now if the user already happens to be idle
-                    return;
-                }
-
-                // Toast-triggered downloads always report back, otherwise the user taps "Download now" and
-                // nothing visible happens (the release is no longer "first seen" by then).
-                if (firstSeen || _autoInstallBlocked || trigger == UpdateTrigger.Toast)
-                    await AnnounceAsync(_autoInstallBlocked ? UpdateNote.AutoInstallFailed : UpdateNote.InstallReady,
-                                        versionLabel, path);
-            }
-            finally { SetUpdateBusy(false); }
-        }
-
-        // Arms an unattended install. The target is recorded before any attempt, so a release that fails to
-        // apply is retried a bounded number of times and then handed to the user — never reinstalled forever.
-        private void ArmAutoInstall(string path, string tag)
-        {
-            _pendingAutoInstallPath = path;
-            var state = Services.System.UpdateState.Load();
-            if (state == null || !string.Equals(state.Tag, tag, StringComparison.OrdinalIgnoreCase))
-                state = new Services.System.UpdateState { Tag = tag };
-            state.Asset = System.IO.Path.GetFileName(path);
-            state.FromVersion = UpdateService.InstalledVersionString();
-            state.Save();
-        }
-
-        /// <summary>Installs an armed update if this is genuinely a safe moment: no input anywhere for a few
-        /// minutes, the window not in use, and no Quick Paste window on screen. Otherwise it waits — and if
-        /// the app exits first, <see cref="ResumeDeferredInstall"/> picks it up at the next launch.</summary>
-        private async Task TryAutoInstallAsync()
-        {
-            if (_pendingAutoInstallPath is not string path) return;
-            if (!DataNode.Instance.CurrentSettings.AutoInstallUpdates) return;
-            if (!System.IO.File.Exists(path)) { _pendingAutoInstallPath = null; return; }
-
-            // Checked before the idle gates: having given up is news the user needs now, not whenever they
-            // next happen to leave the machine alone for five minutes.
-            if (Services.System.UpdateState.Load() is { Exhausted: true })
-            {
-                _pendingAutoInstallPath = null;
-                _autoInstallBlocked = true;
-                await AnnounceAsync(UpdateNote.AutoInstallFailed, _readyVersionLabel ?? "", path);
-                return;
-            }
-
-            if (WindowHelper.GetIdleSeconds() < SafeIdleSeconds) return;
-            if (ForegroundNow()) return;
-            if ((Application.Current as App)?.PasteWindowVisible == true) return;
-            if (!StorageService.WritesQuiet()) return;   // a sync poll is mid-write; try again next tick
-
-            _pendingAutoInstallPath = null;
-            _notifier?.ShowInstalling(_readyVersionLabel ?? "");
-            await InstallUpdateAsync(path, unattended: true, flush: true, relaunchHidden: !WindowVisible());
-        }
-
-        // Turning auto-install off must also cancel an install already armed; turning it on should pick up an
-        // update that is already downloaded instead of waiting for the next check.
         private void Settings_UpdatePrefsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(AppSettings.AutoInstallUpdates)) return;
-
-            if (!DataNode.Instance.CurrentSettings.AutoInstallUpdates)
-            {
-                _pendingAutoInstallPath = null;
-                Services.System.UpdateState.Clear();
-                return;
-            }
-            if (_autoInstallBlocked || _readyInstallerPath is not string path || _knownTag is not string tag) return;
-            ArmAutoInstall(path, tag);
-            _ = TryAutoInstallAsync();
+            if (e.PropertyName == nameof(AppSettings.AutoInstallUpdates))
+                _ = _updates!.OnAutoInstallSettingChangedAsync();
         }
+
+        // A toast button came back while the app is running.
+        private void OnNotificationAction(string action) => _ = _updates!.OnNotificationActionAsync(action);
 
         // Is the main window actually the foreground, visible window right now? (A hidden/tray window is not.)
         private static bool ForegroundNow()
@@ -1060,73 +879,8 @@ namespace TextTemplateManager
             catch { return false; }
         }
 
-        /// <summary>Puts an update message where the user will actually see it: a dialog when the window is on
-        /// screen, a toast when it isn't, and a tray balloon when toast registration failed (which it can, for
-        /// an unpackaged app) — otherwise a tray-only session would be told about updates nowhere at all.</summary>
-        private async Task AnnounceAsync(UpdateNote note, string versionLabel, string? installerPath)
-        {
-            if (WindowVisible())
-            {
-                // On screen but behind another app — flash the taskbar so it isn't missed.
-                if (!ForegroundNow())
-                    WindowHelper.FlashTaskbar(WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow));
-
-                // A passive detection needs no dialog: the top-right button already says it.
-                if (note == UpdateNote.DownloadAvailable) return;
-                if (installerPath != null)
-                    await PromptInstallAsync(versionLabel, installerPath, note == UpdateNote.AutoInstallFailed);
-                return;
-            }
-
-            if (_notifier?.IsAvailable == true)
-            {
-                switch (note)
-                {
-                    case UpdateNote.DownloadAvailable: _notifier.ShowDownloadAvailable(versionLabel); return;
-                    case UpdateNote.InstallReady: _notifier.ShowInstallReady(versionLabel); return;
-                    case UpdateNote.AutoInstallFailed: _notifier.ShowAutoInstallFailed(versionLabel); return;
-                }
-            }
-
-            (Application.Current as App)?.ShowTrayBalloon(
-                note == UpdateNote.AutoInstallFailed ? "Update needs your attention" : "Update available",
-                note switch
-                {
-                    UpdateNote.DownloadAvailable => $"Version {versionLabel} is available to download.",
-                    UpdateNote.InstallReady => $"Version {versionLabel} is ready to install.",
-                    _ => $"Version {versionLabel} couldn't be installed automatically.",
-                });
-        }
-
-        // A toast button came back while the app is running.
-        private async void OnNotificationAction(string action)
-        {
-            switch (action)
-            {
-                case "install":
-                    if (_readyInstallerPath is string p)
-                        await InstallUpdateAsync(p, unattended: false, flush: true, relaunchHidden: !WindowVisible());
-                    else
-                        await RunUpdateCheckAsync(UpdateTrigger.Toast);   // installer was cleaned up meanwhile
-                    break;
-                case "download":
-                    await RunUpdateCheckAsync(UpdateTrigger.Toast);
-                    break;
-                case "open":
-                    App.SurfaceMainWindow();
-                    break;
-            }
-        }
-
-        // The "Update available" button kicks off a download, so it must not stay clickable during one.
-        private void SetUpdateBusy(bool busy)
-        {
-            _updateBusy = busy;
-            UpdateAvailableButton.IsEnabled = !busy;
-        }
-
         // Reflect the update state in the top-right strip and the "Check for Updates" menu dot.
-        private void SetUpdateStatus(UpdateStatusKind kind, string busyText = "Downloading update…")
+        private void SetUpdateStatus(UpdateStatusKind kind, string busyText)
         {
             UpdateBusyIndicator.Visibility = kind == UpdateStatusKind.Downloading ? Visibility.Visible : Visibility.Collapsed;
             if (kind == UpdateStatusKind.Downloading) UpdateBusyText.Text = busyText;
@@ -1139,7 +893,66 @@ namespace TextTemplateManager
                 : new SymbolIcon(Symbol.Refresh);
         }
 
-        private async Task PromptInstallAsync(string versionLabel, string installerPath, bool autoFailed)
+        // ---- IUpdateHost: everything the coordinator needs from the running app ----
+
+        bool IUpdateHost.UpdatesAllowed => UpdatePolicy.UpdatesAllowed;
+        bool IUpdateHost.BetaAllowed => UpdatePolicy.BetaAllowed;
+        bool IUpdateHost.AutoCheckUpdates => DataNode.Instance.CurrentSettings.AutoCheckUpdates;
+        bool IUpdateHost.AutoInstallUpdates => DataNode.Instance.CurrentSettings.AutoInstallUpdates;
+        bool IUpdateHost.AllowBetaUpdates => DataNode.Instance.CurrentSettings.AllowBetaUpdates;
+
+        Task<UpdateService.UpdateInfo?> IUpdateHost.CheckAsync(bool allowBeta) => _updater.CheckAsync(allowBeta);
+        Task<string?> IUpdateHost.EnsureDownloadedAsync(UpdateService.UpdateInfo info) => _updater.EnsureDownloadedAsync(info);
+
+        string IUpdateHost.InstallerDir => StorageService.GetInstallerDir();
+        string IUpdateHost.InstalledVersion => UpdateService.InstalledVersionString();
+        string IUpdateHost.AppVersion => AppVersion();
+
+        void IUpdateHost.CleanInstallerDir(string? keep) =>
+            UpdateService.CleanInstallerDir(StorageService.GetInstallerDir(), keep);
+
+        bool IUpdateHost.HasUsableInstaller(string path)
+        {
+            try { return System.IO.File.Exists(path) && new System.IO.FileInfo(path).Length > 0; }
+            catch { return false; }
+        }
+
+        bool IUpdateHost.WindowVisible => WindowVisible();
+        bool IUpdateHost.WindowForeground => ForegroundNow();
+        bool IUpdateHost.PasteWindowVisible => (Application.Current as App)?.PasteWindowVisible == true;
+        uint IUpdateHost.IdleSeconds => WindowHelper.GetIdleSeconds();
+        bool IUpdateHost.WritesQuiet => StorageService.WritesQuiet();
+
+        void IUpdateHost.SetStatus(UpdateStatusKind kind, string busyText) =>
+            SetUpdateStatus(kind, string.IsNullOrEmpty(busyText) ? "Downloading update…" : busyText);
+
+        void IUpdateHost.SetBusy(bool busy) => UpdateAvailableButton.IsEnabled = !busy;
+
+        void IUpdateHost.FlashTaskbar() =>
+            WindowHelper.FlashTaskbar(WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow));
+
+        bool IUpdateHost.NotificationsAvailable => _notifier?.IsAvailable == true;
+
+        void IUpdateHost.ShowToast(UpdateNote note, string versionLabel)
+        {
+            switch (note)
+            {
+                case UpdateNote.DownloadAvailable: _notifier?.ShowDownloadAvailable(versionLabel); break;
+                case UpdateNote.InstallReady: _notifier?.ShowInstallReady(versionLabel); break;
+                case UpdateNote.AutoInstallFailed: _notifier?.ShowAutoInstallFailed(versionLabel); break;
+            }
+        }
+
+        void IUpdateHost.ShowInstallingToast(string versionLabel) => _notifier?.ShowInstalling(versionLabel);
+
+        void IUpdateHost.ShowTrayBalloon(string title, string message) =>
+            (Application.Current as App)?.ShowTrayBalloon(title, message);
+
+        Task IUpdateHost.ClearNotificationsAsync() => _notifier?.ClearAsync() ?? Task.CompletedTask;
+
+        void IUpdateHost.SurfaceMainWindow() => App.SurfaceMainWindow();
+
+        async Task<bool> IUpdateHost.PromptInstallAsync(string versionLabel, bool autoFailed)
         {
             var dialog = new ContentDialog
             {
@@ -1151,65 +964,30 @@ namespace TextTemplateManager
                 CloseButtonText = "Later",
                 DefaultButton = ContentDialogButton.Primary,
             };
-            if (await ShowDialogAsync(dialog) == ContentDialogResult.Primary)
-                await InstallUpdateAsync(installerPath, unattended: false, flush: true, relaunchHidden: false);
+            return await ShowDialogAsync(dialog) == ContentDialogResult.Primary;
         }
 
-        /// <param name="unattended">No user is watching: report failures through a notification, and count the
-        /// attempt so a release that refuses to apply stops being retried.</param>
-        /// <param name="flush">Persist pending edits first. Skipped at launch, where there is nothing to flush.</param>
-        /// <param name="relaunchHidden">Bring the app back in the tray instead of opening its window.</param>
-        private async Task InstallUpdateAsync(string installerPath, bool unattended, bool flush, bool relaunchHidden)
+        Task IUpdateHost.ShowMessageAsync(string title, string message) => ShowMessageAsync(title, message);
+
+        async Task IUpdateHost.PersistPendingWorkAsync()
         {
-            if (!System.IO.File.Exists(installerPath))
-            {
-                // Superseded by a newer release and cleaned up between arming and installing.
-                _readyInstallerPath = null;
-                _pendingAutoInstallPath = null;
-                SetUpdateStatus(UpdateStatusKind.None);
-                if (!unattended)
-                    await ShowMessageAsync("Update", "The downloaded installer is no longer available. Check for updates again.");
-                return;
-            }
+            // Persist first, then hand off to the silent installer and exit so files aren't locked.
+            await FlushEditorAsync();
+            _saveTimer?.Stop();
+            await ViewModel.SaveCurrentStateAsync();
+        }
 
-            SetUpdateStatus(UpdateStatusKind.Downloading, "Updating…");   // reuse the busy indicator
-
-            // Count the attempt before launching, not after: if the install doesn't take, the app is already
-            // gone by the time that could be observed, so the record has to be on disk beforehand.
-            if (unattended && Services.System.UpdateState.Load() is { } state)
-            {
-                state.Attempts++;
-                state.Save();
-            }
-
-            if (flush)
-            {
-                // Persist first, then hand off to the silent installer and exit so files aren't locked.
-                await FlushEditorAsync();
-                _saveTimer?.Stop();
-                await ViewModel.SaveCurrentStateAsync();
-            }
-
-            // Let anything still writing finish. The installer closes the app, so a sync write cut off
-            // here is what leaves a truncated file or a cloud conflict copy behind. Capped — a source
-            // that is permanently stuck must not block the update forever.
+        async Task IUpdateHost.DrainWritesAsync()
+        {
+            // Capped — a source that is permanently stuck must not block the update forever.
             for (int i = 0; i < 25 && StorageService.WritesInFlight; i++)
                 await Task.Delay(100);
-
-            if (UpdateService.LaunchInstaller(installerPath, relaunchHidden))
-            {
-                (Application.Current as App)?.Shutdown();
-                return;
-            }
-
-            SetUpdateStatus(UpdateStatusKind.Ready);
-            if (unattended)
-            {
-                _autoInstallBlocked = true;
-                await AnnounceAsync(UpdateNote.AutoInstallFailed, _readyVersionLabel ?? "", installerPath);
-            }
-            else await ShowMessageAsync("Update", "Could not start the installer.");
         }
+
+        bool IUpdateHost.LaunchInstaller(string path, bool relaunchHidden) =>
+            UpdateService.LaunchInstaller(path, relaunchHidden);
+
+        void IUpdateHost.Shutdown() => (Application.Current as App)?.Shutdown();
 
         private async void Exit_Click(object sender, RoutedEventArgs e)
         {
