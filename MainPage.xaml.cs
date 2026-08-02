@@ -887,10 +887,61 @@ namespace TextTemplateManager
             UpdateAvailableButton.Visibility = kind == UpdateStatusKind.Available ? Visibility.Visible : Visibility.Collapsed;
             UpdateButton.Visibility = kind == UpdateStatusKind.Ready ? Visibility.Visible : Visibility.Collapsed;
 
+            // Keep the standard refresh glyph and mark it when an update is waiting. MenuFlyoutItem.Icon
+            // takes a single IconElement, so a badge dot cannot simply be layered on top of the glyph —
+            // the whole thing is drawn as one geometry instead (see UpdateMenuIcon).
             bool known = kind is UpdateStatusKind.Available or UpdateStatusKind.Ready;
-            CheckForUpdatesMenuItem.Icon = known
-                ? new FontIcon { Glyph = "", FontSize = 12, Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xC8, 0xA0, 0x00)) }
-                : new SymbolIcon(Symbol.Refresh);
+            CheckForUpdatesMenuItem.Icon = UpdateMenuIcon(known);
+        }
+
+        private static readonly Windows.UI.Color UpdateAccentColor =
+            Windows.UI.Color.FromArgb(0xFF, 0xC8, 0xA0, 0x00);
+
+        /// <summary>Icon for "Check for Updates": the stock refresh symbol normally, and — when an update
+        /// is waiting — a refresh ring in the ordinary icon colour with a small accent dot in its
+        /// top-right corner.
+        ///
+        /// Rendered from SVG because the badged version needs two colours, and every IconElement paints
+        /// with a single Foreground; MenuFlyoutItem.Icon likewise takes one element, so there is no
+        /// container to layer a badge into. The ring colour is resolved from the theme at build time.</summary>
+        private static IconElement UpdateMenuIcon(bool updateWaiting)
+        {
+            if (!updateWaiting) return new SymbolIcon(Symbol.Refresh);
+
+            var ink = ThemeBrush("TextFillColorPrimaryBrush", Microsoft.UI.Colors.Black) is SolidColorBrush b
+                ? b.Color
+                : Microsoft.UI.Colors.Black;
+
+            // 16x16 box, ring centred (7,9): the outer arc runs from 12 o'clock anticlockwise round to
+            // 3 o'clock and back along the inner radius, leaving the top-right free for the badge.
+            string svg =
+                "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>" +
+                $"<path d='M 7 4 A 5 5 0 1 0 12 9 L 10.4 9 A 3.4 3.4 0 1 1 7 5.6 Z' fill='{Hex(ink)}'/>" +
+                $"<path d='M 5.6 2.2 L 5.6 6.4 L 9.2 4.3 Z' fill='{Hex(ink)}'/>" +
+                $"<circle cx='13' cy='3' r='2.3' fill='{Hex(UpdateAccentColor)}'/>" +
+                "</svg>";
+
+            var source = new Microsoft.UI.Xaml.Media.Imaging.SvgImageSource();
+            _ = LoadSvgAsync(source, svg);
+            return new ImageIcon { Source = source, Width = 16, Height = 16 };
+        }
+
+        private static string Hex(Windows.UI.Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+        private static async Task LoadSvgAsync(Microsoft.UI.Xaml.Media.Imaging.SvgImageSource target, string svg)
+        {
+            try
+            {
+                using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                var writer = new Windows.Storage.Streams.DataWriter(stream.GetOutputStreamAt(0));
+                writer.WriteString(svg);
+                await writer.StoreAsync();
+                await writer.FlushAsync();
+                writer.DetachStream();
+                stream.Seek(0);
+                await target.SetSourceAsync(stream);
+            }
+            catch { /* the icon is cosmetic — never break the menu over it */ }
         }
 
         // ---- IUpdateHost: everything the coordinator needs from the running app ----
