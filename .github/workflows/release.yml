@@ -68,20 +68,17 @@ jobs:
           }
           ./package.ps1 -Version ${{ steps.ver.outputs.version }}
 
-      - name: Name the assets with the version
+      - name: Name the installers with the version
         shell: pwsh
         run: |
+          # Only the installers carry the version in their file name — the delta names already do, and
+          # a versioned Setup makes it obvious which build someone downloaded. The manuals and the
+          # cleanup utility stay unversioned, so a link to them keeps working across releases.
           Copy-Item "installer/TextTemplateManager-Setup.exe" `
                     "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
           # package.ps1 regenerates the manual PDF (Assets/Manual.pdf) — ship it as an asset too.
-          Copy-Item "Assets/Manual.pdf" `
-                    "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf"
-          # Standalone cleanup utility (also bundled inside the app). package.ps1 built it into installer\.
-          Copy-Item "installer/TextTemplateManager-CleanupUtility.exe" `
-                    "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
-          # Administrator & Deployment Guide PDF (release asset only; not bundled in the app).
-          Copy-Item "installer/TextTemplateManager-AdminManual.pdf" `
-                    "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf"
+          # The admin guide and the cleanup utility are already in installer/ under their final names.
+          Copy-Item "Assets/Manual.pdf" "installer/TextTemplateManager-Manual.pdf"
 
       - name: Build delta installers (one per supported base version)
         id: delta
@@ -236,10 +233,10 @@ jobs:
             }
           }
           $ghArgs += @(
-            "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
-            "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf",
+            "installer/TextTemplateManager-Manual.pdf",
+            "installer/TextTemplateManager-AdminManual.pdf",
             # An .exe, but well after the full Setup, so the first-.exe fallback never resolves to it.
-            "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe",
+            "installer/TextTemplateManager-CleanupUtility.exe",
             "installer/manifest.json",
             "installer/update.json",
             "--title", "${{ github.ref_name }}",

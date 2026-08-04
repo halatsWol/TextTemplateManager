@@ -45,5 +45,5 @@ Pair Text Template Manager with the companion **TTM-Connect** extension to list 
 ---
 
 Full documentation is available in the app under **Help ▸ Open Manual**, or download
-**`TextTemplateManager-Manual-{{VERSION}}.pdf`** from the assets below.
+**`TextTemplateManager-Manual.pdf`** from the assets below.
 Source: https://github.com/halatsWol/TextTemplateManager

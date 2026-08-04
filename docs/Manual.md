@@ -360,7 +360,7 @@ way, and the full installer is always available on the Releases page.
 Update behavior can be locked down centrally (a registry policy the app only reads), the Setup
 executable accepts command-line options for silent/scripted deployment, and a separate cleanup
 utility can force-remove an installation. These topics are covered in the **Administrator &
-Deployment Guide** (`TextTemplateManager-AdminManual-<version>.pdf`), attached to each release on the
+Deployment Guide** (`TextTemplateManager-AdminManual.pdf`), attached to each release on the
 [Releases page](https://github.com/halatsWol/TextTemplateManager/releases).
 
 ---

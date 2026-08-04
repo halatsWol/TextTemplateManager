@@ -71,7 +71,7 @@ runtime is always the latest .NET 8 release available at the time the version wa
 > **Administrators:** silent-install switches, the update-control registry policy, the full
 > registry/file footprint, and the cleanup / force-uninstall utility are covered in the
 > [Administrator & Deployment Guide](docs/AdminManual.md) — also attached as a PDF
-> (`TextTemplateManager-AdminManual-<version>.pdf`) to each release.
+> (`TextTemplateManager-AdminManual.pdf`) to each release.
 
 ---
 
