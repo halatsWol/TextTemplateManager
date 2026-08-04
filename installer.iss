@@ -64,7 +64,7 @@ Name: "autostart"; Description: "Start {#MyAppName} automatically when I sign in
 Source: "publish\win-x64\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 ; Standalone cleanup utility (also uploaded as its own release asset). Built by package.ps1 into installer\.
 ; Kept out of publish\win-x64 so it stays out of the delta manifest; [UninstallDelete] removes it with {app}.
-Source: "installer\TextTemplateManager-CleanupUtility.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "installer\TextTemplateManager-Support-Cleanup.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -83,6 +83,12 @@ Root: HKCU; Subkey: "Software\Classes\.ttmdata"; ValueType: string; ValueName: "
 Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata"; ValueType: string; ValueName: ""; ValueData: "Text Template Manager data"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKCU; Subkey: "Software\Classes\TextTemplateManager.ttmdata\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
+[InstallDelete]
+; The cleanup tool was renamed to TextTemplateManager-Support-Cleanup.exe (so it sorts after the Setup
+; asset, which is what old clients pick from a release). Drop the old copy when updating an install that
+; still has it, or both would sit in {app}. It isn't in the delta manifest, so a delta can't remove it.
+Type: files; Name: "{app}\TextTemplateManager-CleanupUtility.exe"
 
 [UninstallDelete]
 ; Remove the entire install folder on uninstall, not just the files in the uninstall log. A delta

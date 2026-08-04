@@ -152,17 +152,27 @@ public sealed class UpdateService
         return null;
     }
 
+    private const string SetupAssetPrefix = "TextTemplateManager-Setup";
+
+    /// <summary>The full installer asset. Prefers the Setup naming over simply "the first .exe", because
+    /// GitHub returns release assets in ALPHABETICAL order — not upload order — and a release carries
+    /// other .exe assets (the delta updates, the support/cleanup tool) that can sort ahead of the
+    /// installer. Falls back to the first .exe so releases predating that naming still resolve.</summary>
     internal static (string? url, string? name) FindInstallerAsset(JsonElement release)
     {
+        (string? url, string? name) firstExe = (null, null);
         if (release.TryGetProperty("assets", out var assets))
             foreach (var a in assets.EnumerateArray())
             {
                 string name = a.GetProperty("name").GetString() ?? "";
-                if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                    && a.TryGetProperty("browser_download_url", out var u) && u.GetString() is string url)
-                    return (url, name);
+                if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!a.TryGetProperty("browser_download_url", out var u) || u.GetString() is not string url) continue;
+
+                if (name.StartsWith(SetupAssetPrefix, StringComparison.OrdinalIgnoreCase)) return (url, name);
+                firstExe.url ??= url;
+                firstExe.name ??= name;
             }
-        return (null, null);
+        return firstExe;
     }
 
     /// <summary>Downloads the installer to the appdata installer folder (skips if already present) and

@@ -36,37 +36,64 @@ public class UpdateAssetTests
     }
 
     [Fact]
-    public void Upload_order_decides_the_fallback_installer()
+    public void Asset_order_does_not_decide_the_installer()
     {
-        // Documents the fragility the workflow comment warns about: put the delta first and the fallback
-        // picks the delta. release.yml must keep the full installer first.
+        // GitHub returns assets ALPHABETICALLY, not in upload order — verified against the real v1.3.1
+        // and v1.4.0 releases, where the cleanup tool sorted ahead of Setup despite being uploaded after
+        // it. Picking "the first .exe" therefore handed old clients the wrong binary, so the Setup naming
+        // decides instead, wherever it appears in the list.
         var rel = Release(
+            ("TextTemplateManager-CleanupUtility.exe", "https://example/cleanup.exe"),
             ("TextTemplateManager-Update-1.3.1-to-1.3.2.exe", "https://example/delta.exe"),
             ("TextTemplateManager-Setup-1.3.2.exe", "https://example/full.exe"));
 
-        var (url, _) = UpdateService.FindInstallerAsset(rel);
+        var (url, name) = UpdateService.FindInstallerAsset(rel);
 
-        Assert.Equal("https://example/delta.exe", url);
+        Assert.Equal("https://example/full.exe", url);
+        Assert.Equal("TextTemplateManager-Setup-1.3.2.exe", name);
     }
 
     [Fact]
-    public void A_release_carrying_several_deltas_still_offers_the_full_installer_first()
+    public void Without_a_setup_named_asset_the_first_exe_is_still_used()
     {
-        // A release now ships one delta per earlier version in its series. Clients older than 1.2 know
-        // nothing about update.json and simply take the first .exe, so the full installer must stay
-        // ahead of every delta in upload order — otherwise those clients would be handed a delta they
-        // cannot apply.
+        // Keeps pre-1.2 releases resolvable, whose installer was not named this way.
+        var rel = Release(("SomeOldInstaller.exe", "https://example/old.exe"));
+
+        var (url, _) = UpdateService.FindInstallerAsset(rel);
+
+        Assert.Equal("https://example/old.exe", url);
+    }
+
+    [Fact]
+    public void The_installer_is_found_among_many_delta_assets()
+    {
+        // A release ships one delta per earlier version in its series, listed alphabetically alongside
+        // the support tool. Exactly one of these .exe assets is installable by a client on any version.
         var rel = Release(
+            ("TextTemplateManager-Manual.pdf", "https://example/manual.pdf"),
             ("TextTemplateManager-Setup-1.3.9.exe", "https://example/full.exe"),
+            ("TextTemplateManager-Support-Cleanup.exe", "https://example/cleanup.exe"),
             ("TextTemplateManager-Update-1.3.0-to-1.3.9.exe", "https://example/d0.exe"),
-            ("TextTemplateManager-Update-1.3.1-to-1.3.9.exe", "https://example/d1.exe"),
-            ("TextTemplateManager-Update-1.3.8-to-1.3.9.exe", "https://example/d8.exe"),
-            ("TextTemplateManager-CleanupUtility-1.3.9.exe", "https://example/cleanup.exe"));
+            ("TextTemplateManager-Update-1.3.8-to-1.3.9.exe", "https://example/d8.exe"));
 
         var (url, name) = UpdateService.FindInstallerAsset(rel);
 
         Assert.Equal("https://example/full.exe", url);
         Assert.Equal("TextTemplateManager-Setup-1.3.9.exe", name);
+    }
+
+    [Fact]
+    public void The_support_cleanup_tool_is_never_mistaken_for_the_installer()
+    {
+        // The actual defect found in v1.4.0: the cleanup tool sorts before Setup, so a first-.exe pick
+        // handed clients a force-uninstaller instead of the installer.
+        var rel = Release(
+            ("TextTemplateManager-Support-Cleanup.exe", "https://example/cleanup.exe"),
+            ("TextTemplateManager-Setup-1.4.1.exe", "https://example/full.exe"));
+
+        var (_, name) = UpdateService.FindInstallerAsset(rel);
+
+        Assert.Equal("TextTemplateManager-Setup-1.4.1.exe", name);
     }
 
     [Fact]

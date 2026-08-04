@@ -137,7 +137,7 @@ it does not prevent installing a newer version by hand.
 
 ## Cleanup / force-uninstall utility
 
-`TextTemplateManager-CleanupUtility.exe` completely removes an installation **without** the normal
+`TextTemplateManager-Support-Cleanup.exe` completely removes an installation **without** the normal
 uninstaller — useful after a corrupted install or uninstall, or to script removal. It is bundled in
 the install folder and also shipped as a standalone release asset. For ordinary removal, users should
 still use **Settings > Apps** (Add/Remove Programs); this tool is the force option.
@@ -168,11 +168,11 @@ required, because there is no interactive session to confirm against.
 
 Example — silent full removal including all data, for the current user:
 
-    TextTemplateManager-CleanupUtility.exe /force /quiet /removeall
+    TextTemplateManager-Support-Cleanup.exe /force /quiet /removeall
 
 Example — an administrator cleaning another user's installation:
 
-    TextTemplateManager-CleanupUtility.exe /user:jdoe /force
+    TextTemplateManager-Support-Cleanup.exe /user:jdoe /force
 
 ---
 

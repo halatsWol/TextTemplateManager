@@ -16,7 +16,7 @@
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <AssemblyName>TextTemplateManager-CleanupUtility</AssemblyName>
+    <AssemblyName>TextTemplateManager-Support-Cleanup</AssemblyName>
     <RootNamespace>TtmCleanup</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
 

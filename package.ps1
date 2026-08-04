@@ -82,10 +82,10 @@ if (Test-Path (Join-Path $vsInstaller 'vswhere.exe')) { $env:PATH = "$vsInstalle
 $cleanupProj = Join-Path $root "tools\CleanupUtility\CleanupUtility.csproj"
 & dotnet publish $cleanupProj -c Release -r win-x64 -p:Version=$Version
 if ($LASTEXITCODE -ne 0) { throw "cleanup utility build failed" }
-$cleanupExe = Join-Path $root "tools\CleanupUtility\bin\Release\net8.0-windows\win-x64\publish\TextTemplateManager-CleanupUtility.exe"
+$cleanupExe = Join-Path $root "tools\CleanupUtility\bin\Release\net8.0-windows\win-x64\publish\TextTemplateManager-Support-Cleanup.exe"
 if (-not (Test-Path $cleanupExe)) { throw "cleanup utility exe not found: $cleanupExe" }
-Copy-Item $cleanupExe (Join-Path $installerDir "TextTemplateManager-CleanupUtility.exe") -Force
-Write-Host "==> Cleanup utility: installer\TextTemplateManager-CleanupUtility.exe" -ForegroundColor Green
+Copy-Item $cleanupExe (Join-Path $installerDir "TextTemplateManager-Support-Cleanup.exe") -Force
+Write-Host "==> Cleanup utility: installer\TextTemplateManager-Support-Cleanup.exe" -ForegroundColor Green
 
 Write-Host "==> Locating Inno Setup compiler (ISCC.exe)" -ForegroundColor Cyan
 $iscc = @(
