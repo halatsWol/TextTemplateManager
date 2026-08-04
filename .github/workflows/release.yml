@@ -221,9 +221,11 @@ jobs:
           # --draft: the release (and its installer) is uploaded but NOT published. Review it on
           # the Releases page and click "Publish release" when ready. Auto-update only sees
           # published releases, so clients won't be offered the update until you publish.
-          # The full Setup .exe MUST be listed first: older clients (and the fallback path) pick the
-          # first .exe asset and GitHub keeps upload order, so the full installer has to stay the
-          # first-uploaded .exe. The delta .exes (any number) follow; non-.exe assets after.
+          # Asset order is deliberate and GitHub preserves it, both for how the release page reads and
+          # because clients older than 1.2 know nothing about update.json and simply take the FIRST
+          # .exe asset. The full Setup .exe must therefore stay first — every other .exe (the deltas,
+          # the cleanup utility) has to come after it.
+          #   1. full installer   2. delta updates   3. manuals   4. cleanup utility   5. json
           $ghArgs = @(
             "${{ github.ref_name }}",
             "installer/TextTemplateManager-Setup-${{ steps.ver.outputs.version }}.exe"
@@ -233,12 +235,11 @@ jobs:
               $ghArgs += "installer/$($d.asset)"
             }
           }
-          # Cleanup utility (an .exe, but listed after the full Setup so the first-.exe fallback still
-          # resolves to the installer, never this).
-          $ghArgs += "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe"
           $ghArgs += @(
             "installer/TextTemplateManager-Manual-${{ steps.ver.outputs.version }}.pdf",
             "installer/TextTemplateManager-AdminManual-${{ steps.ver.outputs.version }}.pdf",
+            # An .exe, but well after the full Setup, so the first-.exe fallback never resolves to it.
+            "installer/TextTemplateManager-CleanupUtility-${{ steps.ver.outputs.version }}.exe",
             "installer/manifest.json",
             "installer/update.json",
             "--title", "${{ github.ref_name }}",
