@@ -990,6 +990,9 @@ namespace TextTemplateManager
         void IUpdateHost.FlashTaskbar() =>
             WindowHelper.FlashTaskbar(WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow));
 
+        // The effective answer to "may I show an update notification?" — a future parent
+        // "show notifications" switch folds in here, leaving the coordinator unchanged.
+        bool IUpdateHost.NotificationsEnabled => DataNode.Instance.CurrentSettings.ShowUpdateNotifications;
         bool IUpdateHost.NotificationsAvailable => _notifier?.IsAvailable == true;
 
         void IUpdateHost.ShowToast(UpdateNote note, string versionLabel)

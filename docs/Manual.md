@@ -201,6 +201,9 @@ Open settings from **File ▸ Settings**. It has a **General** and a **Sync** ta
 - **Automatic updates** — check for new releases and download them in the background. **Install updates
   automatically** installs a downloaded update without asking, at a quiet moment (off by default), and
   **Allow beta updates** also offers pre-release versions (off by default). See *Updates*.
+- **Notifications** — **Show update notifications** (on by default) controls whether a Windows
+  notification is used when an update needs your attention while the window is closed to the system
+  tray. With it off, updates are shown inside the application instead.
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
 - **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and
   press the combination.
@@ -334,6 +337,11 @@ available. Installing closes the application, applies the update silently, and r
 
 If the window is closed to the system tray when an update becomes ready, a Windows notification appears 
 instead, with **Install now** on it — so an update is never announced somewhere you cannot see it.
+
+Turn **Show update notifications** off in **Settings ▸ General ▸ Notifications** to suppress them. 
+Updates are then only shown inside the application, in the top-right corner of the main window, and you 
+will not hear about one until you open it. Everything else is unaffected: updates are still checked for, 
+still downloaded, and — if you enabled it — still installed automatically.
 
 ### Installing updates automatically
 

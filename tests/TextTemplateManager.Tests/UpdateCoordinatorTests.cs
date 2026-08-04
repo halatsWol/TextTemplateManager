@@ -235,6 +235,49 @@ public class UpdateCoordinatorTests : IDisposable
     }
 
     [Fact]
+    public async Task Notifications_turned_off_suppress_the_toast_and_the_balloon_alike()
+    {
+        // "Off" has to mean silent, not "fall back to the tray balloon" — a balloon is still a
+        // notification, so leaving that path open would ignore the setting.
+        _host.WindowVisible = false;
+        _host.NotificationsEnabled = false;
+        _host.Available = FakeUpdateHost.Release();
+
+        await _sut.RunCheckAsync(UpdateTrigger.Auto);
+
+        Assert.Empty(_host.Toasts);
+        Assert.Empty(_host.Balloons);
+        Assert.Equal(UpdateStatusKind.Ready, _host.Status);   // still ready, just not announced
+    }
+
+    [Fact]
+    public async Task Notifications_turned_off_do_not_suppress_the_dialog_on_a_visible_window()
+    {
+        // The setting governs notifications, not the in-app prompt.
+        _host.WindowVisible = true;
+        _host.WindowForeground = true;
+        _host.NotificationsEnabled = false;
+        _host.Available = FakeUpdateHost.Release();
+
+        await _sut.RunCheckAsync(UpdateTrigger.Auto);
+
+        Assert.Single(_host.Prompts);
+    }
+
+    [Fact]
+    public async Task Notifications_turned_off_silence_the_installing_toast()
+    {
+        _host.NotificationsEnabled = false;
+        await ArmAutoInstallAsync();
+        _host.AtSafeMoment();
+
+        await _sut.TryAutoInstallAsync();
+
+        Assert.Empty(_host.InstallingToasts);
+        Assert.Single(_host.Launches);   // the install itself still happens
+    }
+
+    [Fact]
     public async Task A_passive_detection_raises_no_dialog_on_a_visible_window()
     {
         // Auto-download off: the top-right button already says it, so a modal would just be noise.

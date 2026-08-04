@@ -70,6 +70,22 @@
 
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
 
+        <StackPanel Spacing="10">
+            <TextBlock Text="Notifications" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="NotificationsToggle"
+                              Header="Show update notifications"
+                              Toggled="Notifications_Toggled"/>
+                <TextBlock Text="Show a Windows notification when an update needs your attention while the window is closed to the system tray. Off = updates are shown inside the app only."
+                           TextWrapping="Wrap"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
         <StackPanel Spacing="8">
             <TextBlock Text="Default Paste Mode" Style="{StaticResource BodyStrongTextBlockStyle}"/>
             <TextBlock Text="Sets the mode used when creating new templates." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>

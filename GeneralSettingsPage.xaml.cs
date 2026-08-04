@@ -147,6 +147,12 @@ public sealed partial class GeneralSettingsPage : Page
         AutoInstallToggle.IsOn = ViewModel.AutoInstallUpdates;
         AutoInstallToggle.IsEnabled = updatesAllowed && AutoUpdateToggle.IsOn;
 
+        // Its own Notifications section, not an update switch — initialised here only so it shares the
+        // loading guard that stops these assignments firing the Toggled handlers. Deliberately never
+        // disabled: the update policy governs updates, and greying out a general notification setting
+        // because of it would be misleading.
+        NotificationsToggle.IsOn = ViewModel.ShowUpdateNotifications;
+
         BetaToggle.IsOn = betaAllowed && ViewModel.AllowBetaUpdates;
         BetaToggle.IsEnabled = betaAllowed && AutoUpdateToggle.IsOn;
 
@@ -175,6 +181,13 @@ public sealed partial class GeneralSettingsPage : Page
     {
         if (_updatePolicyLoading || ViewModel == null) return;
         ViewModel.AutoInstallUpdates = AutoInstallToggle.IsOn;
+        _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
+    }
+
+    private void Notifications_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_updatePolicyLoading || ViewModel == null) return;
+        ViewModel.ShowUpdateNotifications = NotificationsToggle.IsOn;
         _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
     }
 

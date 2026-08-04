@@ -12,6 +12,11 @@ public partial class AppSettings : ObservableObject
     // When on, a downloaded update is installed automatically at a safe moment (app not in use), no prompt.
     // Off (default): the user confirms each install. Only relevant while AutoCheckUpdates is on.
     [ObservableProperty] private bool _autoInstallUpdates = false;
+    // Windows notifications about updates (and the tray-balloon fallback). Off suppresses them entirely —
+    // an update waiting while the window is hidden is then only visible after opening the window.
+    // Named for the category rather than notifications in general, so further categories (and a parent
+    // "show notifications" switch governing all of them) can be added without this becoming ambiguous.
+    [ObservableProperty] private bool _showUpdateNotifications = true;
     // When on, pre-release/beta versions (GitHub pre-releases, or tags with beta/preview/unstable/prev)
     // are also offered. Off by default — only stable releases are offered.
     [ObservableProperty] private bool _allowBetaUpdates = false;

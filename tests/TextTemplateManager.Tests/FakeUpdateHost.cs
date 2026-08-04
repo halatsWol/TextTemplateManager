@@ -88,6 +88,7 @@ internal sealed class FakeUpdateHost : IUpdateHost
     public int TaskbarFlashes { get; private set; }
     public void FlashTaskbar() => TaskbarFlashes++;
 
+    public bool NotificationsEnabled { get; set; } = true;
     public bool NotificationsAvailable { get; set; } = true;
     public List<UpdateNote> Toasts { get; } = new();
     public void ShowToast(UpdateNote note, string versionLabel) => Toasts.Add(note);

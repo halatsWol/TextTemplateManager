@@ -49,6 +49,9 @@ public interface IUpdateHost
     /// clickable during one. Distinct from <see cref="SetStatus"/>, which owns what the strip shows.</summary>
     void SetBusy(bool busy);
     void FlashTaskbar();
+    /// <summary>The user's "show notifications" setting. Distinct from <see cref="NotificationsAvailable"/>,
+    /// which is whether the platform will deliver one at all.</summary>
+    bool NotificationsEnabled { get; }
     bool NotificationsAvailable { get; }
     void ShowToast(UpdateNote note, string versionLabel);
     void ShowInstallingToast(string versionLabel);
@@ -248,7 +251,7 @@ public sealed class UpdateCoordinator
         if (!_host.WritesQuiet) return;              // a sync poll is mid-write; try again next tick
 
         PendingAutoInstallPath = null;
-        _host.ShowInstallingToast(ReadyVersionLabel ?? "");
+        if (_host.NotificationsEnabled) _host.ShowInstallingToast(ReadyVersionLabel ?? "");
         await InstallAsync(path, unattended: true, flush: true, relaunchHidden: !_host.WindowVisible);
     }
 
@@ -342,6 +345,10 @@ public sealed class UpdateCoordinator
                 await PromptAndInstallAsync(versionLabel, installerPath, note == UpdateNote.AutoInstallFailed);
             return;
         }
+
+        // Notifications turned off: say nothing rather than falling through to the balloon. The
+        // top-right indicator still carries the state once the window is opened.
+        if (!_host.NotificationsEnabled) return;
 
         if (_host.NotificationsAvailable) { _host.ShowToast(note, versionLabel); return; }
 
