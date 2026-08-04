@@ -20,18 +20,12 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New & improved
 
-- **Reworked update experience.** Updates now tell you where you can actually see them. The top-right corner shows the current state — checking, downloading, or ready to install — and the **Check for Updates** menu entry carries a small marker while one is waiting. When the window is closed to the tray, you get a Windows notification instead, with **Install now** on it.
-- **Install updates automatically.** A new option under **Settings ▸ General ▸ Updates**. Off by default, so nothing changes unless you turn it on. With it on, a downloaded update installs on its own at a genuinely quiet moment — a few minutes with no keyboard or mouse activity, no Quick Paste window open, and nothing being saved — or otherwise the next time the app starts. It never interrupts you mid-task, and the app returns to the tray afterwards if that is where it was.
 - **Notifications can be turned off.** A new **Notifications** section in **Settings ▸ General** with **Show update notifications** (on by default). With it off, updates are only shown inside the app — everything else, including automatic installing, carries on as before.
-- **Settings reorganised.** **Startup** and **Updates** are now separate sections rather than one mixed list.
-- **Release date in About.** **Help ▸ About** now shows the date the version was built.
-- **Smaller updates from more versions.** Previously only the release immediately before this one could download the small delta update; anyone further behind got the full installer. A release now carries a delta for every earlier version in its series, so updating from any 1.3 version downloads only what changed. Nothing to configure — it just means a smaller download more often.
+- **Simpler asset names on the Releases page.** The manuals and the cleanup tool no longer carry the version in their file names, so a saved link to them keeps working from one release to the next. The cleanup tool is now **`TextTemplateManager-Support-Cleanup.exe`**.
 
 #### Fixes
 
-- An update can no longer install while data is being written, which could leave a synchronized file half-written or produce a cloud conflict copy.
-- Closing the window to the tray now leaves the Settings view, so reopening from the tray lands on your templates instead of resuming in Settings.
-- The Administrator & Deployment Guide PDF now shows its command examples, which were previously dropped.
+- Much older versions could be offered the wrong download when checking for updates. Release files are listed alphabetically, which put the bundled cleanup tool ahead of the installer, so a version predating 1.2 could pick that up instead. The installer is now identified by name rather than by position. Nothing was installed without asking — the tool always prompts before it does anything — but it was a confusing thing to be handed.
 
 {{CHANGELOG}}
 
