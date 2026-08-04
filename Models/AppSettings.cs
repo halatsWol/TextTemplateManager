@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Collections.ObjectModel;
 using TextTemplateManager.Common;
 
 namespace TextTemplateManager.Models;
@@ -32,7 +31,5 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _browserConnectorEnabled = false;
     [ObservableProperty] private int _browserConnectorPort = 47615;
     [ObservableProperty] private string _browserConnectorToken = "";
-
-    public ObservableCollection<SyncEntry> SyncEntries { get; set; } = new();
 }
 
