@@ -145,7 +145,12 @@ pasted.
 
 The shortcut lists at the bottom of the window show the available single-key and multi-key 
 shortcuts, together with the area each belongs to (a synchronized folder's name, or *local*). 
-Switch between them with the **Single Key** and **Multi Key** tabs:
+Switch between them with the **Single Key** and **Multi Key** tabs.
+
+Whichever tab is showing, its first row is highlighted, **↑ / ↓** move the highlight, and **Enter** 
+pastes it — so the Multi Key list can be browsed with the mouse and keyboard without holding **Alt**. 
+The arrow keys wrap around: pressing **↓** on the last row returns to the first, and **↑** on the first 
+row jumps to the last.
 
 ![Quick Paste, Single Key tab: press the listed key to paste; the area (here, local) is shown on the right.](../Assets/ManualImages/TTM_QuickPaste_SingleKeyView.png)
 

@@ -375,22 +375,25 @@ namespace TextTemplateManager
                 if (e.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
                     return;
             }
-            // Single-key tab: arrow up/down browse the list, Enter pastes the highlighted row.
-            else if (IsSingleTabActive())
+            // Whichever shortcut tab is showing: arrow up/down browse its list, Enter pastes the
+            // highlighted row. Both tabs behave the same — the multi-key list is reachable this way as
+            // well as through the ALT flow above.
+            else
             {
+                var list = IsSingleTabActive() ? SingleKeyList : MultiKeyList;
                 if (e.Key == VirtualKey.Up || e.Key == VirtualKey.Down)
                 {
                     var f = FocusManager.GetFocusedElement(this.Content.XamlRoot);
-                    if (!ReferenceEquals(f, SingleKeyList))   // if the list is focused its own nav handles it
+                    if (!ReferenceEquals(f, list))   // if the list is focused its own nav handles it
                     {
-                        NavigateList(SingleKeyList, e.Key == VirtualKey.Down ? 1 : -1);
+                        NavigateList(list, e.Key == VirtualKey.Down ? 1 : -1);
                         e.Handled = true;
                     }
                     return;
                 }
                 if (e.Key == VirtualKey.Enter)
                 {
-                    if (SingleKeyList.SelectedItem is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
+                    if (list.SelectedItem is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
                     return;
                 }
             }
@@ -590,12 +593,20 @@ namespace TextTemplateManager
 
         private static void NavigateList(ListView list, int delta)
         {
-            int count = list.Items.Count;
-            if (count == 0) return;
-            int cur = list.SelectedIndex;
-            int next = cur < 0 ? (delta > 0 ? 0 : count - 1) : Math.Clamp(cur + delta, 0, count - 1);
+            int next = NextIndex(list.SelectedIndex, delta, list.Items.Count);
+            if (next < 0) return;
             list.SelectedIndex = next;
             if (list.SelectedItem != null) list.ScrollIntoView(list.SelectedItem);
+        }
+
+        /// <summary>Where an arrow-key step lands, wrapping at both ends: past the last item goes back to
+        /// the first, before the first goes to the last. With nothing selected yet, Down starts at the top
+        /// and Up at the bottom. Returns -1 when there is nothing to select.</summary>
+        internal static int NextIndex(int current, int delta, int count)
+        {
+            if (count <= 0) return -1;
+            if (current < 0) return delta > 0 ? 0 : count - 1;
+            return ((current + delta) % count + count) % count;   // stays in range for a negative delta
         }
 
         private bool _hasExecuted = false;
@@ -882,6 +893,13 @@ namespace TextTemplateManager
             bool multi = ReferenceEquals(sender.SelectedItem, TabMulti);
             SingleKeyList.Visibility = multi ? Visibility.Collapsed : Visibility.Visible;
             MultiKeyList.Visibility = multi ? Visibility.Visible : Visibility.Collapsed;
+
+            // The visible list always shows a highlighted row, so the arrows and Enter have somewhere to
+            // start. RefreshMultiKeyList leaves the multi-key list unselected, which used to mean landing
+            // on that tab with nothing selected. An existing selection is kept.
+            var list = multi ? MultiKeyList : SingleKeyList;
+            if (list.SelectedIndex < 0 && list.Items.Count > 0) list.SelectedIndex = 0;
+            if (list.SelectedItem != null) list.ScrollIntoView(list.SelectedItem);
         }
 
         private void ShortcutItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)

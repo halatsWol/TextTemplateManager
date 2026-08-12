@@ -20,12 +20,8 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New & improved
 
-- **Notifications can be turned off.** A new **Notifications** section in **Settings ▸ General** with **Show update notifications** (on by default). With it off, updates are only shown inside the app — everything else, including automatic installing, carries on as before.
-- **Simpler asset names on the Releases page.** The manuals and the cleanup tool no longer carry the version in their file names, so a saved link to them keeps working from one release to the next. The cleanup tool is now **`TextTemplateManager-Support-Cleanup.exe`**.
-
-#### Fixes
-
-- Much older versions could be offered the wrong download when checking for updates. Release files are listed alphabetically, which put the bundled cleanup tool ahead of the installer, so a version predating 1.2 could pick that up instead. The installer is now identified by name rather than by position. Nothing was installed without asking — the tool always prompts before it does anything — but it was a confusing thing to be handed.
+- **The Multi Key list is usable without holding Alt.** Switching to the **Multi Key** tab now highlights its first row, and **↑ / ↓** and **Enter** work there just as they do on the **Single Key** tab. Previously that tab opened with nothing selected and responded only while **Alt** was held.
+- **Arrow keys wrap around the shortcut lists.** Pressing **↓** on the last row returns to the first, and **↑** on the first row jumps to the last, instead of stopping at the ends. Applies to both tabs.
 
 {{CHANGELOG}}
 
