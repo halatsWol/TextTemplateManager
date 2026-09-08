@@ -126,6 +126,15 @@ public sealed class BrowserConnector : IDisposable
 
     private static readonly byte[] HeaderEnd = { 0x0D, 0x0A, 0x0D, 0x0A };   // \r\n\r\n
 
+    // A read that treats a client abort as a clean end-of-stream (0 bytes) rather than throwing — the
+    // caller's read loops already stop on a non-positive count. Keeps the expected disconnect from
+    // surfacing as a first-chance exception, same as WriteResponseAsync.
+    private static async Task<int> ReadSafeAsync(NetworkStream stream, Memory<byte> buf, CancellationToken ct)
+    {
+        try { return await stream.ReadAsync(buf, ct); }
+        catch (Exception ex) when (IsClientGone(ex)) { return 0; }
+    }
+
     private static async Task<Request?> ReadRequestAsync(NetworkStream stream, CancellationToken ct)
     {
         var buf = new byte[8192];
@@ -136,7 +145,7 @@ public sealed class BrowserConnector : IDisposable
         // UTF-8, so the two can't be ASCII-decoded together.
         while (headEnd < 0)
         {
-            int n = await stream.ReadAsync(buf.AsMemory(0, buf.Length), ct);
+            int n = await ReadSafeAsync(stream, buf.AsMemory(0, buf.Length), ct);
             if (n <= 0) break;
             ms.Write(buf, 0, n);
             headEnd = IndexOf(ms.GetBuffer(), (int)ms.Length, HeaderEnd);
@@ -187,7 +196,7 @@ public sealed class BrowserConnector : IDisposable
             if (have > 0) bodyMs.Write(all, bodyStart, Math.Min(have, contentLength));
             while (bodyMs.Length < contentLength)
             {
-                int n = await stream.ReadAsync(buf.AsMemory(0, buf.Length), ct);
+                int n = await ReadSafeAsync(stream, buf.AsMemory(0, buf.Length), ct);
                 if (n <= 0) break;
                 bodyMs.Write(buf, 0, Math.Min(n, contentLength - (int)bodyMs.Length));
             }
@@ -293,6 +302,13 @@ public sealed class BrowserConnector : IDisposable
     private static Response Ok(object payload, string origin) =>
         new(200, JsonSerializer.Serialize(payload, Json), origin);
 
+    // The expected "the client hung up" exceptions: a reset/aborted socket, a disposed stream, or
+    // cooperative cancellation on shutdown. A browser routinely aborts in-flight loopback requests
+    // (the tab navigated, lost focus, or was throttled while another window took the foreground), so
+    // these are normal, not errors.
+    private static bool IsClientGone(Exception ex) =>
+        ex is IOException or SocketException or ObjectDisposedException or OperationCanceledException;
+
     private static async Task WriteResponseAsync(NetworkStream stream, Response res, CancellationToken ct)
     {
         byte[] body = Encoding.UTF8.GetBytes(res.Body);
@@ -311,9 +327,18 @@ public sealed class BrowserConnector : IDisposable
         head.Append("Connection: close\r\n\r\n");
 
         byte[] headBytes = Encoding.ASCII.GetBytes(head.ToString());
-        await stream.WriteAsync(headBytes, ct);
-        if (body.Length > 0) await stream.WriteAsync(body, ct);
-        await stream.FlushAsync(ct);
+        try
+        {
+            await stream.WriteAsync(headBytes, ct);
+            if (body.Length > 0) await stream.WriteAsync(body, ct);
+            await stream.FlushAsync(ct);
+        }
+        catch (Exception ex) when (IsClientGone(ex))
+        {
+            // The browser aborted the connection before we finished replying. Nothing to send; the
+            // connection is dead. Swallowed here, at the throwing await, so it doesn't propagate up as
+            // a first-chance exception the debugger stops on.
+        }
     }
 
     private static string Reason(int code) => code switch
