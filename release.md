@@ -20,8 +20,9 @@ Already have it installed? The app offers this update automatically, or you can 
 
 #### New & improved
 
-- **The Multi Key list is usable without holding Alt.** Switching to the **Multi Key** tab now highlights its first row, and **↑ / ↓** and **Enter** work there just as they do on the **Single Key** tab. Previously that tab opened with nothing selected and responded only while **Alt** was held.
-- **Arrow keys wrap around the shortcut lists.** Pressing **↓** on the last row returns to the first, and **↑** on the first row jumps to the last, instead of stopping at the ends. Applies to both tabs.
+- **Quick Paste moves under the keyboard more naturally.** In the search box the **↑ / ↓** keys move the text cursor, and pressing **↓** once it's at the end (or the box is empty) steps into the template tree — from there **Esc** returns to the box with your text intact. **Tab** now moves cleanly between the search box, the tree and the shortcut list, and the highlighted row in the shortcut list shows only while it's the active area.
+- **Shortcut mode is just for shortcuts now.** With the search box unfocused, a key that isn't a template shortcut sounds a short tone instead of quietly starting a search — so a key you're used to doing nothing can't suddenly start pasting once a shortcut is assigned to it. **Shift**, **Caps Lock** and **Ctrl** no longer pull focus away either.
+- **Longer multi-key shortcuts.** A multi-key shortcut can now be up to 20 characters (previously 15).
 
 {{CHANGELOG}}
 
