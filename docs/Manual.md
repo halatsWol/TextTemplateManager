@@ -126,7 +126,9 @@ pasted.
   just press the key assigned to a template to paste it immediately. If the same key is assigned in 
   more than one area, the local template takes precedence, followed by synchronized folders in their 
   configured order. You can also browse the list with the **↑ / ↓** arrow keys and press **Enter** to 
-  paste the highlighted row. (Once the search box has focus, letters filter instead of triggering 
+  paste the highlighted row. A letter or digit with no template assigned sounds a short error tone 
+  rather than doing anything — the keyboard here is for shortcuts, so pressing **Tab** (or clicking) is 
+  how you move to the search box. (Once the search box has focus, letters filter instead of triggering 
   shortcuts — see *Search*.)
 - **Multi-key shortcut** — hold **Alt** and type the shortcut. The list narrows as you type and 
   highlights the top match; **release Alt** to paste it. You don't have to type the whole 
@@ -138,10 +140,13 @@ pasted.
   **Backspace** while holding **Alt** to correct a mistyped entry.
 - **Paste as plain text** — while still holding **Alt**, end a multi-key entry with **Shift + -** (which produces `_`) to 
   insert the template as unformatted text, regardless of its default paste mode.
-- **Search** — click the search box (or start typing) to filter the tree; matching templates display 
+- **Search** — click the search box (or press **Tab**) to filter the tree; matching templates display 
   their folder path. While the search box has focus, every letter filters and never triggers a 
-  shortcut; press **Esc** to return to shortcut mode. Double-click any template, in either the tree 
-  or the shortcut lists, to paste it.
+  shortcut; press **Esc** to return to shortcut mode. In the search box the arrow keys move the text 
+  cursor — **↑** to the start, **↓** to the end — and pressing **↓** again once the cursor is at the 
+  end (or the box is empty) moves into the template tree, the same as **Tab**. From the tree, **Esc** 
+  returns to the search box with your text intact, and typing a letter carries straight on filtering. 
+  Double-click any template, in either the tree or the shortcut lists, to paste it.
 
 The shortcut lists at the bottom of the window show the available single-key and multi-key 
 shortcuts, together with the area each belongs to (a synchronized folder's name, or *local*). 
@@ -149,8 +154,9 @@ Switch between them with the **Single Key** and **Multi Key** tabs.
 
 Whichever tab is showing, its first row is highlighted, **↑ / ↓** move the highlight, and **Enter** 
 pastes it — so the Multi Key list can be browsed with the mouse and keyboard without holding **Alt**. 
-The arrow keys wrap around: pressing **↓** on the last row returns to the first, and **↑** on the first 
-row jumps to the last.
+(This applies in shortcut mode, when neither the search box nor the tree has focus; the arrows do 
+something different in each of those, as described above.) The arrow keys wrap around: pressing **↓** 
+on the last row returns to the first, and **↑** on the first row jumps to the last.
 
 ![Quick Paste, Single Key tab: press the listed key to paste; the area (here, local) is shown on the right.](../Assets/ManualImages/TTM_QuickPaste_SingleKeyView.png)
 
@@ -386,8 +392,10 @@ Deployment Guide** (`TextTemplateManager-AdminManual.pdf`), attached to each rel
 | Main window (Tree) | **Ctrl + C** | Copy the selected template in its default paste mode. |
 | Main window (Tree) | **Esc** | Clear the current selection. |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
-| Quick Paste | **↑ / ↓** | Move the highlight through the current shortcut list. |
-| Quick Paste | **Enter** | Paste the highlighted shortcut. |
+| Quick Paste (list) | **↑ / ↓** | Move the highlight through the current shortcut list (wraps at both ends). |
+| Quick Paste (list) | **Enter** | Paste the highlighted shortcut. |
+| Quick Paste (search box) | **↑ / ↓** | Move the text cursor to the start / end; **↓** again at the end steps into the tree. |
+| Quick Paste (tree) | **↓** (at end of search) or **Tab** | Move focus into the template tree. |
 | Quick Paste | **Alt** + *keys* | Paste by multi-key shortcut; release **Alt** to insert the highlighted match. |
 | Quick Paste | **Alt** + *keys* + **_**| Paste by multi-key shortcut as Plain Text; release **Alt** to insert. |
 | Quick Paste | **Alt** + **Backspace** | Correct the current multi-key entry. |

@@ -55,7 +55,8 @@ namespace TextTemplateManager
                             _inputSiteHwnd = WindowHelper.SuppressAltMenuBeepOnChild(_hwnd);
 
                         // Open in "shortcut mode" (focus the root, not search) so a single-key
-                        // shortcut pastes immediately; typing a letter or clicking moves into search.
+                        // shortcut pastes immediately; a letter/digit that isn't a shortcut beeps, and
+                        // Tab or a click moves into search.
                         RootGrid.Focus(FocusState.Programmatic);
                     });
                 }
@@ -75,6 +76,11 @@ namespace TextTemplateManager
             // handledEventsToo: see keys even after SearchBox handles them.
             this.RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnKeyDown), true);
             this.RootGrid.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(OnKeyUp), true);
+
+            // Focus landing anywhere in the window drives the shortcut-list highlight (see
+            // SyncShortcutHighlight): visible in shortcut mode, cleared while search or the tree has focus.
+            // GotFocus bubbles, so subscribing on RootGrid catches focus reaching any descendant.
+            this.RootGrid.GotFocus += OnContentGotFocus;
         }
 
         private void LoadInitialData()
@@ -224,7 +230,9 @@ namespace TextTemplateManager
             SingleKeyList.ItemsSource = string.IsNullOrWhiteSpace(searchFilter)
                 ? all
                 : all.Where(t => t.Title.Contains(searchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
-            SingleKeyList.SelectedIndex = SingleKeyList.Items.Count > 0 ? 0 : -1;
+            // Highlight the first row only in shortcut mode — while search/tree has focus the list stays
+            // unselected (SyncShortcutHighlight re-selects it when focus returns).
+            SingleKeyList.SelectedIndex = (InShortcutMode() && SingleKeyList.Items.Count > 0) ? 0 : -1;
         }
 
         private void UpdateMultiKeyFilter(string shortcutBuffer)
@@ -313,8 +321,12 @@ namespace TextTemplateManager
                 // tree → search box → shortcut mode → close (so from the tree the 3rd Esc closes).
                 if (IsTreeFocused())
                 {
+                    // Back to the search box with the filter intact and the caret at the end, so one
+                    // more Down steps straight back into the tree (a clean browse/return round trip).
                     e.Handled = true;
                     SearchBox.Focus(FocusState.Programmatic);
+                    SearchBox.SelectionLength = 0;
+                    SearchBox.SelectionStart = SearchBox.Text.Length;
                     return;
                 }
 
@@ -355,13 +367,19 @@ namespace TextTemplateManager
                 return;
             }
 
-            // While the tree has focus it owns navigation: the TreeView handles the arrows itself
-            // (left/right collapse/expand) and Enter pastes the selected template. Focus elsewhere
-            // (or Esc, above) hands navigation back to the shortcut lists.
+            // Three explicit focus states drive the rest: the TREE (owns its own arrows/Enter), the
+            // SEARCH box (arrows move the caret and can step down into the tree; letters filter), and
+            // SHORTCUT mode (RootGrid focused — single keys paste and arrows browse the visible list).
+            // Keeping them separate stops a key inheriting a neighbour's behaviour, the way the search
+            // box used to pick up the shortcut-list arrows by accident.
+            var focused = FocusManager.GetFocusedElement(this.Content.XamlRoot);
+            bool searchFocused = focused is TextBox;
             bool treeFocused = IsTreeFocused();
+
+            // ---- Tree ----
             if (treeFocused)
             {
-                // Enter/Space paste a template, or expand/collapse a folder.
+                // Enter/Space paste the selected template, or expand/collapse a folder.
                 if (e.Key is VirtualKey.Enter or VirtualKey.Space)
                 {
                     e.Handled = true;
@@ -372,73 +390,96 @@ namespace TextTemplateManager
                     }
                     return;
                 }
+                // The TreeView handles the arrows itself (up/down move, left/right collapse/expand).
                 if (e.Key is VirtualKey.Up or VirtualKey.Down or VirtualKey.Left or VirtualKey.Right)
                     return;
-            }
-            // Whichever shortcut tab is showing: arrow up/down browse its list, Enter pastes the
-            // highlighted row. Both tabs behave the same — the multi-key list is reachable this way as
-            // well as through the ALT flow above.
-            else
-            {
-                var list = IsSingleTabActive() ? SingleKeyList : MultiKeyList;
-                if (e.Key == VirtualKey.Up || e.Key == VirtualKey.Down)
-                {
-                    var f = FocusManager.GetFocusedElement(this.Content.XamlRoot);
-                    if (!ReferenceEquals(f, list))   // if the list is focused its own nav handles it
-                    {
-                        NavigateList(list, e.Key == VirtualKey.Down ? 1 : -1);
-                        e.Handled = true;
-                    }
-                    return;
-                }
-                if (e.Key == VirtualKey.Enter)
-                {
-                    if (list.SelectedItem is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
-                    return;
-                }
-            }
-
-            // Single-key shortcuts fire only in "shortcut mode" — never while the search box or the
-            // tree has focus, where the letter belongs to the search/tree. (A SearchBox.Text check
-            // isn't enough: the text is still empty on the FIRST keystroke into search, so that first
-            // letter would be hijacked into a paste.)
-            var focused = FocusManager.GetFocusedElement(this.Content.XamlRoot);
-            bool searchFocused = focused is TextBox;
-
-            if (!searchFocused && !treeFocused)
-            {
-                var match = DataNode.Instance.ResolveSingleKey(e.Key.ToString());
-                if (match != null)
+                // A printable key hands the tree back to the search box and keeps typing there, rather
+                // than dead-ending with a beep. (Space is taken above; '-'/'.' aren't letters/digits,
+                // so they fall through and are ignored, as before.)
+                if (TryGetCharKey(e.Key, out char intoSearch))
                 {
                     e.Handled = true;
-                    ExecutePaste(match, false);
+                    FocusSearchWith(intoSearch);
+                }
+                return;
+            }
+
+            // ---- Search box ----
+            if (searchFocused)
+            {
+                // Up: caret (collapsing any selection) to the very start — nothing sits above the box,
+                // so it never leaves. Down: caret to the end; a second Down from the end steps into the
+                // tree (when it has rows — otherwise it stays put).
+                if (e.Key == VirtualKey.Up)
+                {
+                    e.Handled = true;
+                    SearchBox.SelectionLength = 0;
+                    SearchBox.SelectionStart = 0;
                     return;
                 }
+                if (e.Key == VirtualKey.Down)
+                {
+                    e.Handled = true;
+                    if (DecideSearchDown(SearchBox.SelectionStart, SearchBox.SelectionLength,
+                                         SearchBox.Text.Length, TemplateTree.RootNodes.Count) == SearchDown.EnterTree)
+                        EnterTreeFromSearch();
+                    else { SearchBox.SelectionLength = 0; SearchBox.SelectionStart = SearchBox.Text.Length; }
+                    return;
+                }
+                // Enter here is deliberately inert for now (the shortcut list isn't the focus).
+                // Swallowed so a later binding has a clean home. Alt+Enter never reaches this branch —
+                // the ALT block above commits the highlighted multi-key row first.
+                if (e.Key == VirtualKey.Enter)
+                {
+                    e.Handled = true;
+                    return;
+                }
+                return;   // every other key types into the box normally
             }
 
-            if (searchFocused) return;   // in the search box: let it type normally
+            // ---- Shortcut mode (RootGrid focused) ----
+            // Arrow up/down browse whichever shortcut tab is showing; Enter pastes the highlighted row.
+            // Both tabs behave the same — the multi-key list is reachable this way as well as via ALT.
+            var list = IsSingleTabActive() ? SingleKeyList : MultiKeyList;
+            if (e.Key == VirtualKey.Up || e.Key == VirtualKey.Down)
+            {
+                if (!ReferenceEquals(focused, list))   // if the list itself is focused, its own nav handles it
+                {
+                    NavigateList(list, e.Key == VirtualKey.Down ? 1 : -1);
+                    e.Handled = true;
+                }
+                return;
+            }
+            if (e.Key == VirtualKey.Enter)
+            {
+                if (list.SelectedItem is Template sel) { e.Handled = true; ExecutePaste(sel, false); }
+                return;
+            }
 
-            // Shortcut mode, a key that isn't a shortcut: a printable one starts a search (focus the
-            // box and insert it); other keys just move focus there. While the tree is navigating, keep
-            // its focus and only beep on a stray letter.
-            if (TryGetCharKey(e.Key, out char typed))
+            // A single-key shortcut pastes immediately in shortcut mode. (A SearchBox.Text check isn't
+            // enough to gate this — the text is still empty on the FIRST keystroke into search, so that
+            // first letter would be hijacked into a paste; the focus split above is what gates it.)
+            var match = DataNode.Instance.ResolveSingleKey(e.Key.ToString());
+            if (match != null)
             {
                 e.Handled = true;
-                if (treeFocused)
-                {
-                    PlayNoMatchBeep();
-                }
-                else
-                {
-                    SearchBox.Focus(FocusState.Programmatic);
-                    SearchBox.Text += typed;
-                    SearchBox.SelectionStart = SearchBox.Text.Length;
-                }
+                ExecutePaste(match, false);
+                return;
             }
-            else if (!treeFocused)
+
+            // Not a matching shortcut: in shortcut mode the keyboard is for shortcuts, so a stray letter
+            // or digit just beeps rather than dropping into search. That keeps behaviour steady whether
+            // or not a key happens to be a shortcut today — a key you're used to doing nothing can't
+            // start pasting later just because a shortcut got assigned to it.
+            if (TryGetCharKey(e.Key, out _))
             {
-                SearchBox.Focus(FocusState.Programmatic);
+                e.Handled = true;
+                PlayNoMatchBeep();
             }
+            // Everything else — Tab, Shift, Caps Lock, other modifiers, '-'/'.'/Space — is left unhandled
+            // so nothing drags focus out of shortcut mode: Tab lets the framework move to the search box in
+            // one clean step (focusing it here as well would skip search and land on the tree), and a bare
+            // modifier does nothing. Search is reached by Tab or a click.
         }
 
         private void HandleMultiKeyInput(VirtualKey key)
@@ -579,6 +620,36 @@ namespace TextTemplateManager
             return false;
         }
 
+        // Shortcut mode = the keyboard is on the shortcut lists: focus is neither the search box nor the
+        // tree. Single keys paste and the arrows browse the visible list in this state. Before the window
+        // is shown (no XamlRoot yet) it opens straight into shortcut mode, so default to true.
+        private bool InShortcutMode()
+        {
+            var root = this.Content?.XamlRoot;
+            if (root is null) return true;
+            return FocusManager.GetFocusedElement(root) is not TextBox && !IsTreeFocused();
+        }
+
+        // Focus moved: the visible shortcut list carries a highlighted row only while shortcut mode is
+        // active, so it never looks live while you type in search or browse the tree. Leaving clears both
+        // lists; coming back (Esc, Tab, or a click that didn't land on a row) re-selects the first row.
+        private void OnContentGotFocus(object sender, RoutedEventArgs e) => SyncShortcutHighlight();
+
+        private void SyncShortcutHighlight()
+        {
+            if (InShortcutMode())
+            {
+                var list = IsSingleTabActive() ? SingleKeyList : MultiKeyList;
+                if (list.SelectedIndex < 0 && list.Items.Count > 0) list.SelectedIndex = 0;
+                if (list.SelectedItem != null) list.ScrollIntoView(list.SelectedItem);
+            }
+            else
+            {
+                SingleKeyList.SelectedIndex = -1;
+                MultiKeyList.SelectedIndex = -1;
+            }
+        }
+
 
         // Pastes the highlighted multi-key row (trailing '_' = plaintext). Returns true if a paste
         // fired. requireBuffer gates the passive ALT-release commit on having typed something;
@@ -607,6 +678,40 @@ namespace TextTemplateManager
             if (count <= 0) return -1;
             if (current < 0) return delta > 0 ? 0 : count - 1;
             return ((current + delta) % count + count) % count;   // stays in range for a negative delta
+        }
+
+        internal enum SearchDown { MoveCaretToEnd, EnterTree }
+
+        /// <summary>What Down does from the search box: step into the tree, or just move the caret to the
+        /// end. It enters the tree only from a collapsed caret already at the end (an empty box counts as
+        /// at-the-end) and only when the tree has rows; a selection or a mid-string caret collapses to the
+        /// end first, and an empty tree keeps the caret in the box.</summary>
+        internal static SearchDown DecideSearchDown(int caret, int selectionLength, int textLength, int treeNodeCount)
+        {
+            bool atEnd = selectionLength == 0 && caret >= textLength;
+            return atEnd && treeNodeCount > 0 ? SearchDown.EnterTree : SearchDown.MoveCaretToEnd;
+        }
+
+        // Move focus into the search box and append a character, caret at the end — the shared path for a
+        // printable key pressed in shortcut mode or while the tree has focus.
+        private void FocusSearchWith(char typed)
+        {
+            SearchBox.Focus(FocusState.Programmatic);
+            SearchBox.Text += typed;
+            SearchBox.SelectionStart = SearchBox.Text.Length;
+        }
+
+        // Step Down out of the search box into the tree. The tree drives Enter off its SELECTED node (not
+        // the focused one) and nothing else seeds a selection, so pick the first root node when none is
+        // set — that also raises TemplateTree_SelectionChanged, filling the preview. Caller has already
+        // confirmed there is a node to land on (DecideSearchDown).
+        private void EnterTreeFromSearch()
+        {
+            TemplateTree.SelectedNode ??= TemplateTree.RootNodes[0];
+            if (TemplateTree.ContainerFromNode(TemplateTree.SelectedNode) is TreeViewItem container)
+                container.Focus(FocusState.Programmatic);
+            else
+                TemplateTree.Focus(FocusState.Programmatic);
         }
 
         private bool _hasExecuted = false;
@@ -894,12 +999,10 @@ namespace TextTemplateManager
             SingleKeyList.Visibility = multi ? Visibility.Collapsed : Visibility.Visible;
             MultiKeyList.Visibility = multi ? Visibility.Visible : Visibility.Collapsed;
 
-            // The visible list always shows a highlighted row, so the arrows and Enter have somewhere to
-            // start. RefreshMultiKeyList leaves the multi-key list unselected, which used to mean landing
-            // on that tab with nothing selected. An existing selection is kept.
-            var list = multi ? MultiKeyList : SingleKeyList;
-            if (list.SelectedIndex < 0 && list.Items.Count > 0) list.SelectedIndex = 0;
-            if (list.SelectedItem != null) list.ScrollIntoView(list.SelectedItem);
+            // Highlight the newly-visible list's first row so the arrows and Enter have somewhere to start
+            // — but only in shortcut mode, so switching tabs never lights a list up while focus is in the
+            // search box or the tree.
+            SyncShortcutHighlight();
         }
 
         private void ShortcutItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)

@@ -66,4 +66,43 @@ public class PasteWindowNavigationTests
         Assert.Equal(1, PasteWindow.NextIndex(current: 0, delta: 4, count: 3));
         Assert.Equal(2, PasteWindow.NextIndex(current: 0, delta: -4, count: 3));
     }
+
+    [Fact]
+    public void Down_from_the_end_of_the_search_box_steps_into_the_tree()
+    {
+        // Caret collapsed at the end, tree has rows -> hand off to the tree.
+        Assert.Equal(PasteWindow.SearchDown.EnterTree,
+            PasteWindow.DecideSearchDown(caret: 4, selectionLength: 0, textLength: 4, treeNodeCount: 3));
+    }
+
+    [Fact]
+    public void Down_from_an_empty_search_box_steps_into_the_tree()
+    {
+        // An empty box is "at the end" (caret 0 == length 0), so Down goes straight in with no filter.
+        Assert.Equal(PasteWindow.SearchDown.EnterTree,
+            PasteWindow.DecideSearchDown(caret: 0, selectionLength: 0, textLength: 0, treeNodeCount: 3));
+    }
+
+    [Fact]
+    public void Down_from_mid_string_only_moves_the_caret_to_the_end()
+    {
+        Assert.Equal(PasteWindow.SearchDown.MoveCaretToEnd,
+            PasteWindow.DecideSearchDown(caret: 2, selectionLength: 0, textLength: 5, treeNodeCount: 3));
+    }
+
+    [Fact]
+    public void Down_with_text_selected_collapses_to_the_end_rather_than_entering_the_tree()
+    {
+        // A live selection (even one that reaches the end) collapses first — a second Down then enters.
+        Assert.Equal(PasteWindow.SearchDown.MoveCaretToEnd,
+            PasteWindow.DecideSearchDown(caret: 0, selectionLength: 5, textLength: 5, treeNodeCount: 3));
+    }
+
+    [Fact]
+    public void Down_stays_in_the_search_box_when_the_tree_is_empty()
+    {
+        // At the end but nothing to land on -> stay put (re-pin the caret to the end).
+        Assert.Equal(PasteWindow.SearchDown.MoveCaretToEnd,
+            PasteWindow.DecideSearchDown(caret: 4, selectionLength: 0, textLength: 4, treeNodeCount: 0));
+    }
 }

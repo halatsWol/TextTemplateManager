@@ -46,11 +46,12 @@
 
         <Button x:Name="HelpButton"
                 Grid.Column="2"
-                Click="HelpButton_Click" 
-                VerticalAlignment="Top" 
-                HorizontalAlignment="Right" 
-                Canvas.ZIndex="100" 
+                Click="HelpButton_Click"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Right"
+                Canvas.ZIndex="100"
                 Margin="0,10,15,0"
+                IsTabStop="False"
                 Style="{StaticResource SubtleButtonStyle}"
                 ToolTipService.ToolTip="Usage Help">
             <SymbolIcon Symbol="Help"/>
@@ -116,6 +117,7 @@
                                 ResizeBehavior="BasedOnAlignment"
                                 ResizeDirection="Columns"
                                 IsThumbVisible="False"
+                                IsTabStop="False"
                                 Background="Transparent"
                                 Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
         <FontIcon Grid.Column="1" Glyph="&#xE784;" FontSize="14" FontFamily="Segoe MDL2 Assets"
@@ -144,7 +146,7 @@
                         BorderThickness="1"
                         CornerRadius="4"
                         Background="{ThemeResource ControlFillColorDefaultBrush}">
-                    <WebView2 x:Name="PreviewWebView" Loaded="PreviewWebView_Loaded"/>
+                    <WebView2 x:Name="PreviewWebView" Loaded="PreviewWebView_Loaded" IsTabStop="False"/>
                 </Border>
             </Grid>
 
@@ -154,6 +156,7 @@
                                    ResizeBehavior="PreviousAndNext"
                                    ResizeDirection="Rows"
                                    IsThumbVisible="False"
+                                   IsTabStop="False"
                                    Background="Transparent"
                                    Foreground="{ThemeResource DividerStrokeColorDefaultBrush}"/>
             <!-- Gripper glyph: click & drag affordance; IsHitTestVisible=False so the splitter gets the drag. -->
@@ -187,7 +190,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Border BorderThickness="0,1,0,1" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Padding="6,0">
-                    <SelectorBar x:Name="ShortcutTabs" SelectionChanged="ShortcutTabs_SelectionChanged">
+                    <SelectorBar x:Name="ShortcutTabs" SelectionChanged="ShortcutTabs_SelectionChanged" IsTabStop="False">
                         <SelectorBarItem x:Name="TabSingle" Text="Single Key" IsSelected="True"/>
                         <SelectorBarItem x:Name="TabMulti" Text="Multi Key"/>
                     </SelectorBar>
@@ -312,7 +315,7 @@
 
                     <TextBlock Grid.Row="6" Grid.Column="0" Text="🔍" VerticalAlignment="Top"/>
                     <TextBlock Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" FontSize="13">
-                        <Run FontWeight="SemiBold" Text="Search:"/><Run Text=" folder-aware; matches show their parent path."/>
+                        <Run FontWeight="SemiBold" Text="Search:"/><Run Text=" folder-aware; matches show their parent path. ↑/↓ move the cursor; ↓ at the end steps into the tree."/>
                     </TextBlock>
 
                     <TextBlock Grid.Row="7" Grid.Column="0" Text="⎋" VerticalAlignment="Top" FontWeight="SemiBold"/>
