@@ -18,11 +18,10 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### New & improved
+#### Fixes
 
-- **Quick Paste moves under the keyboard more naturally.** In the search box the **↑ / ↓** keys move the text cursor, and pressing **↓** once it's at the end (or the box is empty) steps into the template tree — from there **Esc** returns to the box with your text intact. **Tab** now moves cleanly between the search box, the tree and the shortcut list, and the highlighted row in the shortcut list shows only while it's the active area.
-- **Shortcut mode is just for shortcuts now.** With the search box unfocused, a key that isn't a template shortcut sounds a short tone instead of quietly starting a search — so a key you're used to doing nothing can't suddenly start pasting once a shortcut is assigned to it. **Shift**, **Caps Lock** and **Ctrl** no longer pull focus away either.
-- **Longer multi-key shortcuts.** A multi-key shortcut can now be up to 20 characters (previously 15).
+- **Tab moves through Quick Paste reliably.** Cycling between the search box, the template tree and the shortcut list with **Tab** (and **Shift + Tab**) now steps through them in order, instead of occasionally skipping the search box or leaving focus stuck on a shortcut row.
+- **Ctrl + F focuses the search box again.** In both the main window and Quick Paste, **Ctrl + F** jumps straight to the search box.
 
 {{CHANGELOG}}
 
