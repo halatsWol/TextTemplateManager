@@ -140,7 +140,7 @@ pasted.
   **Backspace** while holding **Alt** to correct a mistyped entry.
 - **Paste as plain text** — while still holding **Alt**, end a multi-key entry with **Shift + -** (which produces `_`) to 
   insert the template as unformatted text, regardless of its default paste mode.
-- **Search** — click the search box (or press **Tab**) to filter the tree; matching templates display 
+- **Search** — click the search box (or press **Tab** or **Ctrl + F**) to filter the tree; matching templates display 
   their folder path. While the search box has focus, every letter filters and never triggers a 
   shortcut; press **Esc** to return to shortcut mode. In the search box the arrow keys move the text 
   cursor — **↑** to the start, **↓** to the end — and pressing **↓** again once the cursor is at the 
@@ -388,10 +388,12 @@ Deployment Guide** (`TextTemplateManager-AdminManual.pdf`), attached to each rel
 
 | Context | Input | Action |
 | --- | --- | --- |
+| Main window | **Ctrl + F** | Focus the search box. |
 | Main window (Tree) | **Delete** | Delete the selected item (with confirmation). |
 | Main window (Tree) | **Ctrl + C** | Copy the selected template in its default paste mode. |
 | Main window (Tree) | **Esc** | Clear the current selection. |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
+| Quick Paste | **Ctrl + F** | Focus the search box. |
 | Quick Paste (list) | **↑ / ↓** | Move the highlight through the current shortcut list (wraps at both ends). |
 | Quick Paste (list) | **Enter** | Paste the highlighted shortcut. |
 | Quick Paste (search box) | **↑ / ↓** | Move the text cursor to the start / end; **↓** again at the end steps into the tree. |

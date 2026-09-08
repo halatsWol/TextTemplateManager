@@ -367,6 +367,17 @@ namespace TextTemplateManager
                 return;
             }
 
+            // Ctrl+F focuses the search box from anywhere (shortcut mode, tree, or search), selecting any
+            // existing text to type over. Without this a bare 'F' in shortcut mode would just beep as a
+            // non-shortcut key.
+            if (e.Key == VirtualKey.F && IsCtrlDown())
+            {
+                e.Handled = true;
+                SearchBox.Focus(FocusState.Programmatic);
+                SearchBox.SelectAll();
+                return;
+            }
+
             // Three explicit focus states drive the rest: the TREE (owns its own arrows/Enter), the
             // SEARCH box (arrows move the caret and can step down into the tree; letters filter), and
             // SHORTCUT mode (RootGrid focused — single keys paste and arrows browse the visible list).
@@ -375,6 +386,31 @@ namespace TextTemplateManager
             var focused = FocusManager.GetFocusedElement(this.Content.XamlRoot);
             bool searchFocused = focused is TextBox;
             bool treeFocused = IsTreeFocused();
+
+            // Tab / Shift+Tab cycle deterministically between the three surfaces, handled here so the
+            // framework's own tab navigation (which kept pulling focus onto a display-only shortcut-list
+            // row) never runs. Forward order is shortcut mode -> search -> tree -> shortcut mode; Shift
+            // reverses it. An empty tree is skipped so focus never lands on nothing.
+            if (e.Key == VirtualKey.Tab)
+            {
+                e.Handled = true;
+                bool back = IsShiftDown();
+                if (searchFocused)
+                {
+                    if (back) FocusShortcutMode();
+                    else if (!TryFocusTree()) FocusShortcutMode();
+                }
+                else if (treeFocused)
+                {
+                    if (back) FocusSearch(); else FocusShortcutMode();
+                }
+                else   // shortcut mode
+                {
+                    if (back) { if (!TryFocusTree()) FocusSearch(); }
+                    else FocusSearch();
+                }
+                return;
+            }
 
             // ---- Tree ----
             if (treeFocused)
@@ -422,7 +458,7 @@ namespace TextTemplateManager
                     e.Handled = true;
                     if (DecideSearchDown(SearchBox.SelectionStart, SearchBox.SelectionLength,
                                          SearchBox.Text.Length, TemplateTree.RootNodes.Count) == SearchDown.EnterTree)
-                        EnterTreeFromSearch();
+                        TryFocusTree();
                     else { SearchBox.SelectionLength = 0; SearchBox.SelectionStart = SearchBox.Text.Length; }
                     return;
                 }
@@ -584,6 +620,10 @@ namespace TextTemplateManager
             => (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down)
                == CoreVirtualKeyStates.Down;
 
+        private static bool IsCtrlDown()
+            => (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & CoreVirtualKeyStates.Down)
+               == CoreVirtualKeyStates.Down;
+
         // The typed multikey shortcut (sync-prefixed, e.g. "and-msg").
         private static string EffectiveMulti(Template t) => DataNode.Instance.GetEffectiveMultiKey(t);
 
@@ -701,18 +741,24 @@ namespace TextTemplateManager
             SearchBox.SelectionStart = SearchBox.Text.Length;
         }
 
-        // Step Down out of the search box into the tree. The tree drives Enter off its SELECTED node (not
-        // the focused one) and nothing else seeds a selection, so pick the first root node when none is
-        // set — that also raises TemplateTree_SelectionChanged, filling the preview. Caller has already
-        // confirmed there is a node to land on (DecideSearchDown).
-        private void EnterTreeFromSearch()
+        // Move focus into the tree, seeding a selection so Enter has a target and the preview fills (the
+        // tree drives Enter off its SELECTED node, not the focused one, and nothing else seeds one).
+        // Returns false when the tree is empty, so callers can route focus elsewhere.
+        private bool TryFocusTree()
         {
+            if (TemplateTree.RootNodes.Count == 0) return false;
             TemplateTree.SelectedNode ??= TemplateTree.RootNodes[0];
             if (TemplateTree.ContainerFromNode(TemplateTree.SelectedNode) is TreeViewItem container)
                 container.Focus(FocusState.Programmatic);
             else
                 TemplateTree.Focus(FocusState.Programmatic);
+            return true;
         }
+
+        private void FocusSearch() => SearchBox.Focus(FocusState.Programmatic);
+
+        // Return to shortcut mode: focus the root grid (single keys paste, the arrows drive the list).
+        private void FocusShortcutMode() => RootGrid.Focus(FocusState.Programmatic);
 
         private bool _hasExecuted = false;
 

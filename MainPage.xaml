@@ -10,6 +10,11 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d">
 
+    <Page.KeyboardAccelerators>
+        <!-- Ctrl+F focuses the search box from anywhere in the window. -->
+        <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="SearchAccelerator_Invoked"/>
+    </Page.KeyboardAccelerators>
+
     <Page.Resources>
         <helpers:BoolToVisibilityConverter x:Key="BoolToVis"/>
 
@@ -161,7 +166,8 @@
 
                     <!-- Search -->
                     <StackPanel Grid.Row="1" Margin="10,5" Spacing="5">
-                        <AutoSuggestBox QueryIcon="Find"
+                        <AutoSuggestBox x:Name="SearchBox"
+                                        QueryIcon="Find"
                                         PlaceholderText="Search templates..."
                                         Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>

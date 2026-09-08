@@ -1116,6 +1116,13 @@ namespace TextTemplateManager
             => (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & CoreVirtualKeyStates.Down)
                == CoreVirtualKeyStates.Down;
 
+        // Ctrl+F focuses the search box from anywhere in the window (page-level accelerator).
+        private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            SearchBox.Focus(FocusState.Programmatic);
+        }
+
         private void ItemTreeView_DragOver(object sender, DragEventArgs e)
         {
             e.AcceptedOperation = DataPackageOperation.Move;

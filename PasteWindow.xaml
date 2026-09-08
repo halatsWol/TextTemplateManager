@@ -204,6 +204,10 @@
                                 <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="MinHeight" Value="0"/>
+                                <!-- The list is display-only, driven by the shortcut-mode arrows on RootGrid.
+                                     Keep its rows out of the Tab order so Tab never lands focus on a row
+                                     (which would run the ListView's own arrow nav on top of ours). -->
+                                <Setter Property="IsTabStop" Value="False"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
@@ -235,6 +239,10 @@
                                 <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="MinHeight" Value="0"/>
+                                <!-- The list is display-only, driven by the shortcut-mode arrows on RootGrid.
+                                     Keep its rows out of the Tab order so Tab never lands focus on a row
+                                     (which would run the ListView's own arrow nav on top of ours). -->
+                                <Setter Property="IsTabStop" Value="False"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
