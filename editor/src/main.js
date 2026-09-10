@@ -15,10 +15,38 @@ import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import CodeBlock from '@tiptap/extension-code-block'
 import { Fragment, Slice } from '@tiptap/pm/model'
-import { TextSelection, EditorState } from '@tiptap/pm/state'
+import { TextSelection, EditorState, Plugin, PluginKey } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 // Allow any block (incl. headings) inside a list item so heading + list can coexist.
 const RichListItem = ListItem.extend({ content: 'block+' })
+
+// Map a character index within an element's text to a (textNode, offset) DOM position, so a
+// Range can be built for measuring where a wrapped code line breaks. Returns null past the end.
+function charToDomPos(root, target) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    let node, seen = 0
+    while ((node = walker.nextNode())) {
+        const len = node.nodeValue.length
+        if (seen + len >= target) return { node, offset: target - seen }
+        seen += len
+    }
+    return null
+}
+
+// How many wrapped visual rows the character range [start, end) occupies inside `code`: distinct
+// rect tops = distinct rows; a collapsed range (an empty line) counts as one.
+function visualRows(code, start, end) {
+    const a = charToDomPos(code, start)
+    const b = charToDomPos(code, end)
+    if (!a || !b) return 1
+    const range = document.createRange()
+    range.setStart(a.node, a.offset)
+    range.setEnd(b.node, b.offset)
+    const tops = new Set()
+    for (const r of range.getClientRects()) tops.add(Math.round(r.top))
+    return tops.size || 1
+}
 
 // Code block with an optional line-number gutter. The `lineNumbers` attribute lets one node
 // serve both the plain "Preformat" style (off) and the "Code block" (on). The gutter is a
@@ -44,25 +72,65 @@ const LineNumberCodeBlock = CodeBlock.extend({
             pre.appendChild(gutter)
             pre.appendChild(code)
 
-            const sync = (n) => {
-                const on = !!n.attrs.lineNumbers
-                pre.classList.toggle('with-line-numbers', on)
-                if (on) {
-                    const lines = (n.textContent.match(/\n/g) || []).length + 1
-                    let s = ''
-                    for (let i = 1; i <= lines; i++) s += (i > 1 ? '\n' : '') + i
-                    gutter.textContent = s
-                }
+            let on = !!node.attrs.lineNumbers
+
+            // Plain numbering (one per source line), set synchronously from the node's text so numbers
+            // never flash empty — this shows before layout is measured or when a frame can't run yet.
+            // (Reads the node, not the DOM, because contentDOM isn't populated yet at nodeview build.)
+            const setNumbers = (n) => {
+                const count = (n.textContent.match(/\n/g) || []).length + 1
+                let out = ''
+                for (let i = 1; i <= count; i++) out += (i > 1 ? '\n' : '') + i
+                if (gutter.textContent !== out) gutter.textContent = out
             }
+
+            // Refine the gutter so each number sits on the first of its line's (wrapped) rows: after
+            // the number, emit one blank gutter line per extra row. Measures rendered layout, so it
+            // runs after a frame and re-runs whenever the code reflows (edits, editor resize).
+            const rebuild = () => {
+                if (!on) return
+                const lines = code.textContent.split('\n')
+                let out = '', pos = 0
+                for (let i = 0; i < lines.length; i++) {
+                    out += (i > 0 ? '\n' : '') + (i + 1)
+                    out += '\n'.repeat(visualRows(code, pos, pos + lines[i].length) - 1)
+                    pos += lines[i].length + 1  // + the '\n' separator
+                }
+                if (gutter.textContent !== out) gutter.textContent = out
+            }
+
+            let frame = 0
+            const schedule = () => {
+                if (!frame) frame = requestAnimationFrame(() => { frame = 0; rebuild() })
+            }
+
+            const sync = (n) => {
+                on = !!n.attrs.lineNumbers
+                pre.classList.toggle('with-line-numbers', on)
+                if (on) { setNumbers(n); schedule() }
+                else gutter.textContent = ''
+            }
+
+            const observer = new ResizeObserver(schedule)
+            observer.observe(code)
             sync(node)
 
             return {
                 dom: pre,
                 contentDOM: code,
+                // The gutter is ours and is repainted outside ProseMirror's update cycle (on a frame).
+                // Without this, PM would treat each gutter edit as an unexpected DOM change and redraw
+                // the node — which repaints the gutter again, looping. Only mutations inside the
+                // editable code are PM's to reconcile.
+                ignoreMutation: (mutation) => mutation.type !== 'selection' && !code.contains(mutation.target),
                 update: (updated) => {
                     if (updated.type.name !== node.type.name) return false
                     sync(updated)
                     return true
+                },
+                destroy: () => {
+                    observer.disconnect()
+                    if (frame) cancelAnimationFrame(frame)
                 },
             }
         }
@@ -81,6 +149,43 @@ const LineNumberCodeBlock = CodeBlock.extend({
                 return editor.commands.exitCode()
             },
         }
+    },
+    // Keep hyphenated tokens (e.g. PowerShell `-Recurse`) whole when a line wraps. The browser
+    // offers a break *after* a hyphen, so ` -Recurse` can wrap with the "-" stranded on the line
+    // above. We wrap each such hyphen in a decoration whose CSS ::after adds a zero-width word
+    // joiner, which cancels that break so wrapping falls on the preceding space instead. It's a
+    // decoration, so the stored text and anything copied out stay exactly as typed. A genuinely
+    // over-long token still gets an emergency mid-token break from overflow-wrap.
+    addProseMirrorPlugins() {
+        const type = this.type
+        const key = new PluginKey('codeHyphenGlue')
+        const build = (doc) => {
+            const decos = []
+            doc.descendants((node, pos) => {
+                if (node.type !== type) return true
+                const text = node.textContent
+                const start = pos + 1
+                for (let i = 0; i < text.length - 1; i++) {
+                    // a hyphen glued to the following non-space character
+                    if (text.charCodeAt(i) === 45 && !/\s/.test(text[i + 1])) {
+                        decos.push(Decoration.inline(start + i, start + i + 1, { class: 'nb-glue' }))
+                    }
+                }
+                return false
+            })
+            return DecorationSet.create(doc, decos)
+        }
+        return [
+            ...(this.parent?.() || []),
+            new Plugin({
+                key,
+                state: {
+                    init: (_, { doc }) => build(doc),
+                    apply: (tr, old) => (tr.docChanged ? build(tr.doc) : old),
+                },
+                props: { decorations(state) { return key.getState(state) } },
+            }),
+        ]
     },
 })
 

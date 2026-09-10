@@ -430,9 +430,14 @@ body.readonly .ProseMirror {
 
 .ProseMirror pre.with-line-numbers code {
     flex: 1 1 auto;
-    white-space: pre;
-    overflow-x: auto;
+    min-width: 0;              /* let the flex item shrink so long lines wrap instead of overflowing */
+    white-space: pre-wrap;     /* wrap at word boundaries rather than scrolling horizontally */
+    overflow-wrap: break-word; /* break inside a word only when a single token can't fit */
 }
+
+/* Zero-width word joiner after a hyphen (added by the codeHyphenGlue decoration): cancels the
+   browser's break-after-hyphen so a wrapped `-Argument` keeps its "-" instead of stranding it. */
+.ProseMirror pre .nb-glue::after { content: "\2060"; }
 
 /* Preformat block: preformatted text, lighter than a code block and with no line numbers —
    a dashed outline with no fill, to clearly distinguish it from the solid code block. */
