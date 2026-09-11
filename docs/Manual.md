@@ -55,7 +55,7 @@ new templates and folders are created at the root.
 
 Selecting a template opens it in the editor, which supports bold, italic, underline, 
 strikethrough, text and highlight colors, headings, bulleted and numbered lists, links, tables, 
-and callout panels. Changes are saved automatically a short time after you stop typing, so there is 
+callout panels, and code blocks with syntax highlighting. Changes are saved automatically a short time after you stop typing, so there is 
 no separate save step — a brief **Saved** indicator appears in the top-right corner each time your 
 data is written.
 
@@ -63,6 +63,21 @@ data is written.
 points. A plain click just places the cursor so you can edit the link.
 
 ![A template open in the editor: a formatted body with an Info callout panel, its Single Key (M) and Multi Key (MSG) shortcuts, and the HTML/Jira default paste mode. The badge on the folder marks it as synchronized.](<../Assets/ManualImages/TTM_MainWindow_TemplateExample(syncedTemplate).png>)
+
+### Code blocks
+
+The **Code block** button on the toolbar formats the current block as monospaced code with a 
+line-number gutter (the **Preformat** entry in the text-format menu is the same style without the 
+numbers). A picker in the block's top-right corner sets the language: it **auto-detects** by 
+default, or you can choose PowerShell, Python, Batch/cmd, Bash, JSON, JavaScript, TypeScript, 
+HTML/XML, SQL, C#, YAML, Markdown, or **Plain text** to turn colouring off. Colours follow the 
+light/dark theme and also appear in the read-only preview; the template itself still stores plain 
+text.
+
+Long lines wrap to the next row instead of scrolling sideways, with the line numbers staying 
+aligned. Typing is indentation-aware: **Enter** keeps the current indentation and steps in after 
+an opening `(`, `[`, `{` or a backtick, while typing a closing `)`, `]` or `}` steps back out, and 
+pasting multi-line code re-indents it to fit where you drop it.
 
 ### Callout panels
 

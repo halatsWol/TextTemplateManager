@@ -18,10 +18,11 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### Fixes
+The rich-text editor's code blocks got a big upgrade:
 
-- **Tab moves through Quick Paste reliably.** Cycling between the search box, the template tree and the shortcut list with **Tab** (and **Shift + Tab**) now steps through them in order, instead of occasionally skipping the search box or leaving focus stuck on a shortcut row.
-- **Ctrl + F focuses the search box again.** In both the main window and Quick Paste, **Ctrl + F** jumps straight to the search box.
+- **Syntax highlighting with a language picker.** Code blocks now colour your code. A picker in the block's top-right corner auto-detects the language by default, or you can choose PowerShell, Python, Batch/cmd, Bash, JSON, JavaScript, TypeScript, HTML/XML, SQL, C#, YAML, Markdown, or Plain text. Colours follow the light/dark theme and appear in the read-only preview too — your saved template still stores plain text.
+- **Long lines wrap instead of scrolling.** A long line now wraps to the next row rather than forcing a horizontal scrollbar, with the line numbers staying aligned, and PowerShell-style `-Arguments` are kept whole instead of breaking after the hyphen.
+- **Auto-indent.** Enter keeps the current indentation and steps in after an opening `(` `[` `{` or a backtick; typing a closing `)` `]` `}` steps back out. Pasting multi-line code re-indents it to fit where you drop it.
 
 {{CHANGELOG}}
 
