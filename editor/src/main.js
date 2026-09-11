@@ -78,6 +78,10 @@ function bracketDelta(s) {
 // state from the line the cursor is on. Structure-only: it does not understand string contents.
 function reindentPaste(text, baseIndent, depth, cont) {
     const lines = text.replace(/\r\n?/g, '\n').split('\n')
+    // Base indentation as a level count so the paste can dedent BELOW where the cursor sits — e.g. a
+    // "}" that closes a block opened before the paste returns to column 0, instead of being pinned to
+    // the cursor's indent. `depth` is relative and may go negative; only the final indent is clamped.
+    const baseLevel = Math.floor(baseIndent.replace(/\t/g, INDENT_UNIT).length / INDENT_UNIT.length)
     const out = []
     for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].replace(/^[ \t]+/, '')
@@ -86,12 +90,12 @@ function reindentPaste(text, baseIndent, depth, cont) {
         } else if (trimmed === '') {
             out.push('')
         } else {
-            let level = /^[)}\]]/.test(trimmed) ? Math.max(0, depth - 1) : depth
-            if (cont) level += 1
-            out.push(baseIndent + INDENT_UNIT.repeat(level) + trimmed)
+            let lvl = /^[)}\]]/.test(trimmed) ? depth - 1 : depth
+            if (cont) lvl += 1
+            out.push(INDENT_UNIT.repeat(Math.max(0, baseLevel + lvl)) + trimmed)
         }
         if (trimmed !== '') {
-            depth = Math.max(0, depth + bracketDelta(trimmed))
+            depth += bracketDelta(trimmed)   // may go negative: the paste can close out of the base
             cont = /`[ \t]*$/.test(trimmed)
         }
     }
