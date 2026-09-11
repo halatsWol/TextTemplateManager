@@ -383,12 +383,44 @@ body.readonly .ProseMirror {
 .ProseMirror li:has(strong)::marker { font-weight: 700; }
 
 .ProseMirror pre {
+    position: relative;        /* anchor the corner language picker */
     background: var(--hover);
     border-radius: 6px;
     padding: 8px 10px;
     font-family: Consolas, "Cascadia Mono", monospace;
     white-space: pre-wrap;
 }
+
+/* Reserve a strip at the top for the language picker so it never overlaps the first code line. */
+.ProseMirror pre.has-lang { padding-top: 28px; }
+
+/* Per-block language picker (editor only; the read-only preview has no node view, so no picker).
+   A small filled "chip": readable text on the page background with a thin border and a custom
+   caret, so it reads clearly as a control. The native option list is themed via color-scheme. */
+.ProseMirror pre .code-lang {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    color-scheme: light;
+    font: 500 11px "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    color: var(--fg);
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a6a6a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 4px center;
+    background-size: 9px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 17px 2px 7px;
+    cursor: pointer;
+}
+body.dark .ProseMirror pre .code-lang {
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+.ProseMirror pre .code-lang:hover:not(:disabled) { border-color: var(--muted); }
+.ProseMirror pre .code-lang:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+/* Read-only (save-off sync): the picker shows the language but can't change it. */
+.ProseMirror pre .code-lang:disabled { opacity: .5; cursor: default; }
 
 .ProseMirror code {
     font-family: Consolas, "Cascadia Mono", monospace;
@@ -445,6 +477,60 @@ body.readonly .ProseMirror {
     background: transparent;
     border: 1px dashed var(--border);
 }
+
+/* Syntax highlighting palette (VS Code-like). Light values here; dark overrides just below.
+   Used by both the editor (lowlight decorations) and the preview (re-highlighted spans). */
+.ProseMirror pre code {
+    --hl-comment: #008000;
+    --hl-keyword: #0000ff;
+    --hl-string:  #a31515;
+    --hl-number:  #098658;
+    --hl-func:    #795e26;
+    --hl-type:    #267f99;
+    --hl-var:     #001080;
+    --hl-meta:    #af00db;
+}
+body.dark .ProseMirror pre code {
+    --hl-comment: #6a9955;
+    --hl-keyword: #569cd6;
+    --hl-string:  #ce9178;
+    --hl-number:  #b5cea8;
+    --hl-func:    #dcdcaa;
+    --hl-type:    #4ec9b0;
+    --hl-var:     #9cdcfe;
+    --hl-meta:    #c586c0;
+}
+.ProseMirror pre code .hljs-comment,
+.ProseMirror pre code .hljs-quote { color: var(--hl-comment); font-style: italic; }
+.ProseMirror pre code .hljs-keyword,
+.ProseMirror pre code .hljs-selector-tag,
+.ProseMirror pre code .hljs-meta-keyword,
+.ProseMirror pre code .hljs-doctag,
+.ProseMirror pre code .hljs-section { color: var(--hl-keyword); }
+.ProseMirror pre code .hljs-string,
+.ProseMirror pre code .hljs-regexp { color: var(--hl-string); }
+.ProseMirror pre code .hljs-number,
+.ProseMirror pre code .hljs-literal { color: var(--hl-number); }
+.ProseMirror pre code .hljs-title,
+.ProseMirror pre code .hljs-title.function_,
+.ProseMirror pre code .hljs-name { color: var(--hl-func); }
+.ProseMirror pre code .hljs-built_in,
+.ProseMirror pre code .hljs-title.class_,
+.ProseMirror pre code .hljs-type,
+.ProseMirror pre code .hljs-class { color: var(--hl-type); }
+.ProseMirror pre code .hljs-attr,
+.ProseMirror pre code .hljs-attribute,
+.ProseMirror pre code .hljs-variable,
+.ProseMirror pre code .hljs-template-variable,
+.ProseMirror pre code .hljs-property,
+.ProseMirror pre code .hljs-params { color: var(--hl-var); }
+.ProseMirror pre code .hljs-meta,
+.ProseMirror pre code .hljs-symbol,
+.ProseMirror pre code .hljs-bullet { color: var(--hl-meta); }
+.ProseMirror pre code .hljs-emphasis { font-style: italic; }
+.ProseMirror pre code .hljs-strong { font-weight: 700; }
+.ProseMirror pre code .hljs-deletion { color: var(--hl-string); }
+.ProseMirror pre code .hljs-addition { color: var(--hl-number); }
 
 .ProseMirror a {
     color: var(--accent);

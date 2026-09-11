@@ -897,12 +897,20 @@ namespace TextTemplateManager
                 core.Settings.IsStatusBarEnabled = false;
                 core.WebMessageReceived += Preview_WebMessageReceived;
 
-                // Inline preview.html + editor.css and navigate to the string (no fetch, no cache).
+                // Inline preview.html + editor.css + the highlight bundle and navigate to the string
+                // (no fetch, no cache).
                 string dir = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "editor");
                 string html = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "preview.html"));
                 string css = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "editor.css"));
+                string js = System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "preview.bundle.js"));
+
+                // Stop an accidental </script> in the bundle from closing the inline tag.
+                js = js.Replace("</script", "<\\/script");
+
                 html = System.Text.RegularExpressions.Regex.Replace(
                     html, "<link[^>]*editor\\.css[^>]*>", _ => $"<style>{css}</style>");
+                html = System.Text.RegularExpressions.Regex.Replace(
+                    html, "<script[^>]*preview\\.bundle\\.js[^>]*></script>", _ => $"<script>{js}</script>");
 
                 PreviewWebView.NavigateToString(html);
             }

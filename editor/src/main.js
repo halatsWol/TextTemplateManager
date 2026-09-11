@@ -13,7 +13,8 @@ import Link from '@tiptap/extension-link'
 import TextAlign from '@tiptap/extension-text-align'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
-import CodeBlock from '@tiptap/extension-code-block'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { lowlight, LANGUAGES, DEFAULT_LANGUAGE } from './languages.js'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import { TextSelection, EditorState, Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
@@ -48,10 +49,59 @@ function visualRows(code, start, end) {
     return tops.size || 1
 }
 
+// One indent step for the code block's auto-indent (Enter after an opener, dedent on a closer).
+const INDENT_UNIT = '    '
+
+// The current line up to the cursor inside a code block, plus that line's leading indentation.
+function codeLineContext($from) {
+    const before = $from.parent.textContent.slice(0, $from.parentOffset)
+    const line = before.slice(before.lastIndexOf('\n') + 1)
+    const indent = (line.match(/^[ \t]*/) || [''])[0]
+    return { line, indent }
+}
+
+// Net bracket balance of a line (openers +1, closers -1). A blunt structural signal — brackets
+// inside strings/comments can fool it, which is acceptable for an auto-indenter.
+function bracketDelta(s) {
+    let d = 0
+    for (const ch of s) {
+        if (ch === '(' || ch === '[' || ch === '{') d++
+        else if (ch === ')' || ch === ']' || ch === '}') d--
+    }
+    return d
+}
+
+// Re-indent pasted multi-line text for a code block. Each line is indented by the running bracket
+// depth (relative to `baseIndent`); a line that *starts* with a closer dedents one step; a line
+// following a backtick line-continuation is indented one extra until the run of continuations ends.
+// The first line is left as typed — it continues wherever the cursor sits. `depth`/`cont` seed the
+// state from the line the cursor is on. Structure-only: it does not understand string contents.
+function reindentPaste(text, baseIndent, depth, cont) {
+    const lines = text.replace(/\r\n?/g, '\n').split('\n')
+    const out = []
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].replace(/^[ \t]+/, '')
+        if (i === 0) {
+            out.push(trimmed)
+        } else if (trimmed === '') {
+            out.push('')
+        } else {
+            let level = /^[)}\]]/.test(trimmed) ? Math.max(0, depth - 1) : depth
+            if (cont) level += 1
+            out.push(baseIndent + INDENT_UNIT.repeat(level) + trimmed)
+        }
+        if (trimmed !== '') {
+            depth = Math.max(0, depth + bracketDelta(trimmed))
+            cont = /`[ \t]*$/.test(trimmed)
+        }
+    }
+    return out.join('\n')
+}
+
 // Code block with an optional line-number gutter. The `lineNumbers` attribute lets one node
 // serve both the plain "Preformat" style (off) and the "Code block" (on). The gutter is a
 // contenteditable=false sibling drawn by a nodeView; it is never part of the stored HTML.
-const LineNumberCodeBlock = CodeBlock.extend({
+const LineNumberCodeBlock = CodeBlockLowlight.extend({
     addAttributes() {
         return {
             ...this.parent?.(),
@@ -62,8 +112,16 @@ const LineNumberCodeBlock = CodeBlock.extend({
             },
         }
     },
+    // Same as the base, but omit the class for the default language: a block left at the default
+    // serializes with no `language-` class (so older class-less templates aren't rewritten, and a
+    // class-less block round-trips back to the default). Explicit choices still get their class.
+    renderHTML({ node, HTMLAttributes }) {
+        const lang = node.attrs.language
+        const cls = lang && lang !== this.options.defaultLanguage ? this.options.languageClassPrefix + lang : null
+        return ['pre', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), ['code', { class: cls }, 0]]
+    },
     addNodeView() {
-        return ({ node }) => {
+        return ({ node, editor, getPos }) => {
             const pre = document.createElement('pre')
             const gutter = document.createElement('span')
             gutter.className = 'code-gutter'
@@ -71,6 +129,28 @@ const LineNumberCodeBlock = CodeBlock.extend({
             const code = document.createElement('code')
             pre.appendChild(gutter)
             pre.appendChild(code)
+
+            // Per-block language picker in the top-right corner (code blocks only). Setting it stamps
+            // the node's `language` attribute, which drives the lowlight highlighting decorations.
+            const langSelect = document.createElement('select')
+            langSelect.className = 'code-lang'
+            langSelect.contentEditable = 'false'
+            langSelect.title = 'Code language'
+            for (const { value, label } of LANGUAGES) {
+                const opt = document.createElement('option')
+                opt.value = value
+                opt.textContent = label
+                langSelect.appendChild(opt)
+            }
+            langSelect.addEventListener('mousedown', (e) => e.stopPropagation())
+            langSelect.addEventListener('change', () => {
+                if (langSelect.disabled || typeof getPos !== 'function') return
+                const pos = getPos()
+                if (pos == null) return
+                editor.view.dispatch(editor.state.tr.setNodeAttribute(pos, 'language', langSelect.value))
+                editor.view.focus()
+            })
+            pre.appendChild(langSelect)
 
             let on = !!node.attrs.lineNumbers
 
@@ -107,6 +187,12 @@ const LineNumberCodeBlock = CodeBlock.extend({
             const sync = (n) => {
                 on = !!n.attrs.lineNumbers
                 pre.classList.toggle('with-line-numbers', on)
+                // The language picker belongs to real code blocks, not the plain Preformat variant.
+                langSelect.hidden = !on
+                pre.classList.toggle('has-lang', on)
+                langSelect.disabled = !editor.isEditable   // no changing it while read-only (save off)
+                const lang = n.attrs.language || DEFAULT_LANGUAGE
+                if (langSelect.value !== lang) langSelect.value = lang
                 if (on) { setNumbers(n); schedule() }
                 else gutter.textContent = ''
             }
@@ -138,8 +224,38 @@ const LineNumberCodeBlock = CodeBlock.extend({
     // Jira parity: the built-in ArrowDown exits a code block when it's the last node; add the
     // same for Right arrow pressed at the very end of the block.
     addKeyboardShortcuts() {
+        const parent = this.parent?.() || {}
         return {
-            ...this.parent?.(),
+            ...parent,
+            // Auto-indent: Enter carries the current line's indentation, and adds one step when the
+            // line ends with an opener ( [ { or a backtick. If the cursor sits between a bracket pair,
+            // the closer drops to its own line. Nesting works to any depth. The base's triple-Enter
+            // exit runs first so it still works.
+            Enter: (props) => {
+                if (parent.Enter && parent.Enter(props)) return true
+                const { editor } = props
+                const { $from, empty } = editor.state.selection
+                if (!empty || $from.parent.type !== this.type) return false
+                const { line, indent } = codeLineContext($from)
+                const opener = line.replace(/[ \t]+$/, '').slice(-1)
+                const opens = opener !== '' && '([{`'.includes(opener)
+                const newIndent = indent + (opens ? INDENT_UNIT : '')
+                const closer = { '(': ')', '[': ']', '{': '}' }[opener]
+                const nextChar = $from.parent.textContent.slice($from.parentOffset, $from.parentOffset + 1)
+                const expand = opens && closer && nextChar === closer
+                return editor.commands.command(({ tr }) => {
+                    const pos = $from.pos
+                    if (expand) {
+                        tr.insertText('\n' + newIndent + '\n' + indent, pos)
+                        tr.setSelection(TextSelection.create(tr.doc, pos + 1 + newIndent.length))
+                    } else {
+                        const ins = '\n' + newIndent
+                        tr.insertText(ins, pos)
+                        tr.setSelection(TextSelection.create(tr.doc, pos + ins.length))
+                    }
+                    return true
+                })
+            },
             ArrowRight: ({ editor }) => {
                 const { $from, empty } = editor.state.selection
                 if (!empty || $from.parent.type !== this.type) return false
@@ -183,7 +299,39 @@ const LineNumberCodeBlock = CodeBlock.extend({
                     init: (_, { doc }) => build(doc),
                     apply: (tr, old) => (tr.docChanged ? build(tr.doc) : old),
                 },
-                props: { decorations(state) { return key.getState(state) } },
+                props: {
+                    decorations(state) { return key.getState(state) },
+                    // Auto-dedent: typing a closer ) ] } on a line that is only indentation removes
+                    // one indent step first, so the closer lines up under its opener.
+                    handleTextInput(view, from, to, text) {
+                        if (text !== ')' && text !== ']' && text !== '}') return false
+                        const { $from } = view.state.selection
+                        if ($from.parent.type !== type) return false
+                        const { line } = codeLineContext($from)
+                        if (!line.length || !/^[ \t]+$/.test(line)) return false
+                        const dedent = line.endsWith('\t') ? 1 : Math.min(INDENT_UNIT.length, line.length)
+                        if (dedent <= 0) return false
+                        view.dispatch(view.state.tr.insertText(text, from - dedent, to))
+                        return true
+                    },
+                    // Auto-indent a multi-line paste to the current context (Ctrl+V). Single-line
+                    // pastes keep the default behavior. The base VS Code paste handler already bails
+                    // out inside a code block, so this runs.
+                    handlePaste(view, event) {
+                        const { $from } = view.state.selection
+                        if ($from.parent.type !== type) return false
+                        const text = event.clipboardData && event.clipboardData.getData('text/plain')
+                        if (!text || text.indexOf('\n') === -1) return false   // single line: default
+                        const { line, indent: baseIndent } = codeLineContext($from)
+                        const trimmed = line.replace(/[ \t]+$/, '')
+                        const last = trimmed.slice(-1)
+                        const seedDepth = last !== '' && '([{'.includes(last) ? 1 : 0
+                        const seedCont = /`$/.test(trimmed)
+                        const out = reindentPaste(text, baseIndent, seedDepth, seedCont)
+                        view.dispatch(view.state.tr.insertText(out).scrollIntoView())
+                        return true
+                    },
+                },
             }),
         ]
     },
@@ -321,7 +469,7 @@ const editor = new Editor({
     extensions: [
         StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] }, listItem: false, codeBlock: false }),
         RichListItem,
-        LineNumberCodeBlock,
+        LineNumberCodeBlock.configure({ lowlight, defaultLanguage: DEFAULT_LANGUAGE }),
         Underline,
         TextStyle,
         Color,
@@ -507,6 +655,9 @@ window.editorApi = {
         // Read-only (save-off sync): setEditable(false) already blocks typing/paste; the class hides
         // the toolbar so its buttons can't edit either, while the text stays selectable for copying.
         document.body.classList.toggle('readonly', !on)
+        // The per-block language pickers are node-view <select>s outside the editable content, so
+        // setEditable doesn't reach them — disable them here (and new blocks read isEditable in sync).
+        document.querySelectorAll('.code-lang').forEach(s => { s.disabled = !on })
     },
 }
 

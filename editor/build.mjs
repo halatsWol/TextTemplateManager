@@ -8,14 +8,19 @@ const here = dirname(fileURLToPath(import.meta.url))
 const outDir = resolve(here, '..', 'Assets', 'editor')
 mkdirSync(outDir, { recursive: true })
 
+const common = { bundle: true, format: 'iife', minify: true, target: ['chrome110'], logLevel: 'info' }
+
 await esbuild.build({
+  ...common,
   entryPoints: [resolve(here, 'src', 'main.js')],
-  bundle: true,
-  format: 'iife',
-  minify: true,
-  target: ['chrome110'],
   outfile: resolve(outDir, 'editor.bundle.js'),
-  logLevel: 'info',
+})
+
+// The read-only preview highlights code blocks with the same grammars (highlight.js core).
+await esbuild.build({
+  ...common,
+  entryPoints: [resolve(here, 'src', 'preview.js')],
+  outfile: resolve(outDir, 'preview.bundle.js'),
 })
 
 // editor.html is deliberately NOT copied here: the .csproj takes it straight from src/ (it needs no

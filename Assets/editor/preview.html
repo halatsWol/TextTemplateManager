@@ -17,10 +17,15 @@
     <div id="editor-scroll">
         <div class="ProseMirror" id="preview"></div>
     </div>
+    <script src="preview.bundle.js"></script>
     <script>
         var host = window.chrome && window.chrome.webview;
+        var previewEl = document.getElementById('preview');
         window.previewApi = {
-            setContent: function (html) { document.getElementById('preview').innerHTML = html || ''; },
+            setContent: function (html) {
+                previewEl.innerHTML = html || '';
+                if (window.previewHighlight) window.previewHighlight(previewEl);
+            },
             setTheme: function (dark) { document.body.classList.toggle('dark', !!dark); }
         };
         try { host && host.postMessage(JSON.stringify({ type: 'ready' })); } catch (e) {}
