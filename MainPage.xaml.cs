@@ -264,6 +264,7 @@ namespace TextTemplateManager
                 core.Settings.AreDefaultContextMenusEnabled = true;
                 core.Settings.AreDevToolsEnabled = false;
                 core.Settings.IsStatusBarEnabled = false;
+                core.Settings.AreBrowserAcceleratorKeysEnabled = false;
                 core.ContextMenuRequested += Editor_ContextMenuRequested;
 
                 // Inline CSS+JS (no fetch), so WebView2's cache can't serve a stale bundle.
@@ -352,6 +353,10 @@ namespace TextTemplateManager
                 {
                     var href = doc.RootElement.TryGetProperty("href", out var u) ? u.GetString() : null;
                     OpenExternalLink(href);
+                }
+                else if (type == "focusSearch")
+                {
+                    FocusSearchBox();
                 }
             }
             catch (Exception ex)
@@ -1120,8 +1125,10 @@ namespace TextTemplateManager
         private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         {
             args.Handled = true;
-            SearchBox.Focus(FocusState.Programmatic);
+            FocusSearchBox();
         }
+
+        private void FocusSearchBox() => SearchBox.Focus(FocusState.Programmatic);
 
         private void ItemTreeView_DragOver(object sender, DragEventArgs e)
         {

@@ -18,11 +18,11 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-The rich-text editor's code blocks got a big upgrade:
+#### Fixes
 
-- **Syntax highlighting with a language picker.** Code blocks now colour your code. A picker in the block's top-right corner auto-detects the language by default, or you can choose PowerShell, Python, Batch/cmd, Bash, JSON, JavaScript, TypeScript, HTML/XML, SQL, C#, YAML, Markdown, or Plain text. Colours follow the light/dark theme and appear in the read-only preview too — your saved template still stores plain text.
-- **Long lines wrap instead of scrolling.** A long line now wraps to the next row rather than forcing a horizontal scrollbar, with the line numbers staying aligned, and PowerShell-style `-Arguments` are kept whole instead of breaking after the hyphen.
-- **Auto-indent.** Enter keeps the current indentation and steps in after an opening `(` `[` `{` or a backtick; typing a closing `)` `]` `}` steps back out. Pasting multi-line code re-indents it to fit where you drop it.
+- **Ctrl + F in the editor focuses the search box.** Pressing **Ctrl + F** while typing in a template now jumps to the tree's search box, like everywhere else in the main window, instead of opening the browser's find bar inside the editor.
+- **No more stray "Ctrl+F" hint.** A small "Ctrl+F" tooltip no longer pops up when the mouse rests over the main window.
+- **Browser shortcuts no longer act on the editor.** Keys such as **F5** / **Ctrl + R** (reload) and **Ctrl + P** (print) no longer reach the embedded editor, so an accidental F5 can't reload it mid-edit.
 
 {{CHANGELOG}}
 
