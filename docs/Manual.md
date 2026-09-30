@@ -217,38 +217,48 @@ cross-area shortcut warnings** in **Settings ▸ General**.
 
 ## Settings
 
-Open settings from **File ▸ Settings**. It has a **General** and a **Sync** tab.
+Open settings from **File ▸ Settings**. It has a **General**, an **Integrations** and a **Sync** tab.
 
 ### General
 
-- **Run at Windows login** — start the app automatically when you sign in. When on, **Start hidden in the
-  system tray** appears below it: enable that to launch minimized to the tray (no window) at sign-in — the
-  Quick Paste hotkey and tray icon still work. This matches the on/off state in Windows' own **Startup Apps** list.
-- **Automatic updates** — check for new releases and download them in the background. **Install updates
-  automatically** installs a downloaded update without asking, at a quiet moment (off by default), and
-  **Allow beta updates** also offers pre-release versions (off by default). See *Updates*.
-- **Notifications** — **Show update notifications** (on by default) controls whether a Windows
-  notification is used when an update needs your attention while the window is closed to the system
-  tray. With it off, updates are shown inside the application instead.
+**Quick Paste**
+
+- **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and press the combination.
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
-- **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and
-  press the combination.
-- **Hide cross-area shortcut warnings** — suppress the dismissible note shown when the same shortcut
-  is used in more than one area (local and synchronized folders). Off by default; blocking same-area
-  conflicts are always shown. See *Keyboard shortcuts and conflicts*.
-- **Browser extensions** — enable a local connector for a companion browser extension (see
-  *Browser extensions* below).
-- **File association** — **Set as default for .ttmdata** makes `.ttmdata` files open with this app
-  (opening one adds it as a sync source — see the **Sync** tab). Use it if another program took the
-  association over.
 
-![Settings ▸ General: run at login, automatic updates, the default paste mode for new templates, and the global Quick Paste hotkey.](../Assets/ManualImages/TTM_GeneralSettings.png)
+**Startup**
 
-#### Browser extensions
+- **Run at Windows login** — start the app automatically when you sign in. When on, **Start hidden in the system tray** appears below it: enable that to launch minimized to the tray (no window) at sign-in — the Quick Paste hotkey and tray icon still work. This matches the on/off state in Windows' own **Startup Apps** list.
+
+![Settings ▸ General: the Quick Paste hotkey, the default paste mode for new templates, and startup.](../Assets/ManualImages/TTM_GeneralSettings1.png)
+
+**Updates**
+
+- **Automatically check for updates** — check for new releases and download them in the background.
+- **Install updates automatically** — install a downloaded update without asking, at a quiet moment (off by default).
+- **Allow beta updates** — also offer pre-release versions (off by default).
+- **Show update notifications** — (on by default) use a Windows notification when an update needs your attention while the window is closed to the system tray. With it off, updates are shown inside the application instead.
+
+See *Updates* for details.
+
+**Other**
+
+- **Hide cross-area shortcut warnings** — suppress the dismissible note shown when the same shortcut is used in more than one area (local and synchronized folders). Off by default; blocking same-area conflicts are always shown. See *Keyboard shortcuts and conflicts*.
+
+![Settings ▸ General (continued): the update options and Other.](../Assets/ManualImages/TTM_GeneralSettings2.png)
+
+### Integrations
+
+- **Browser extension** — enable a local connector for a companion browser extension (see below).
+- **File association** — **Set as default for .ttmdata** makes `.ttmdata` files open with this app (opening one adds it as a sync source — see the **Sync** tab). Use it if another program took the association over.
+
+![Settings ▸ Integrations: the browser connector with its port and pairing token, the extension store links, and the .ttmdata file association.](../Assets/ManualImages/TTM_IntegrationsSettings.png)
+
+#### Browser extension
 
 The browser connector lets a companion browser extension (Chrome, Edge, or Firefox) list your
 templates, paste them from the browser, and create new templates from selected text. It is **off by
-default**; turn it on with **Browser extensions** on this tab.
+default**; turn it on with **Enable browser connector** in **Settings ▸ Integrations**.
 
 The companion extension is [TTM-Connect](https://github.com/halatsWol/TTM-Connect), available on:
 
@@ -364,7 +374,7 @@ available. Installing closes the application, applies the update silently, and r
 If the window is closed to the system tray when an update becomes ready, a Windows notification appears 
 instead, with **Install now** on it — so an update is never announced somewhere you cannot see it.
 
-Turn **Show update notifications** off in **Settings ▸ General ▸ Notifications** to suppress them. 
+Turn **Show update notifications** off in **Settings ▸ General ▸ Updates** to suppress them. 
 Updates are then only shown inside the application, in the top-right corner of the main window, and you 
 will not hear about one until you open it. Everything else is unaffected: updates are still checked for, 
 still downloaded, and — if you enabled it — still installed automatically.

@@ -8,6 +8,45 @@
     <StackPanel Spacing="25" Padding="20">
         <TextBlock Text="General Settings" Style="{StaticResource TitleTextBlockStyle}"/>
 
+        <StackPanel Spacing="10">
+            <TextBlock Text="Quick Paste" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Global shortcut"/>
+                <TextBlock Text="Opens the Quick Paste window from anywhere." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Grid ColumnSpacing="10" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="HotkeyTextBox"
+                             IsReadOnly="True"
+                             PlaceholderText="Click to set shortcut..."
+                             GotFocus="HotkeyTextBox_GotFocus"
+                             LostFocus="HotkeyTextBox_LostFocus"
+                             KeyDown="HotkeyTextBox_KeyDown"
+                             KeyUp="HotkeyTextBox_KeyUp"/>
+                    <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Default paste mode"/>
+                <TextBlock Text="Used for newly created templates." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <ComboBox x:Name="PasteModeCombo"
+                          MinWidth="200"
+                          SelectedItem="{x:Bind ViewModel.DefaultPasteMode, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource PasteModeLabelConverter}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </StackPanel>
+
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
         <StackPanel Spacing="8">
             <TextBlock Text="Startup" Style="{StaticResource BodyStrongTextBlockStyle}"/>
             <StackPanel Spacing="2">
@@ -18,7 +57,7 @@
                               Header="Start hidden in the system tray"
                               Margin="24,0,0,0"
                               Toggled="StartHidden_Toggled"/>
-                <TextBlock Text="Launch minimized to the tray at sign-in instead of opening the window. The Quick Paste hotkey and tray icon still work."
+                <TextBlock Text="Starts in the tray instead of opening the window. The hotkey and tray icon still work."
                            TextWrapping="Wrap"
                            Margin="24,0,0,0"
                            Style="{StaticResource CaptionTextBlockStyle}"
@@ -35,7 +74,7 @@
                 <ToggleSwitch x:Name="AutoUpdateToggle"
                               Header="Automatically check for updates"
                               Toggled="AutoUpdate_Toggled"/>
-                <TextBlock Text="Downloads an update when one is found. With this off, the app still tells you an update is available but won't download it automatically."
+                <TextBlock Text="Downloads a found update in the background. Off = you're only told one is available."
                            TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -45,7 +84,7 @@
                 <ToggleSwitch x:Name="AutoInstallToggle"
                               Header="Install updates automatically"
                               Toggled="AutoInstall_Toggled"/>
-                <TextBlock Text="Install a downloaded update without asking, at a moment when the app isn't in use. Off = you confirm each install."
+                <TextBlock Text="Installs when the app isn't in use. Off = you confirm each install."
                            TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -55,7 +94,18 @@
                 <ToggleSwitch x:Name="BetaToggle"
                               Header="Allow beta updates"
                               Toggled="Beta_Toggled"/>
-                <TextBlock Text="Also offer pre-release versions (beta / preview). Off = stable releases only."
+                <TextBlock Text="Also offers pre-release versions. Off = stable releases only."
+                           TextWrapping="Wrap"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="2">
+                <ToggleSwitch x:Name="NotificationsToggle"
+                              Header="Show update notifications"
+                              Toggled="Notifications_Toggled"/>
+                <TextBlock Text="Uses a Windows notification when an update needs attention while the app is in the tray. Off = shown inside the app only."
+                           TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
@@ -71,121 +121,18 @@
         <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
 
         <StackPanel Spacing="10">
-            <TextBlock Text="Notifications" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock Text="Other" Style="{StaticResource BodyStrongTextBlockStyle}"/>
 
             <StackPanel Spacing="2">
-                <ToggleSwitch x:Name="NotificationsToggle"
-                              Header="Show update notifications"
-                              Toggled="Notifications_Toggled"/>
-                <TextBlock Text="Show a Windows notification when an update needs your attention while the window is closed to the system tray. Off = updates are shown inside the app only."
+                <ToggleSwitch x:Name="HideCrossAreaWarningsToggle"
+                              Header="Hide cross-area shortcut warnings"
+                              IsOn="{x:Bind ViewModel.HideCrossAreaShortcutWarnings, Mode=TwoWay}"
+                              Toggled="HideCrossAreaWarnings_Toggled"/>
+                <TextBlock Text="Hides the notice when a shortcut is reused across areas (local + sync, or between sync folders). Same-area duplicates are always shown."
                            TextWrapping="Wrap"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
-
-        <StackPanel Spacing="8">
-            <TextBlock Text="Default Paste Mode" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-            <TextBlock Text="Sets the mode used when creating new templates." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-            <ComboBox x:Name="PasteModeCombo"
-                      MinWidth="200"
-                      SelectedItem="{x:Bind ViewModel.DefaultPasteMode, Mode=TwoWay}">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding Converter={StaticResource PasteModeLabelConverter}}"/>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </StackPanel>
-
-        <StackPanel Spacing="8">
-            <TextBlock Text="Global Shortcut" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-            <TextBlock Text="Hotkey to open the Quick Paste window from anywhere." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-            <Grid ColumnSpacing="10" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="HotkeyTextBox"
-                         IsReadOnly="True"
-                         PlaceholderText="Click to set shortcut..."
-                         GotFocus="HotkeyTextBox_GotFocus"
-                         LostFocus="HotkeyTextBox_LostFocus"
-                         KeyDown="HotkeyTextBox_KeyDown"
-                         KeyUp="HotkeyTextBox_KeyUp"/>
-                <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
-            </Grid>
-        </StackPanel>
-
-        <StackPanel Spacing="2">
-            <ToggleSwitch x:Name="HideCrossAreaWarningsToggle"
-                          Header="Hide cross-area shortcut warnings"
-                          IsOn="{x:Bind ViewModel.HideCrossAreaShortcutWarnings, Mode=TwoWay}"
-                          Toggled="HideCrossAreaWarnings_Toggled"/>
-            <TextBlock Text="Don't show the dismissible notice when the same shortcut is used in more than one area (local + sync, or across sync folders). Blocking same-area duplicates are still shown."
-                       TextWrapping="Wrap"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
-
-        <StackPanel Spacing="8">
-            <TextBlock Text="Browser extensions" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Text="Lets a companion browser extension list and paste your templates over a local (127.0.0.1) connection. Off by default; paste the token below into the extension to pair it."/>
-            <ToggleSwitch x:Name="ConnectorToggle" Header="Enable browser connector" Toggled="Connector_Toggled"/>
-
-            <StackPanel Spacing="2">
-                <TextBlock Text="Get the extension:" Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <StackPanel Margin="12,0,0,0" Spacing="2">
-                    <HyperlinkButton Content="Chrome Web Store"
-                                     NavigateUri="https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi"
-                                     Padding="0"/>
-                    <HyperlinkButton Content="Microsoft Edge Add-ons"
-                                     NavigateUri="https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm"
-                                     Padding="0"/>
-                    <HyperlinkButton Content="Firefox Add-ons"
-                                     NavigateUri="https://addons.mozilla.org/addon/ttm-connect/"
-                                     Padding="0"/>
-                </StackPanel>
-            </StackPanel>
-            <HyperlinkButton x:Name="ApiDocLink" Content="View API documentation" Padding="0"/>
-
-            <Grid x:Name="ConnectorDetails" Visibility="Collapsed" ColumnSpacing="10" RowSpacing="8" HorizontalAlignment="Left">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="280"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Port" VerticalAlignment="Center"/>
-                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ConnectorPortBox" HorizontalAlignment="Left" MinWidth="90"
-                         InputScope="Number" LostFocus="ConnectorPort_LostFocus"/>
-
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Token" VerticalAlignment="Center"/>
-                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ConnectorTokenBox" IsReadOnly="True" IsSpellCheckEnabled="False"/>
-                <Button Grid.Row="1" Grid.Column="2" Content="Copy" Click="CopyToken_Click"/>
-                <Button Grid.Row="1" Grid.Column="3" Content="Regenerate" Click="RegenerateToken_Click"/>
-            </Grid>
-        </StackPanel>
-
-        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
-
-        <StackPanel Spacing="8">
-            <TextBlock Text="File association" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Text="Make .ttmdata files open with Text Template Manager (opening one adds it as a sync source). Use this if another app took over the association."/>
-            <Button Content="Set as default for .ttmdata" Click="RegisterFileType_Click" HorizontalAlignment="Left"/>
-            <InfoBar x:Name="FileAssocInfo" IsOpen="False" IsClosable="True"/>
         </StackPanel>
     </StackPanel>
     </ScrollViewer>

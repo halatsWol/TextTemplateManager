@@ -617,6 +617,8 @@ namespace TextTemplateManager
         {
             if (tag == "General")
                 SettingsFrame.Navigate(typeof(GeneralSettingsPage), DataNode.Instance.CurrentSettings);
+            else if (tag == "Integrations")
+                SettingsFrame.Navigate(typeof(IntegrationsSettingsPage), DataNode.Instance.CurrentSettings);
             else if (tag == "Sync")
             {
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);

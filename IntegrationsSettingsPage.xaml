@@ -1,0 +1,63 @@
+<Page
+    x:Class="TextTemplateManager.IntegrationsSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+    <StackPanel Spacing="25" Padding="20">
+        <TextBlock Text="Integrations" Style="{StaticResource TitleTextBlockStyle}"/>
+
+        <StackPanel Spacing="8">
+            <TextBlock Text="Browser extension" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="Lets the companion extension list and paste your templates over a local (127.0.0.1) connection. Paste the token below into the extension to pair it."/>
+            <ToggleSwitch x:Name="ConnectorToggle" Header="Enable browser connector" Toggled="Connector_Toggled"/>
+
+            <Grid x:Name="ConnectorDetails" Visibility="Collapsed" ColumnSpacing="10" RowSpacing="8" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="280"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Port" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="0" Grid.Column="1" x:Name="ConnectorPortBox" HorizontalAlignment="Left" MinWidth="90"
+                         InputScope="Number" LostFocus="ConnectorPort_LostFocus"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Token" VerticalAlignment="Center"/>
+                <TextBox Grid.Row="1" Grid.Column="1" x:Name="ConnectorTokenBox" IsReadOnly="True" IsSpellCheckEnabled="False"/>
+                <Button Grid.Row="1" Grid.Column="2" Content="Copy" Click="CopyToken_Click"/>
+                <Button Grid.Row="1" Grid.Column="3" Content="Regenerate" Click="RegenerateToken_Click"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <TextBlock Text="Get the extension:" VerticalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <HyperlinkButton Content="Chrome" Padding="0"
+                                 NavigateUri="https://chrome.google.com/webstore/detail/jclopjpjdldbknjdhmjldehlkgbihlmi"/>
+                <HyperlinkButton Content="Edge" Padding="0"
+                                 NavigateUri="https://microsoftedge.microsoft.com/addons/detail/ttm-connect/fbpmhopmnaoedcnbegdkpfblekhaindm"/>
+                <HyperlinkButton Content="Firefox" Padding="0"
+                                 NavigateUri="https://addons.mozilla.org/addon/ttm-connect/"/>
+            </StackPanel>
+            <HyperlinkButton x:Name="ApiDocLink" Content="View API documentation" Padding="0"/>
+        </StackPanel>
+
+        <Rectangle Height="1" Fill="{ThemeResource SystemControlForegroundBaseLowBrush}" Margin="0,5"/>
+
+        <StackPanel Spacing="8">
+            <TextBlock Text="File association" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="Makes .ttmdata files open with Text Template Manager (opening one adds it as a sync source). Use this if another app took over the association."/>
+            <Button Content="Set as default for .ttmdata" Click="RegisterFileType_Click" HorizontalAlignment="Left"/>
+            <InfoBar x:Name="FileAssocInfo" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+    </StackPanel>
+    </ScrollViewer>
+</Page>

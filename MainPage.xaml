@@ -385,6 +385,7 @@
                             SelectionChanged="SettingsNav_SelectionChanged">
                 <NavigationView.MenuItems>
                     <NavigationViewItem Content="General" Tag="General" Icon="Setting"/>
+                    <NavigationViewItem Content="Integrations" Tag="Integrations" Icon="Link"/>
                     <NavigationViewItem Content="Sync" Tag="Sync" Icon="Sync"/>
                 </NavigationView.MenuItems>
                 <Frame x:Name="SettingsFrame" Padding="20"/>

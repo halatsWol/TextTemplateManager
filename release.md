@@ -18,6 +18,11 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
+#### Tidier settings
+
+- **New Integrations tab.** The browser extension connector and the `.ttmdata` file association moved from **General** to their own **Settings ▸ Integrations** tab.
+- **General is reorganized.** Quick Paste settings (hotkey, default paste mode) now come first, followed by Startup, Updates and Other (shortcut warnings). **Show update notifications** moved into the Updates section, and the help texts are shorter.
+
 #### Fixes
 
 - **Ctrl + F in the editor focuses the search box.** Pressing **Ctrl + F** while typing in a template now jumps to the tree's search box, like everywhere else in the main window, instead of opening the browser's find bar inside the editor.
