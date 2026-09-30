@@ -76,6 +76,10 @@ namespace TextTemplateManager
             };
 
             ViewModel = new MainViewModel();
+            // Keep the panels from inheriting the page until x:Bind sets their DataContext,
+            // otherwise their {Binding}s briefly resolve against MainPage and log path errors.
+            TemplatePanel.DataContext = null;
+            FolderPanel.DataContext = null;
             this.DataContext = this;
 
             DataNode.Instance.DataSaved += () => DispatcherQueue.TryEnqueue(ShowSaveNotification);
