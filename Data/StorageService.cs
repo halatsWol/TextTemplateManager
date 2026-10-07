@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -149,7 +150,26 @@ public static class StorageService
     {
         string json = JsonSerializer.Serialize(settings, _options);
         string path = GetSyncSettingsPath();
-        await WithWriteLock(path, () => File.WriteAllTextAsync(path, json));
+        await WithWriteLock(path, () => WriteAtomicAsync(path, json));
+    }
+
+    private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
+    // Flushed to disk before the swap, so a crash or power loss leaves either the old file or the new
+    // one in place, never a truncated mix.
+    private static async Task WriteTempAsync(string tmpPath, string content)
+    {
+        await using var fs = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None,
+            bufferSize: 4096, FileOptions.Asynchronous);
+        await fs.WriteAsync(Utf8NoBom.GetBytes(content));
+        fs.Flush(flushToDisk: true);
+    }
+
+    private static async Task WriteAtomicAsync(string path, string content)
+    {
+        string tmp = path + ".tmp";
+        await WriteTempAsync(tmp, content);
+        File.Move(tmp, path, overwrite: true);
     }
 
     /// <summary>Save the root Folder to path (local or sync location).</summary>
@@ -166,9 +186,7 @@ public static class StorageService
                     return;
             }
 
-            string tempPath = path + ".tmp";
-            await File.WriteAllTextAsync(tempPath, json);
-            File.Move(tempPath, path, overwrite: true);
+            await WriteAtomicAsync(path, json);
         });
     }
 
@@ -234,7 +252,7 @@ public static class StorageService
             if (string.Equals(existing, json, StringComparison.Ordinal)) return;
 
             string tmp = path + ".tmp";
-            await File.WriteAllTextAsync(tmp, json);
+            await WriteTempAsync(tmp, json);
             for (int attempt = 0; attempt < 6; attempt++)
             {
                 try { File.Move(tmp, path, overwrite: true); return; }
@@ -260,33 +278,11 @@ public static class StorageService
         }
     }
 
-    public static async Task ExportAsync(string fullPath, object data)
-    {
-        // This handles the .ttmdata export to any user-selected path
-        string json = JsonSerializer.Serialize(data, _options);
-        await WithWriteLock(fullPath, () => File.WriteAllTextAsync(fullPath, json));
-    }
-
     public static async Task<Folder?> ImportBackupAsync(string fullPath)
     {
         if (!File.Exists(fullPath)) return null;
         return await LoadRootAsync(fullPath);
     }
-
-    public static async Task SaveSettingsAsync(object settings)
-    {
-        await SaveGenericAsync(GetSettingsPath(), settings);
-    }
-
-    private static async Task SaveGenericAsync(string path, object obj)
-    {
-        await WithWriteLock(path, async () =>
-        {
-            using FileStream createStream = File.Create(path);
-            await JsonSerializer.SerializeAsync(createStream, obj, _options);
-        });
-    }
-
 
     public static async Task<AppSettings> LoadSettingsAsync()
     {
@@ -308,6 +304,6 @@ public static class StorageService
     {
         string path = GetSettingsPath();
         string json = JsonSerializer.Serialize(settings, _options);
-        await WithWriteLock(path, () => File.WriteAllTextAsync(path, json));
+        await WithWriteLock(path, () => WriteAtomicAsync(path, json));
     }
 }

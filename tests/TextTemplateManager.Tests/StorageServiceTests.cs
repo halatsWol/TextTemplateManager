@@ -113,6 +113,80 @@ public class StorageServiceTests
         Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
     }
 
+    // ---- atomic writes ----
+
+    [Fact]
+    public async Task A_failed_write_leaves_the_previous_file_intact()
+    {
+        // The temp file can't be created (a folder occupies its name), so the write fails before the
+        // swap: the existing file must still hold the last good content, not a truncated one.
+        string dir = TestEnvironment.NewScratchDir();
+        string path = Path.Combine(dir, "data.ttmdata");
+        await StorageService.SaveAsync(path, Tree("Root", "Alpha"));
+        Directory.CreateDirectory(path + ".tmp");
+
+        await Assert.ThrowsAnyAsync<Exception>(() => StorageService.SaveAsync(path, Tree("Root", "Alpha", "Beta")));
+
+        var loaded = await StorageService.LoadRootAsync(path);
+        Assert.Equal(new[] { "Alpha" }, loaded!.Children.Select(c => c.Title));
+    }
+
+    [Fact]
+    public async Task A_temp_file_left_by_an_interrupted_write_is_replaced_on_the_next_save()
+    {
+        string dir = TestEnvironment.NewScratchDir();
+        string path = Path.Combine(dir, "data.ttmdata");
+        await File.WriteAllTextAsync(path + ".tmp", "{ half written");
+
+        await StorageService.SaveAsync(path, Tree("Root", "Alpha"));
+
+        Assert.NotNull(await StorageService.LoadRootAsync(path));
+        Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task Settings_are_written_atomically_and_reload()
+    {
+        var settings = new AppSettings { PasteWindowHotkey = "Ctrl+Alt+Q", BrowserConnectorPort = 50123 };
+
+        await StorageService.SaveSettingsAsync(settings);
+        var loaded = await StorageService.LoadSettingsAsync();
+
+        Assert.Equal("Ctrl+Alt+Q", loaded.PasteWindowHotkey);
+        Assert.Equal(50123, loaded.BrowserConnectorPort);
+        Assert.False(File.Exists(StorageService.GetSettingsPath() + ".tmp"));
+    }
+
+    [Fact]
+    public async Task A_failed_settings_write_keeps_the_previous_settings()
+    {
+        await StorageService.SaveSettingsAsync(new AppSettings { PasteWindowHotkey = "Ctrl+Alt+K" });
+        string tmp = StorageService.GetSettingsPath() + ".tmp";
+        Directory.CreateDirectory(tmp);
+        try
+        {
+            await Assert.ThrowsAnyAsync<Exception>(
+                () => StorageService.SaveSettingsAsync(new AppSettings { PasteWindowHotkey = "Ctrl+Alt+L" }));
+
+            Assert.Equal("Ctrl+Alt+K", (await StorageService.LoadSettingsAsync()).PasteWindowHotkey);
+        }
+        finally { Directory.Delete(tmp); }
+    }
+
+    [Fact]
+    public async Task Sync_settings_are_written_atomically_and_reload()
+    {
+        var sync = new SyncSettings { Separator = "." };
+        sync.Sources.Add(new SyncSource { Name = "Team", Path = @"C:\shared\team.ttmdata", IsActive = true });
+
+        await StorageService.SaveSyncSettingsAsync(sync);
+        var loaded = await StorageService.LoadSyncSettingsAsync();
+
+        Assert.Equal(".", loaded.Separator);
+        Assert.Equal("Team", Assert.Single(loaded.Sources).Name);
+        Assert.False(File.Exists(StorageService.GetSyncSettingsPath() + ".tmp"));
+    }
+
     // ---- concurrency ----
 
     [Fact]
