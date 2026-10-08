@@ -406,8 +406,11 @@ public partial class MainViewModel : ObservableObject
             await _dataNode.ExportFolderAsync(file.Path, folder);
     }
 
-    [RelayCommand]
-    private async Task LoadBackup()
+    public enum LoadBackupResult { Cancelled, Unreadable, Replaced }
+
+    /// <summary>Picks a backup file and, after <paramref name="confirmReplace"/> agrees (given the file
+    /// name), replaces the local items with its contents. Synced folders are left alone.</summary>
+    public async Task<LoadBackupResult> LoadBackupAsync(Func<string, Task<bool>> confirmReplace)
     {
         var picker = new FileOpenPicker();
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
@@ -416,22 +419,20 @@ public partial class MainViewModel : ObservableObject
         picker.FileTypeFilter.Add(".ttmdata");
 
         var file = await picker.PickSingleFileAsync();
-        if (file == null) return;
+        if (file == null) return LoadBackupResult.Cancelled;
 
         // Backups are a serialized root Folder — take its children (not a bare List<BaseItem>).
         var root = await StorageService.LoadRootAsync(file.Path);
-        if (root == null) return;
+        if (root == null) return LoadBackupResult.Unreadable;
+        if (!await confirmReplace(file.Name)) return LoadBackupResult.Cancelled;
 
-        AllItems.Clear();
-        foreach (var item in root.Children)
-        {
-            item.ParentId = Guid.Empty; // top-level → empty-GUID root
-            AttachOwnerRecursive(item);
-            AllItems.Add(item);
-        }
+        foreach (var item in root.Children) AttachOwnerRecursive(item);
+        await _dataNode.ReplaceLocalItemsAsync(root.Children.ToList());
 
+        SelectedItem = null;
         ValidateAllShortcuts();
         ApplyFilter();
+        return LoadBackupResult.Replaced;
     }
 
     private void AttachOwnerRecursive(BaseItem item)

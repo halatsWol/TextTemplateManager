@@ -7,6 +7,7 @@ namespace TextTemplateManager.Tests;
 /// <summary>Persistence behaviour that other features quietly depend on: the skip-if-unchanged rule that
 /// keeps cloud-synced files from churning into conflict copies, the per-path write lock, and the
 /// write-activity signals the unattended updater uses to decide it is safe to end the process.</summary>
+[Collection(StorageCollection.Name)]
 public class StorageServiceTests
 {
     /// <summary>Ids are normally random per instance, which would make two logically identical trees

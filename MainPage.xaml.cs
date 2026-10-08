@@ -584,7 +584,27 @@ namespace TextTemplateManager
 
             ViewModel.DeleteItemCommand.Execute(null);
         }
-        private void LoadBackup_Click(object sender, RoutedEventArgs e) => ViewModel.LoadBackupCommand.Execute(null);
+        private async void LoadBackup_Click(object sender, RoutedEventArgs e)
+        {
+            var result = await ViewModel.LoadBackupAsync(ConfirmReplaceLocalItemsAsync);
+            if (result == MainViewModel.LoadBackupResult.Unreadable)
+                await ShowMessageAsync("Backup not loaded",
+                    "The file couldn't be read as Text Template Manager data. Nothing was changed.");
+        }
+
+        private async Task<bool> ConfirmReplaceLocalItemsAsync(string fileName)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Load backup",
+                Content = $"Replace your local templates and folders with the contents of \"{fileName}\"?\n\n" +
+                          "Synced folders are not affected. The current local items are replaced and can't be restored.",
+                PrimaryButtonText = "Replace",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            return await ShowDialogAsync(dialog) == ContentDialogResult.Primary;
+        }
         private void SaveBackup_Click(object sender, RoutedEventArgs e) => ViewModel.SaveBackupCommand.Execute(null);
 
         private void OpenPreferences_Click(object sender, RoutedEventArgs e) => ShowSettings();

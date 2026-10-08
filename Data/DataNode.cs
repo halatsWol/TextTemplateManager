@@ -57,9 +57,11 @@ public class DataNode
     /// <summary>Last observed write time per source, so the poller ignores our own writes.</summary>
     private readonly Dictionary<Guid, DateTime> _lastSeenWrite = new();
 
-    public DataNode()
+    public DataNode() : this(StorageService.GetDataPath()) { }
+
+    internal DataNode(string localDataPath)
     {
-        _localDataPath = StorageService.GetDataPath();
+        _localDataPath = localDataPath;
     }
 
     #region Initialization
@@ -133,6 +135,28 @@ public class DataNode
     {
         if (item == null) return;
         RemoveFromTreeById(RootFolder.Children, item.Id);
+        await SaveDataAsync();
+    }
+
+    /// <summary>Replaces the local items with <paramref name="items"/> in one step and one save. The pinned
+    /// sync folders stay; top-level sync folders inside <paramref name="items"/> (a full export contains
+    /// snapshots of them) are skipped, since the sync files themselves are the source of truth.</summary>
+    public async Task ReplaceLocalItemsAsync(IEnumerable<BaseItem> items)
+    {
+        _isMoving = true;
+        try
+        {
+            var syncRoots = RootFolder.Children.Where(c => c.IsSyncRoot).ToList();
+            RootFolder.Children.Clear();
+            foreach (var root in syncRoots) RootFolder.Children.Add(root);
+            foreach (var item in items.Where(i => i.SyncId == null))
+            {
+                item.ParentId = Guid.Empty;
+                RootFolder.Children.Add(item);
+                AttachChangeTracking(item);
+            }
+        }
+        finally { _isMoving = false; }
         await SaveDataAsync();
     }
 
