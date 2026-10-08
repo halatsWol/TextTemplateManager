@@ -62,6 +62,82 @@ public class StorageServiceTests
         Assert.Null(await StorageService.LoadRootAsync(path));
     }
 
+    // ---- the app's own files: never overwrite one that couldn't be read ----
+
+    [Theory]
+    [InlineData("{ not json at all")]
+    [InlineData("")]        // truncated to nothing
+    [InlineData("null")]
+    public async Task An_unreadable_own_file_is_moved_aside_and_reported(string content)
+    {
+        string dir = TestEnvironment.NewScratchDir();
+        string path = Path.Combine(dir, "data.ttmdata");
+        await File.WriteAllTextAsync(path, content);
+        StorageService.TakeUnreadableFiles();
+
+        var loaded = await StorageService.LoadOwnFileAsync<Folder>(path);
+
+        Assert.Null(loaded);
+        Assert.False(File.Exists(path));
+        var report = Assert.Single(StorageService.TakeUnreadableFiles());
+        Assert.Equal(path, report.Path);
+        Assert.NotNull(report.KeptAs);
+        Assert.Equal(content, await File.ReadAllTextAsync(report.KeptAs!));
+    }
+
+    [Fact]
+    public async Task A_missing_own_file_is_not_reported()
+    {
+        StorageService.TakeUnreadableFiles();
+
+        Assert.Null(await StorageService.LoadOwnFileAsync<Folder>(
+            Path.Combine(TestEnvironment.NewScratchDir(), "absent.ttmdata")));
+        Assert.Empty(StorageService.TakeUnreadableFiles());
+    }
+
+    [Fact]
+    public async Task A_readable_own_file_loads_normally()
+    {
+        string path = Path.Combine(TestEnvironment.NewScratchDir(), "data.ttmdata");
+        await StorageService.SaveAsync(path, Tree("Root", "Alpha"));
+        StorageService.TakeUnreadableFiles();
+
+        var loaded = await StorageService.LoadOwnFileAsync<Folder>(path);
+
+        Assert.Equal("Alpha", Assert.Single(loaded!.Children).Title);
+        Assert.Empty(StorageService.TakeUnreadableFiles());
+    }
+
+    [Fact]
+    public async Task An_own_file_that_can_be_neither_read_nor_moved_is_never_overwritten()
+    {
+        string path = Path.Combine(TestEnvironment.NewScratchDir(), "data.ttmdata");
+        await File.WriteAllTextAsync(path, "original");
+        StorageService.TakeUnreadableFiles();
+
+        using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            Assert.Null(await StorageService.LoadOwnFileAsync<Folder>(path));
+
+        var report = Assert.Single(StorageService.TakeUnreadableFiles());
+        Assert.Null(report.KeptAs);
+        await StorageService.SaveAsync(path, Tree("Root", "Alpha"));
+        Assert.Equal("original", await File.ReadAllTextAsync(path));
+    }
+
+    [Fact]
+    public async Task Unreadable_settings_fall_back_to_defaults_but_keep_the_original()
+    {
+        string path = StorageService.GetSettingsPath();
+        await File.WriteAllTextAsync(path, "{ \"PasteWindowHotkey\": ");
+        StorageService.TakeUnreadableFiles();
+
+        var settings = await StorageService.LoadSettingsAsync();
+
+        Assert.Equal(new AppSettings().PasteWindowHotkey, settings.PasteWindowHotkey);
+        var report = Assert.Single(StorageService.TakeUnreadableFiles());
+        Assert.Equal("{ \"PasteWindowHotkey\": ", await File.ReadAllTextAsync(report.KeptAs!));
+    }
+
     // ---- the anti-churn rule ----
 
     [Fact]

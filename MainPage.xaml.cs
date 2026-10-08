@@ -826,6 +826,28 @@ namespace TextTemplateManager
             });
         }
 
+        /// <summary>Tells the user which of the app's own files couldn't be read at startup and where the
+        /// originals were kept, so nothing is silently replaced by an empty tree or default settings.</summary>
+        public async void ReportUnreadableFiles(IReadOnlyList<StorageService.UnreadableFile> files)
+        {
+            if (!IsLoaded)
+            {
+                var loaded = new TaskCompletionSource();
+                RoutedEventHandler? onLoaded = null;
+                onLoaded = (_, _) => { Loaded -= onLoaded; loaded.TrySetResult(); };
+                Loaded += onLoaded;
+                await loaded.Task;
+            }
+
+            var lines = files.Select(f => f.KeptAs != null
+                ? $"• {System.IO.Path.GetFileName(f.Path)}: started without it. The original was kept as {System.IO.Path.GetFileName(f.KeptAs)}."
+                : $"• {System.IO.Path.GetFileName(f.Path)}: couldn't be read or moved. It won't be changed until the app is restarted.");
+            string folder = System.IO.Path.GetDirectoryName(files[0].Path) ?? "";
+
+            await ShowMessageAsync("Some files couldn't be read",
+                string.Join("\n", lines) + $"\n\nFolder: {folder}\n\nThe original files were not overwritten.");
+        }
+
         private async Task ShowMessageAsync(string title, string message)
         {
             await ShowDialogAsync(new ContentDialog

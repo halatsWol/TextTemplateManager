@@ -69,7 +69,7 @@ public class DataNode
     {
         if (_isInitialized) return;
 
-        var loadedRoot = await StorageService.LoadRootAsync(_localDataPath);
+        var loadedRoot = await StorageService.LoadOwnFileAsync<Folder>(_localDataPath);
         if (loadedRoot != null)
         {
             _isMoving = true;   // no save-loops during load

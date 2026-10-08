@@ -75,6 +75,8 @@ public static class StorageService
 
     private static async Task WithWriteLock(string path, Func<Task> write)
     {
+        if (_protectedPaths.ContainsKey(path)) return;   // unreadable and couldn't be set aside — never overwrite
+
         // Counted before the wait, so a write queued behind a slow one (a retrying OneDrive target)
         // still reads as work in progress.
         Interlocked.Increment(ref _writesInFlight);
@@ -89,6 +91,57 @@ public static class StorageService
         {
             Interlocked.Exchange(ref _lastWriteTicks, Environment.TickCount64);
             Interlocked.Decrement(ref _writesInFlight);
+        }
+    }
+
+    /// <summary>One of the app's own files that existed but couldn't be read at load. <c>KeptAs</c> is where
+    /// the original was moved; null when it couldn't be moved either (then it is never written this session).</summary>
+    public sealed record UnreadableFile(string Path, string? KeptAs);
+
+    private static readonly ConcurrentQueue<UnreadableFile> _unreadable = new();
+    private static readonly ConcurrentDictionary<string, byte> _protectedPaths = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Returns and clears the files reported unreadable since the last call.</summary>
+    public static IReadOnlyList<UnreadableFile> TakeUnreadableFiles()
+    {
+        var files = new List<UnreadableFile>();
+        while (_unreadable.TryDequeue(out var f)) files.Add(f);
+        return files;
+    }
+
+    /// <summary>Loads one of the app's own files (data, settings, sync settings). One that exists but can't
+    /// be read or parsed is moved aside and reported, so the next save can't overwrite it with an empty
+    /// tree or defaults. Returns null when the file is missing or was set aside.</summary>
+    internal static async Task<T?> LoadOwnFileAsync<T>(string path) where T : class
+    {
+        if (!File.Exists(path)) return null;
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                var value = JsonSerializer.Deserialize<T>(await File.ReadAllTextAsync(path), _options);
+                if (value != null) return value;
+                break;
+            }
+            catch (IOException) when (attempt < 2) { await Task.Delay(200); }   // briefly locked (antivirus, backup tool)
+            catch (Exception) { break; }
+        }
+        SetAside(path);
+        return null;
+    }
+
+    private static void SetAside(string path)
+    {
+        string keptAs = $"{path}.broken-{DateTime.Now:yyyyMMdd-HHmmss}";
+        try
+        {
+            File.Move(path, keptAs);
+            _unreadable.Enqueue(new UnreadableFile(path, keptAs));
+        }
+        catch
+        {
+            _protectedPaths[path] = 0;
+            _unreadable.Enqueue(new UnreadableFile(path, null));
         }
     }
 
@@ -130,21 +183,9 @@ public static class StorageService
     /// <summary>Append-only log for otherwise-fatal unhandled exceptions.</summary>
     public static string GetCrashLogPath() => Path.Combine(BaseDirectory, "crash.log");
 
-    /// <summary>Load the sync config, or a new empty one if none exists.</summary>
-    public static async Task<SyncSettings> LoadSyncSettingsAsync()
-    {
-        string path = GetSyncSettingsPath();
-        if (!File.Exists(path)) return new SyncSettings();
-        try
-        {
-            string json = await File.ReadAllTextAsync(path);
-            return JsonSerializer.Deserialize<SyncSettings>(json, _options) ?? new SyncSettings();
-        }
-        catch
-        {
-            return new SyncSettings();
-        }
-    }
+    /// <summary>Load the sync config, or a new empty one if none exists (or it was unreadable and set aside).</summary>
+    public static async Task<SyncSettings> LoadSyncSettingsAsync() =>
+        await LoadOwnFileAsync<SyncSettings>(GetSyncSettingsPath()) ?? new SyncSettings();
 
     public static async Task SaveSyncSettingsAsync(SyncSettings settings)
     {
@@ -284,21 +325,8 @@ public static class StorageService
         return await LoadRootAsync(fullPath);
     }
 
-    public static async Task<AppSettings> LoadSettingsAsync()
-    {
-        string path = GetSettingsPath();
-        if (!File.Exists(path)) return new AppSettings();
-
-        try
-        {
-            string json = await File.ReadAllTextAsync(path);
-            return JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
-        }
-        catch
-        {
-            return new AppSettings();
-        }
-    }
+    public static async Task<AppSettings> LoadSettingsAsync() =>
+        await LoadOwnFileAsync<AppSettings>(GetSettingsPath()) ?? new AppSettings();
 
     public static async Task SaveSettingsAsync(AppSettings settings)
     {

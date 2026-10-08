@@ -58,6 +58,7 @@ namespace TextTemplateManager
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             await DataNode.Instance.InitializeAsync();
+            var unreadableFiles = StorageService.TakeUnreadableFiles();
 
             _hotkeyListener = new HotkeyListener();
             _hotkeyListener.HotkeyPressed += OnGlobalHotkeyPressed;
@@ -95,10 +96,13 @@ namespace TextTemplateManager
             };
 
             // A hidden autostart (Windows login with --hidden) stays in the tray: skip Activate so the
-            // window is never shown. A .ttmdata to open overrides this and surfaces the window below.
-            bool startHidden = IsHiddenLaunch() && fileArg == null;
+            // window is never shown. A .ttmdata to open, or a data file that couldn't be read, overrides this.
+            bool startHidden = IsHiddenLaunch() && fileArg == null && unreadableFiles.Count == 0;
             if (!startHidden)
                 MainWindow.Activate();
+
+            if (unreadableFiles.Count > 0)
+                (MainWindow.Content as MainPage)?.ReportUnreadableFiles(unreadableFiles);
 
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)
