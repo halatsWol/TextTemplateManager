@@ -73,6 +73,12 @@ public static class StorageService
     public static bool WritesQuiet(int quietMs = 2000) =>
         !WritesInFlight && Environment.TickCount64 - Interlocked.Read(ref _lastWriteTicks) >= quietMs;
 
+    /// <summary>Completes once no write is queued or running.</summary>
+    public static async Task WaitForWritesAsync()
+    {
+        while (WritesInFlight) await Task.Delay(50);
+    }
+
     private static async Task WithWriteLock(string path, Func<Task> write)
     {
         if (_protectedPaths.ContainsKey(path)) return;   // unreadable and couldn't be set aside — never overwrite

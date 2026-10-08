@@ -152,6 +152,8 @@ namespace TextTemplateManager.Helpers
 
         private const uint WM_GETMINMAXINFO = 0x0024;
         private const uint WM_SYSCHAR = 0x0106;
+        private const uint WM_QUERYENDSESSION = 0x0011;
+        private const uint WM_ENDSESSION = 0x0016;
         private static WndProcDelegate? _subclassHook;   // shared hook, kept alive to avoid GC
         private static readonly Dictionary<IntPtr, WindowHook> _hookedWindows = new();
 
@@ -161,6 +163,50 @@ namespace TextTemplateManager.Helpers
             public int MinW;
             public int MinH;
             public bool SuppressAltBeep;
+            public Action? QueryEndSession;
+            public Action? EndSession;
+        }
+
+        /// <summary>Windows sign-out/shutdown: <paramref name="queryEndSession"/> runs when Windows announces
+        /// it (the session may still be cancelled), <paramref name="endSession"/> when it is final; the
+        /// process is ended as soon as that one returns.</summary>
+        public static void OnSessionEnd(IntPtr hWnd, Action queryEndSession, Action endSession)
+        {
+            var hook = EnsureHook(hWnd);
+            hook.QueryEndSession = queryEndSession;
+            hook.EndSession = endSession;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSG
+        {
+            public IntPtr hwnd;
+            public uint message;
+            public IntPtr wParam;
+            public IntPtr lParam;
+            public uint time;
+            public int ptX, ptY;
+        }
+
+        [DllImport("user32.dll")] private static extern bool PeekMessage(out MSG msg, IntPtr hWnd, uint min, uint max, uint remove);
+        [DllImport("user32.dll")] private static extern bool TranslateMessage(ref MSG msg);
+        [DllImport("user32.dll")] private static extern IntPtr DispatchMessage(ref MSG msg);
+
+        /// <summary>Keeps this thread's messages flowing until <paramref name="done"/> or the timeout. Used inside
+        /// WM_ENDSESSION, where the UI thread must not return yet but the awaited saves still need it.</summary>
+        public static void PumpMessagesUntil(Func<bool> done, TimeSpan timeout)
+        {
+            const uint PM_REMOVE = 0x0001;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (!done() && sw.Elapsed < timeout)
+            {
+                if (PeekMessage(out var msg, IntPtr.Zero, 0, 0, PM_REMOVE))
+                {
+                    TranslateMessage(ref msg);
+                    DispatchMessage(ref msg);
+                }
+                else System.Threading.Thread.Sleep(10);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -265,6 +311,17 @@ namespace TextTemplateManager.Helpers
             // Eat the Alt+key menu-mnemonic beep for opted-in (menu-less) windows.
             if (msg == WM_SYSCHAR && hook.SuppressAltBeep)
                 return IntPtr.Zero;
+
+            if (msg == WM_QUERYENDSESSION && hook.QueryEndSession != null)
+            {
+                hook.QueryEndSession();
+                return (IntPtr)1;   // don't block the sign-out
+            }
+            if (msg == WM_ENDSESSION && wParam != IntPtr.Zero && hook.EndSession != null)
+            {
+                hook.EndSession();
+                return IntPtr.Zero;
+            }
 
             return CallWindowProc(hook.Orig, hWnd, msg, wParam, lParam);
         }

@@ -134,6 +134,13 @@ namespace TextTemplateManager
                 DispatcherQueue.TryEnqueue(async () => await ViewModel.SaveCurrentStateAsync());
             };
 
+            // On exit, take the editor's content that it hasn't reported yet; the data save runs after.
+            (Application.Current as App)?.AddExitFlush(async () =>
+            {
+                await FlushEditorAsync();
+                _saveTimer.Stop();
+            });
+
             DispatcherQueue.TryEnqueue(() =>
             {
                 ViewModel.ValidateAllShortcuts();
@@ -1088,13 +1095,9 @@ namespace TextTemplateManager
 
         Task IUpdateHost.ShowMessageAsync(string title, string message) => ShowMessageAsync(title, message);
 
-        async Task IUpdateHost.PersistPendingWorkAsync()
-        {
-            // Persist first, then hand off to the silent installer and exit so files aren't locked.
-            await FlushEditorAsync();
-            _saveTimer?.Stop();
-            await ViewModel.SaveCurrentStateAsync();
-        }
+        // Persist first, then hand off to the silent installer and exit so files aren't locked.
+        Task IUpdateHost.PersistPendingWorkAsync() =>
+            (Application.Current as App)?.PersistPendingAsync() ?? Task.CompletedTask;
 
         async Task IUpdateHost.DrainWritesAsync()
         {
@@ -1110,10 +1113,47 @@ namespace TextTemplateManager
 
         private async void Exit_Click(object sender, RoutedEventArgs e)
         {
-            await FlushEditorAsync();   // capture latest edits before saving
-            _saveTimer?.Stop();
-            await ViewModel.SaveCurrentStateAsync();
-            (Application.Current as App)?.Shutdown();
+            if (Application.Current is App app) await app.ExitAsync();
+        }
+
+        private ContentDialog? _exitProgress;
+        private Task? _exitProgressShown;
+
+        /// <summary>"Saving changes…" while exit waits for a slow save. No buttons; closed by the app.</summary>
+        public void ShowExitProgress()
+        {
+            if (_exitProgress != null) return;
+            _exitProgress = new ContentDialog
+            {
+                Title = "Saving changes…",
+                Content = new ProgressRing { IsActive = true, Width = 32, Height = 32 },
+            };
+            _exitProgressShown = ShowDialogAsync(_exitProgress);
+        }
+
+        public async Task HideExitProgressAsync()
+        {
+            if (_exitProgress == null) return;
+            _exitProgress.Hide();
+            if (_exitProgressShown != null) await _exitProgressShown;   // frees the one-dialog slot
+            _exitProgress = null;
+            _exitProgressShown = null;
+        }
+
+        /// <summary>Asked when exit has waited a long time for a save. True = keep waiting; Esc or a dialog
+        /// that can't be shown also count as keep waiting, so nothing is dropped by accident.</summary>
+        public async Task<bool> AskKeepWaitingForSaveAsync()
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Still saving",
+                Content = "Your latest changes haven't finished saving yet (a synced file may be busy). " +
+                          "Quitting now can lose them.",
+                PrimaryButtonText = "Keep waiting",
+                SecondaryButtonText = "Quit anyway",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            return await ShowDialogAsync(dialog) != ContentDialogResult.Secondary;
         }
 
         #endregion

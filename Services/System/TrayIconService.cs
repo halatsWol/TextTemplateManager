@@ -76,8 +76,7 @@ namespace TextTemplateManager.Services.System
         {
             _dispatcher.TryEnqueue(async () =>
             {
-                try { await TextTemplateManager.Data.DataNode.Instance.SaveDataAsync(); } catch { }
-                (Application.Current as TextTemplateManager.App)?.Shutdown();
+                if (Application.Current is TextTemplateManager.App app) await app.ExitAsync();
             });
         }
 

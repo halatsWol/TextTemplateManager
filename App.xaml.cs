@@ -4,6 +4,8 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using TextTemplateManager.Data;
 using TextTemplateManager.Helpers;
 using TextTemplateManager.Services.System;
@@ -74,6 +76,7 @@ namespace TextTemplateManager
             appWindow.SetIcon("Assets/AppIcon.ico");
 
             WindowHelper.SetWindowMinSize(hwnd, 720, 560);   // don't clip the panes
+            WindowHelper.OnSessionEnd(hwnd, OnQueryEndSession, OnEndSession);
 
 
             _trayService = new TrayIconService(MainWindow);
@@ -287,9 +290,73 @@ namespace TextTemplateManager
             catch { /* logging must never throw */ }
         }
 
+        // ---- Exit: persist everything pending first ----
+
+        private readonly List<Func<Task>> _exitFlushes = new();
+        private Task? _sessionEndSave;
+
+        /// <summary>Registers work that must be persisted before the app quits (e.g. the editor's not yet
+        /// reported content). Runs in registration order, before the pending data save.</summary>
+        public void AddExitFlush(Func<Task> flush) => _exitFlushes.Add(flush);
+
+        /// <summary>Writes everything pending: registered flushes, the debounced data save, and any write
+        /// still in progress. A failing step is logged and doesn't stop the others.</summary>
+        public async Task PersistPendingAsync()
+        {
+            foreach (var flush in _exitFlushes)
+            {
+                try { await flush(); }
+                catch (Exception ex) { LogCrash("ExitFlush", ex); }
+            }
+            try { await DataNode.Instance.FlushPendingSaveAsync(); }
+            catch (Exception ex) { LogCrash("ExitFlush", ex); }
+            await StorageService.WaitForWritesAsync();
+        }
+
+        private void StopAcceptingWork()
+        {
+            _hotkeyListener?.Register("None");
+            try { _connector?.Stop(); } catch { }
+        }
+
+        /// <summary>Quit from the menu or the tray: persist everything, then exit. Shows progress when that
+        /// takes more than a second and asks before giving up on a save that hangs.</summary>
+        public async Task ExitAsync()
+        {
+            StopAcceptingWork();
+            var save = PersistPendingAsync();
+            if (await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(1))) != save
+                && MainWindow.Content is MainPage page)
+            {
+                ShowMainWindow();
+                page.ShowExitProgress();
+                while (await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(15))) != save)
+                {
+                    await page.HideExitProgressAsync();
+                    if (!await page.AskKeepWaitingForSaveAsync()) break;
+                    page.ShowExitProgress();
+                }
+                await page.HideExitProgressAsync();
+            }
+            Shutdown();
+        }
+
+        // Sign-out/shutdown announced: start saving right away; the session may still be cancelled.
+        private void OnQueryEndSession() => _sessionEndSave ??= PersistPendingAsync();
+
+        // Final: Windows ends the process as soon as this returns, so wait here (keeping the UI thread's
+        // messages flowing for the saves) within the few seconds Windows allows.
+        private void OnEndSession()
+        {
+            StopAcceptingWork();
+            var save = _sessionEndSave ??= PersistPendingAsync();
+            WindowHelper.PumpMessagesUntil(() => save.IsCompleted, TimeSpan.FromSeconds(4));
+            Shutdown();
+        }
+
         /// <summary>Quit: remove the tray icon, then hard-exit. Uses Environment.Exit because
         /// Application.Current.Exit()'s teardown throws a stowed exception (0xc000027b) here.
-        /// Persist pending state before calling.</summary>
+        /// Persist pending state before calling (<see cref="ExitAsync"/> does).</summary>
         public void Shutdown()
         {
             _isClosingFromTray = true;

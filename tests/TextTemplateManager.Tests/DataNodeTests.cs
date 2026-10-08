@@ -43,6 +43,34 @@ public class DataNodeTests
     }
 
     [Fact]
+    public async Task A_debounced_edit_is_written_at_once_when_flushed()
+    {
+        // Exit flushes instead of waiting for the edit debounce, which would be cut off by the exit.
+        var (node, path) = await NewNodeAsync();
+        var template = new Template { Title = "Before" };
+        await node.AddItemAsync(template);
+
+        template.Title = "Edited just before exit";
+        await node.FlushPendingSaveAsync();
+
+        var saved = await StorageService.LoadRootAsync(path);
+        Assert.Contains(saved!.Children, c => c.Title == "Edited just before exit");
+    }
+
+    [Fact]
+    public async Task Waiting_for_writes_completes_after_the_last_write()
+    {
+        string path = Path.Combine(TestEnvironment.NewScratchDir(), "busy.ttmdata");
+        var writes = Task.WhenAll(Enumerable.Range(0, 20).Select(i =>
+            StorageService.SaveAsync(path, new Folder { Title = $"Root {i}" })));
+
+        await StorageService.WaitForWritesAsync();
+
+        Assert.True(writes.IsCompleted);
+        Assert.False(StorageService.WritesInFlight);
+    }
+
+    [Fact]
     public async Task Loading_a_backup_saves_once()
     {
         var (node, _) = await NewNodeAsync();

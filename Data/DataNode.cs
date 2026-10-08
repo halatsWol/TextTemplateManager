@@ -273,6 +273,13 @@ public class DataNode
         _ = SaveAfterDelayAsync(cts.Token);
     }
 
+    /// <summary>Writes a debounced edit now instead of after the delay (on exit).</summary>
+    public async Task FlushPendingSaveAsync()
+    {
+        _editSaveDebounce?.Cancel();
+        await SaveDataAsync();
+    }
+
     private async Task SaveAfterDelayAsync(CancellationToken ct)
     {
         // No token on Task.Delay on purpose: passing it would throw TaskCanceledException on every
