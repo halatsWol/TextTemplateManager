@@ -844,6 +844,22 @@ namespace TextTemplateManager
         /// originals were kept, so nothing is silently replaced by an empty tree or default settings.</summary>
         public async void ReportUnreadableFiles(IReadOnlyList<StorageService.UnreadableFile> files)
         {
+            var lines = files.Select(f => f.KeptAs != null
+                ? $"• {System.IO.Path.GetFileName(f.Path)}: started without it. The original was kept as {System.IO.Path.GetFileName(f.KeptAs)}."
+                : $"• {System.IO.Path.GetFileName(f.Path)}: couldn't be read or moved. It won't be changed until the app is restarted.");
+            string folder = System.IO.Path.GetDirectoryName(files[0].Path) ?? "";
+
+            await ShowStartupMessageAsync("Some files couldn't be read",
+                string.Join("\n", lines) + $"\n\nFolder: {folder}\n\nThe original files were not overwritten.");
+        }
+
+        public async void ReportHotkeyUnavailable(string message) =>
+            await ShowStartupMessageAsync("Quick Paste shortcut unavailable", message);
+
+        // Startup notices can arrive before the page is loaded and while another one is still open; only
+        // one ContentDialog may be open at a time, so wait for both instead of dropping the message.
+        private async Task ShowStartupMessageAsync(string title, string message)
+        {
             if (!IsLoaded)
             {
                 var loaded = new TaskCompletionSource();
@@ -852,14 +868,8 @@ namespace TextTemplateManager
                 Loaded += onLoaded;
                 await loaded.Task;
             }
-
-            var lines = files.Select(f => f.KeptAs != null
-                ? $"• {System.IO.Path.GetFileName(f.Path)}: started without it. The original was kept as {System.IO.Path.GetFileName(f.KeptAs)}."
-                : $"• {System.IO.Path.GetFileName(f.Path)}: couldn't be read or moved. It won't be changed until the app is restarted.");
-            string folder = System.IO.Path.GetDirectoryName(files[0].Path) ?? "";
-
-            await ShowMessageAsync("Some files couldn't be read",
-                string.Join("\n", lines) + $"\n\nFolder: {folder}\n\nThe original files were not overwritten.");
+            while (_dialogOpen) await Task.Delay(200);
+            await ShowMessageAsync(title, message);
         }
 
         private async Task ShowMessageAsync(string title, string message)

@@ -28,6 +28,11 @@
                              KeyUp="HotkeyTextBox_KeyUp"/>
                     <Button Grid.Column="1" Content="Clear" Click="ClearHotkey_Click"/>
                 </Grid>
+                <InfoBar x:Name="HotkeyUnavailableInfo"
+                         Severity="Warning"
+                         IsClosable="False"
+                         IsOpen="False"
+                         Message="Another app already uses this shortcut, so it won't open Quick Paste. Choose a different one."/>
             </StackPanel>
 
             <StackPanel Spacing="4">

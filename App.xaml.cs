@@ -62,7 +62,7 @@ namespace TextTemplateManager
 
             _hotkeyListener = new HotkeyListener();
             _hotkeyListener.HotkeyPressed += OnGlobalHotkeyPressed;
-            _hotkeyListener.Register(DataNode.Instance.CurrentSettings.PasteWindowHotkey);
+            UpdateGlobalHotkey(DataNode.Instance.CurrentSettings.PasteWindowHotkey);
 
             MainWindow = new Window();
             MainWindow.Content = new MainPage();
@@ -103,6 +103,9 @@ namespace TextTemplateManager
 
             if (unreadableFiles.Count > 0)
                 (MainWindow.Content as MainPage)?.ReportUnreadableFiles(unreadableFiles);
+
+            if (!HotkeyRegistered)
+                ReportHotkeyUnavailable(startHidden);
 
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)
@@ -213,9 +216,23 @@ namespace TextTemplateManager
             _uiDispatcher.TryEnqueue(DispatcherQueuePriority.Low, () => EnsurePasteWindow().Prewarm());
         }
 
-        public void UpdateGlobalHotkey(string hotkey)
+        /// <summary>False when the configured hotkey couldn't be registered (another app owns it).</summary>
+        public bool HotkeyRegistered { get; private set; } = true;
+
+        public bool UpdateGlobalHotkey(string hotkey)
         {
-            _hotkeyListener?.Register(hotkey);
+            HotkeyRegistered = _hotkeyListener?.Register(hotkey) ?? true;
+            return HotkeyRegistered;
+        }
+
+        // At startup: a dialog when the window is shown, a tray notice when started hidden.
+        private void ReportHotkeyUnavailable(bool startedHidden)
+        {
+            string hotkey = DataNode.Instance.CurrentSettings.PasteWindowHotkey;
+            string message = $"The Quick Paste shortcut {hotkey} is already used by another app, so it won't open Quick Paste. " +
+                             "Choose a different shortcut in Settings › General.";
+            if (startedHidden) ShowTrayBalloon("Quick Paste shortcut unavailable", message);
+            else (MainWindow.Content as MainPage)?.ReportHotkeyUnavailable(message);
         }
 
         /// <summary>Starts/stops/restarts the browser connector to match the current settings.

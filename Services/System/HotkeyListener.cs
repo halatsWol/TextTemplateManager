@@ -49,7 +49,9 @@ public class HotkeyListener : IDisposable
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    public void Register(string hotkeyStr)
+    /// <summary>Registers the hotkey, replacing the previous one. False when Windows refuses it, usually
+    /// because another app already owns the combination. No hotkey ("None"/empty) counts as success.</summary>
+    public bool Register(string hotkeyStr)
     {
         UnregisterHotKey(_hwnd, HOTKEY_ID);
 
@@ -72,8 +74,7 @@ public class HotkeyListener : IDisposable
             }
         }
 
-        if (vk != 0)
-            RegisterHotKey(_hwnd, HOTKEY_ID, modifiers, vk);
+        return vk == 0 || RegisterHotKey(_hwnd, HOTKEY_ID, modifiers, vk);
     }
 
     #region Win32 Imports

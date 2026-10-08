@@ -29,6 +29,7 @@ public sealed partial class GeneralSettingsPage : Page
             ViewModel = settings;
         }
         HotkeyTextBox.Text = FormatHotkey(ViewModel?.PasteWindowHotkey);
+        HotkeyUnavailableInfo.IsOpen = Application.Current is App { HotkeyRegistered: false };
         InitStartupUi();
         InitUpdatePolicyUi();
         base.OnNavigatedTo(e);
@@ -209,7 +210,8 @@ public sealed partial class GeneralSettingsPage : Page
     private void ApplyHotkey()
     {
         if (ViewModel == null) return;
-        if (Application.Current is App app) app.UpdateGlobalHotkey(ViewModel.PasteWindowHotkey);
+        if (Application.Current is App app)
+            HotkeyUnavailableInfo.IsOpen = !app.UpdateGlobalHotkey(ViewModel.PasteWindowHotkey);
         _ = TextTemplateManager.Data.StorageService.SaveSettingsAsync(ViewModel);
     }
 
