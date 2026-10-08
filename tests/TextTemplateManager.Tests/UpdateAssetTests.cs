@@ -4,10 +4,9 @@ using Xunit;
 
 namespace TextTemplateManager.Tests;
 
-/// <summary>Asset selection from a GitHub release payload. The release workflow deliberately uploads the
-/// full installer as the FIRST .exe because the fallback path picks the first one it sees; these tests
-/// pin that contract down so a reordering in release.yml fails here rather than shipping a delta to
-/// clients that can't apply it.</summary>
+/// <summary>Asset selection from a GitHub release payload. Only <c>TextTemplateManager-Setup*.exe</c> is ever
+/// treated as the installer: every other .exe on a release (deltas, the support tool) must never be run as
+/// one, and from 2.0 on releases carry no installer at all.</summary>
 public class UpdateAssetTests
 {
     private static JsonElement Release(params (string name, string url)[] assets)
@@ -54,14 +53,26 @@ public class UpdateAssetTests
     }
 
     [Fact]
-    public void Without_a_setup_named_asset_the_first_exe_is_still_used()
+    public void Without_a_setup_named_asset_there_is_no_installer()
     {
-        // Keeps pre-1.2 releases resolvable, whose installer was not named this way.
-        var rel = Release(("SomeOldInstaller.exe", "https://example/old.exe"));
+        // No "first .exe" fallback any more: a release carrying only the support tool (as 2.x releases
+        // would if a cleanup .exe were attached) must not be run as the installer.
+        var rel = Release(
+            ("TextTemplateManager-Support-Cleanup.exe", "https://example/cleanup.exe"),
+            ("SomeOldInstaller.exe", "https://example/old.exe"));
 
-        var (url, _) = UpdateService.FindInstallerAsset(rel);
+        var (url, name) = UpdateService.FindInstallerAsset(rel);
 
-        Assert.Equal("https://example/old.exe", url);
+        Assert.Null(url);
+        Assert.Null(name);
+    }
+
+    [Fact]
+    public void A_setup_named_asset_must_be_an_exe()
+    {
+        var rel = Release(("TextTemplateManager-Setup-1.3.2.zip", "https://example/setup.zip"));
+
+        Assert.Null(UpdateService.FindInstallerAsset(rel).url);
     }
 
     [Fact]

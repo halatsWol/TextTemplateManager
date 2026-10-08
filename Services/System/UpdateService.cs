@@ -61,17 +61,45 @@ public sealed class UpdateService
 
         // List releases (not /latest) so pre-releases are visible and name-based markers are
         // honored even for the "latest" release. Drafts aren't returned to unauthenticated callers.
-        using var resp = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases?per_page=50");
-        if (!resp.IsSuccessStatusCode) return null;
+        // Pages are newest first; the next one is only needed while no release at or below the
+        // installed version has shown up yet (usually never, as page 1 holds 100 releases).
+        Candidate? best = null;
+        for (int page = 1; ; page++)
+        {
+            using var resp = await Http.GetAsync(
+                $"https://api.github.com/repos/{Owner}/{Repo}/releases?per_page={ReleasePageSize}&page={page}");
+            if (!resp.IsSuccessStatusCode)
+            {
+                if (page == 1) return null;
+                break;
+            }
 
-        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+            bool reachedInstalled = ScanReleasePage(doc.RootElement, installed, allowBeta, ref best);
+            if (reachedInstalled || doc.RootElement.GetArrayLength() < ReleasePageSize) break;
+        }
 
-        JsonElement bestRel = default;
-        ReleaseVer? bestVer = null;
-        string? bestTag = null;
-        string? fullUrl = null, fullAsset = null;
+        if (best == null) return null;
 
-        foreach (var rel in doc.RootElement.EnumerateArray())
+        // Prefer a delta built for exactly this installed version (declared in the release's
+        // update.json), else the full installer. The download/run path is identical — a delta is
+        // just a smaller installer — so only the chosen asset differs here.
+        var (dlUrl, dlAsset) = await ResolveDownloadAsync(best.Release, best.Url, best.Asset);
+        return new UpdateInfo(best.Version.Numeric, best.Tag ?? "", dlUrl, dlAsset);
+    }
+
+    internal const int ReleasePageSize = 100;   // GitHub's maximum
+
+    internal sealed record Candidate(JsonElement Release, ReleaseVer Version, string? Tag, string Url, string Asset);
+
+    /// <summary>Picks the best update from one page of the release list into <paramref name="best"/>.
+    /// 2.x and later releases are skipped (they ship through the Microsoft Store, not as an installer).
+    /// Returns true once the page holds a release at or below the installed version: pages are newest
+    /// first, so later pages can't contain an update.</summary>
+    internal static bool ScanReleasePage(JsonElement releases, ReleaseVer installed, bool allowBeta, ref Candidate? best)
+    {
+        bool reachedInstalled = false;
+        foreach (var rel in releases.EnumerateArray())
         {
             if (rel.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
 
@@ -80,23 +108,17 @@ public sealed class UpdateService
 
             var ver = ParseRelease(tag, ghPrerelease);
             if (ver == null) continue;
-            if (ver.Prerelease && !allowBeta) continue;         // betas only when enabled
-            if (ver.CompareTo(installed) <= 0) continue;        // not newer than installed
-            if (bestVer != null && ver.CompareTo(bestVer) <= 0) continue; // keep the highest
+            if (ver.Numeric.Major >= 2) continue;
+            if (ver.CompareTo(installed) <= 0) { reachedInstalled = true; continue; }   // not newer
+            if (ver.Prerelease && !allowBeta) continue;                                  // betas only when enabled
+            if (best != null && ver.CompareTo(best.Version) <= 0) continue;              // keep the highest
 
             var (url, asset) = FindInstallerAsset(rel);
-            if (url == null) continue;                          // release has no installer asset
+            if (url == null || asset == null) continue;                                  // no installer asset
 
-            bestRel = rel; bestVer = ver; bestTag = tag; fullUrl = url; fullAsset = asset;
+            best = new Candidate(rel.Clone(), ver, tag, url, asset);
         }
-
-        if (bestVer == null || fullUrl == null) return null;
-
-        // Prefer a delta built for exactly this installed version (declared in the release's
-        // update.json), else the full installer. The download/run path is identical — a delta is
-        // just a smaller installer — so only the chosen asset differs here.
-        var (dlUrl, dlAsset) = await ResolveDownloadAsync(bestRel, fullUrl, fullAsset!);
-        return new UpdateInfo(bestVer.Numeric, bestTag ?? "", dlUrl, dlAsset);
+        return reachedInstalled;
     }
 
     /// <summary>Chooses the asset to download for a release: a delta whose <c>from</c> equals this
@@ -154,25 +176,21 @@ public sealed class UpdateService
 
     private const string SetupAssetPrefix = "TextTemplateManager-Setup";
 
-    /// <summary>The full installer asset. Prefers the Setup naming over simply "the first .exe", because
-    /// GitHub returns release assets in ALPHABETICAL order — not upload order — and a release carries
-    /// other .exe assets (the delta updates, the support/cleanup tool) that can sort ahead of the
-    /// installer. Falls back to the first .exe so releases predating that naming still resolve.</summary>
+    /// <summary>The full installer asset: only <c>TextTemplateManager-Setup*.exe</c>. A release carries other
+    /// .exe assets (deltas, the support/cleanup tool) and GitHub lists assets alphabetically, so anything
+    /// else must never be run as the installer; a release without one has no installer.</summary>
     internal static (string? url, string? name) FindInstallerAsset(JsonElement release)
     {
-        (string? url, string? name) firstExe = (null, null);
         if (release.TryGetProperty("assets", out var assets))
             foreach (var a in assets.EnumerateArray())
             {
                 string name = a.GetProperty("name").GetString() ?? "";
-                if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
-                if (!a.TryGetProperty("browser_download_url", out var u) || u.GetString() is not string url) continue;
-
-                if (name.StartsWith(SetupAssetPrefix, StringComparison.OrdinalIgnoreCase)) return (url, name);
-                firstExe.url ??= url;
-                firstExe.name ??= name;
+                if (name.StartsWith(SetupAssetPrefix, StringComparison.OrdinalIgnoreCase)
+                    && name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                    && a.TryGetProperty("browser_download_url", out var u) && u.GetString() is string url)
+                    return (url, name);
             }
-        return firstExe;
+        return (null, null);
     }
 
     /// <summary>Downloads the installer to the appdata installer folder (skips if already present) and
