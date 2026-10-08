@@ -59,6 +59,25 @@ public class HtmlToRtfTests
         Assert.Contains(@"a\b {c}", ReadBack(rtf));
     }
 
+    [Theory]
+    [InlineData("<p>Hello</p><p>World</p>", @"\fs22 Hello\par World")]
+    [InlineData("<h1>Title</h1><p>Text</p>", @"\fs22 \b\fs36 Title")]
+    [InlineData("<ul><li>One</li><li>Two</li></ul>", @"\fs22 \bullet\tab One\par \bullet\tab Two")]
+    [InlineData("<pre><code>code</code></pre>", @"\fs22 {\f1 code}")]
+    public void The_paste_starts_with_the_first_block_not_an_empty_line(string html, string expected)
+    {
+        Assert.Contains(expected, HtmlConverter.ConvertHtmlToRtf(html));
+    }
+
+    [Fact]
+    public void A_callout_panel_at_the_start_keeps_its_table_row()
+    {
+        string rtf = HtmlConverter.ConvertHtmlToRtf("<div data-panel-type=\"info\"><p>Note</p></div>");
+
+        Assert.Contains(@"\fs22 \trowd", rtf);
+        Assert.Contains(@"\pard\intbl", rtf);
+    }
+
     [Fact]
     public void A_newline_outside_code_is_plain_whitespace()
     {

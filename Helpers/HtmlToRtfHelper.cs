@@ -29,11 +29,26 @@ namespace TextTemplateManager.Helpers
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
+            var body = new StringBuilder();
             foreach (var node in doc.DocumentNode.ChildNodes)
-                ProcessNode(node, rtf);
+                ProcessNode(node, body);
 
+            rtf.Append(TrimLeadingParagraphBreaks(body.ToString()));
             rtf.Append('}');
             return rtf.ToString();
+        }
+
+        // Every block opens with \par, which would start the paste with an empty line.
+        private static string TrimLeadingParagraphBreaks(string body)
+        {
+            int i = 0;
+            while (true)
+            {
+                while (i < body.Length && body[i] == ' ') i++;
+                if (string.CompareOrdinal(body, i, @"\par ", 0, 5) != 0) break;
+                i += 5;
+            }
+            return body.Substring(i);
         }
 
         private static void ProcessNode(HtmlNode node, StringBuilder rtf, bool preformatted = false)
@@ -44,10 +59,11 @@ namespace TextTemplateManager.Helpers
             if (name is "pre" or "code")
             {
                 if (name == "pre") rtf.Append(@"\par ");
-                rtf.Append(@"{\f1 ");
+                bool newGroup = name == "pre" || !preformatted;   // <code> inside <pre> is already monospace
+                if (newGroup) rtf.Append(@"{\f1 ");
                 foreach (var child in node.ChildNodes)
                     ProcessNode(child, rtf, preformatted || name == "pre");
-                rtf.Append('}');
+                if (newGroup) rtf.Append('}');
                 return;
             }
 
