@@ -8,6 +8,32 @@ namespace TextTemplateManager.Tests;
 /// something a user hits constantly — it has to come back round rather than stop.</summary>
 public class PasteWindowNavigationTests
 {
+    // Single-key shortcuts are stored as the character ("G", "1"); the pressed key has to map to the same
+    // character, or a digit shortcut never fires ("Number1" never equals "1").
+    [Theory]
+    [InlineData(Windows.System.VirtualKey.G, 'g')]
+    [InlineData(Windows.System.VirtualKey.A, 'a')]
+    [InlineData(Windows.System.VirtualKey.Z, 'z')]
+    [InlineData(Windows.System.VirtualKey.Number1, '1')]
+    [InlineData(Windows.System.VirtualKey.Number0, '0')]
+    [InlineData(Windows.System.VirtualKey.NumberPad7, '7')]
+    public void Letter_and_digit_keys_map_to_their_shortcut_character(Windows.System.VirtualKey key, char expected)
+    {
+        Assert.True(PasteWindow.TryGetCharKey(key, out char c));
+        Assert.Equal(expected, c);
+    }
+
+    [Theory]
+    [InlineData(Windows.System.VirtualKey.Space)]
+    [InlineData(Windows.System.VirtualKey.Enter)]
+    [InlineData(Windows.System.VirtualKey.Shift)]
+    [InlineData(Windows.System.VirtualKey.F1)]
+    [InlineData(Windows.System.VirtualKey.Subtract)]
+    public void Other_keys_are_not_shortcut_characters(Windows.System.VirtualKey key)
+    {
+        Assert.False(PasteWindow.TryGetCharKey(key, out _));
+    }
+
     [Theory]
     [InlineData(0, 1, 5, 1)]
     [InlineData(3, 1, 5, 4)]

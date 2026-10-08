@@ -495,7 +495,9 @@ namespace TextTemplateManager
             // A single-key shortcut pastes immediately in shortcut mode. (A SearchBox.Text check isn't
             // enough to gate this — the text is still empty on the FIRST keystroke into search, so that
             // first letter would be hijacked into a paste; the focus split above is what gates it.)
-            var match = DataNode.Instance.ResolveSingleKey(e.Key.ToString());
+            var match = TryGetCharKey(e.Key, out char keyChar)
+                ? DataNode.Instance.ResolveSingleKey(keyChar.ToString())
+                : null;
             if (match != null)
             {
                 e.Handled = true;
@@ -603,13 +605,17 @@ namespace TextTemplateManager
                 EffectiveMulti(t).StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Maps a letter/digit VirtualKey to its lowercase character; false for any other key.
-        private static bool TryGetCharKey(VirtualKey key, out char c)
+        // Maps a letter or digit key (top row or numpad) to its lowercase character; false for any other key.
+        internal static bool TryGetCharKey(VirtualKey key, out char c)
         {
-            c = '\0';
-            string s = key.ToString().Replace("Number", "");
-            if (s.Length == 1 && char.IsLetterOrDigit(s[0])) { c = char.ToLowerInvariant(s[0]); return true; }
-            return false;
+            c = key switch
+            {
+                >= VirtualKey.A and <= VirtualKey.Z => (char)('a' + (key - VirtualKey.A)),
+                >= VirtualKey.Number0 and <= VirtualKey.Number9 => (char)('0' + (key - VirtualKey.Number0)),
+                >= VirtualKey.NumberPad0 and <= VirtualKey.NumberPad9 => (char)('0' + (key - VirtualKey.NumberPad0)),
+                _ => '\0',
+            };
+            return c != '\0';
         }
 
         private const uint MB_OK = 0x00000000;   // "Default Beep" — the Explorer no-match ding
