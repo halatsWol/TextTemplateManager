@@ -676,18 +676,7 @@ public partial class MainViewModel : ObservableObject
             ReconcileChildrenFromView(child);
     }
 
-    public async Task SaveCurrentStateAsync()
-    {
-        if (AllItems
-            .SelectManyRecursive(i => i.Children)
-            .OfType<Template>()
-            .Any(t => t.HasSingleKeyConflict || t.HasMultiKeyConflict))
-        {
-            return;
-        }
-
-        await _dataNode.SaveDataAsync();
-    }
+    public Task SaveCurrentStateAsync() => _dataNode.SaveDataAsync();
 
     #endregion
 
