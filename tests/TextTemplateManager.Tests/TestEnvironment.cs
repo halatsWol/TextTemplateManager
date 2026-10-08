@@ -25,6 +25,9 @@ internal static class TestEnvironment
         DataRoot = Path.Combine(Path.GetTempPath(), "ttm-tests", $"run-{Guid.NewGuid():N}");
         Directory.CreateDirectory(DataRoot);
         Environment.SetEnvironmentVariable(StorageService.DataDirOverrideVariable, DataRoot);
+
+        // The app registers the Windows code pages at launch (App.OnLaunched); RTF needs Windows-1252.
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
     }
 
     /// <summary>A fresh empty directory for one test, so file-system tests can't interfere with

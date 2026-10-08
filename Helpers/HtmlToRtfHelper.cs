@@ -16,7 +16,7 @@ namespace TextTemplateManager.Helpers
             if (string.IsNullOrWhiteSpace(html)) return string.Empty;
 
             var rtf = new StringBuilder();
-            rtf.Append(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}}");
+            rtf.Append(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Segoe UI;}{\f1\fmodern Consolas;}}");
             // Colour table for callout panels: pairs of (background, accent) per type, indices 1..10.
             rtf.Append(@"{\colortbl;")
                .Append(@"\red222\green235\blue255;\red38\green132\blue255;")   // 1,2  info
@@ -36,9 +36,20 @@ namespace TextTemplateManager.Helpers
             return rtf.ToString();
         }
 
-        private static void ProcessNode(HtmlNode node, StringBuilder rtf)
+        private static void ProcessNode(HtmlNode node, StringBuilder rtf, bool preformatted = false)
         {
             string name = node.Name.ToLowerInvariant();
+
+            // Code: monospace, and inside <pre> the line breaks and tabs are real content.
+            if (name is "pre" or "code")
+            {
+                if (name == "pre") rtf.Append(@"\par ");
+                rtf.Append(@"{\f1 ");
+                foreach (var child in node.ChildNodes)
+                    ProcessNode(child, rtf, preformatted || name == "pre");
+                rtf.Append('}');
+                return;
+            }
 
             // Callout panel -> a shaded single-cell table with a left accent border.
             if (name == "div" && !string.IsNullOrEmpty(node.GetAttributeValue("data-panel-type", "")))
@@ -75,16 +86,11 @@ namespace TextTemplateManager.Helpers
             if (node.HasChildNodes)
             {
                 foreach (var child in node.ChildNodes)
-                    ProcessNode(child, rtf);
+                    ProcessNode(child, rtf, preformatted);
             }
             else if (node.NodeType == HtmlNodeType.Text)
             {
-                // Escape the RTF backslash FIRST, then braces (order matters).
-                string text = System.Net.WebUtility.HtmlDecode(node.InnerText)
-                    .Replace(@"\", @"\\")
-                    .Replace("{", @"\{")
-                    .Replace("}", @"\}");
-                rtf.Append(text);
+                AppendText(rtf, System.Net.WebUtility.HtmlDecode(node.InnerText), preformatted);
             }
 
             // Closing tags.
@@ -151,6 +157,29 @@ namespace TextTemplateManager.Helpers
                 else
                 {
                     ProcessNode(child, rtf);
+                }
+            }
+        }
+
+        // RTF is 7-bit: escape control characters and write everything outside ASCII as \uN? (signed 16-bit,
+        // so characters beyond the BMP become their two surrogate halves) instead of letting the ANSI
+        // encoding turn them into '?'. Outside <pre>, a newline is just HTML whitespace.
+        private static void AppendText(StringBuilder rtf, string text, bool preformatted)
+        {
+            foreach (char ch in text)
+            {
+                switch (ch)
+                {
+                    case '\\': rtf.Append(@"\\"); break;
+                    case '{': rtf.Append(@"\{"); break;
+                    case '}': rtf.Append(@"\}"); break;
+                    case '\r': break;
+                    case '\n': rtf.Append(preformatted ? @"\line " : " "); break;
+                    case '\t': rtf.Append(preformatted ? @"\tab " : " "); break;
+                    default:
+                        if (ch < 0x80) rtf.Append(ch);
+                        else rtf.Append(@"\u").Append((short)ch).Append('?');
+                        break;
                 }
             }
         }
