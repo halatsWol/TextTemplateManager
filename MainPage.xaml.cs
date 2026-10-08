@@ -100,16 +100,11 @@ namespace TextTemplateManager
                     DispatcherQueue.TryEnqueue(() =>
                     {
                         PushTemplateToEditor();
-                        // Read-only synced item: block editing of the metadata fields and dim them as
-                        // the cue, but keep the editor itself fully legible and interactive so its text
-                        // stays selectable/copyable (setEditable(false) blocks typing/paste; the editor
-                        // hides its own toolbar).
+                        // Read-only synced item: the fields are read-only via their XAML bindings (text
+                        // stays selectable/copyable, like the editor's); dimming is just the visual cue.
                         bool editable = ViewModel.IsSelectedEditable;
-                        TemplateTitleBox.IsHitTestVisible = editable;
                         TemplateTitleBox.Opacity = editable ? 1.0 : 0.6;
-                        TemplateMetaPanel.IsHitTestVisible = editable;
                         TemplateMetaPanel.Opacity = editable ? 1.0 : 0.6;
-                        FolderPanel.IsHitTestVisible = editable;
                         FolderPanel.Opacity = editable ? 1.0 : 0.6;
 
                         // A sync-root folder's name is owned by Settings ▸ Sync — never editable here.

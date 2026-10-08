@@ -243,6 +243,7 @@
                         </Grid.RowDefinitions>
 
                         <TextBox x:Name="TemplateTitleBox" Header="Title"
+                                 IsReadOnly="{x:Bind ViewModel.IsSelectedReadOnly, Mode=OneWay}"
                                  Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <Border Grid.Row="1"
@@ -266,6 +267,7 @@
                                     <TextBox Width="50"
                                              CharacterCasing="Upper"
                                              MaxLength="1"
+                                             IsReadOnly="{x:Bind ViewModel.IsSelectedReadOnly, Mode=OneWay}"
                                              TextChanged="Shortcut_TextChanged"
                                              Text="{Binding SingleKeyShortcut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              HorizontalContentAlignment="Center"
@@ -278,6 +280,7 @@
                                     <TextBox Width="250"
                                              MaxLength="20"
                                              CharacterCasing="Upper"
+                                             IsReadOnly="{x:Bind ViewModel.IsSelectedReadOnly, Mode=OneWay}"
                                              TextChanged="Shortcut_TextChanged"
                                              Text="{Binding MultiKeyShortcut, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              HorizontalContentAlignment="Center"
@@ -286,10 +289,13 @@
                                 </StackPanel>
                             </Grid>
 
-                            <TextBox Header="Tags" Text="{Binding TagsCsv, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox Header="Tags"
+                                     IsReadOnly="{x:Bind ViewModel.IsSelectedReadOnly, Mode=OneWay}"
+                                     Text="{Binding TagsCsv, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                             <ComboBox Header="Default Paste Mode"
                                       HorizontalAlignment="Stretch"
+                                      IsEnabled="{x:Bind ViewModel.IsSelectedEditable, Mode=OneWay}"
                                       ItemsSource="{Binding DataContext.ViewModel.PasteModes, ElementName=ItemTreeView}"
                                       SelectedItem="{Binding DefaultPasteMode, Mode=TwoWay}">
                                 <ComboBox.ItemTemplate>
