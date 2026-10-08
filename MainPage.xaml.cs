@@ -195,13 +195,12 @@ namespace TextTemplateManager
             }
         }
 
-        // Multi-key shortcuts allow letters, digits, and the '-' / '.' separators — strip anything
-        // else (whitespace, '_', other symbols). '_' is a Quick-Paste-only plaintext modifier typed
-        // at paste time, never part of a stored shortcut.
-        private void MultiKey_TextChanged(object sender, TextChangedEventArgs e)
+        // Strips what the stored shortcut can't hold while typing, keeping the caret in place (the binding
+        // doesn't push the model's cleaned value back into the box it came from).
+        private void Shortcut_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is not TextBox tb) return;
-            string filtered = new string(tb.Text.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '.').ToArray());
+            string filtered = TextTemplateManager.Models.Template.CleanShortcut(tb.Text);
             if (tb.Text == filtered) return;
             int removed = tb.Text.Length - filtered.Length;
             int caret = tb.SelectionStart;

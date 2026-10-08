@@ -63,7 +63,14 @@ namespace TextTemplateManager.Models
         [JsonIgnore]
         public MainViewModel? Owner { get; set; }
 
-        private static readonly Regex _shortcutFilter = new(@"[^A-Z0-9+]", RegexOptions.Compiled);
+        private static readonly Regex _shortcutFilter = new(@"[^A-Z0-9]", RegexOptions.Compiled);
+
+        /// <summary>A shortcut as stored: trimmed, uppercase, letters A-Z and digits only. '-' and '.' are
+        /// reserved as the separator between a sync folder's prefix and the shortcut.</summary>
+        public static string CleanShortcut(string? value) =>
+            string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : _shortcutFilter.Replace(value.Trim().ToUpperInvariant(), string.Empty);
 
         public Template()
         {
@@ -85,25 +92,9 @@ namespace TextTemplateManager.Models
             ValidateShortcuts();
         }
 
-        private void NormalizeShortcut(ref string field, string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                field = string.Empty;
-                return;
-            }
-
-            // trim, uppercase, remove invalid chars
-            var normalized = _shortcutFilter.Replace(
-                value.Trim().ToUpperInvariant(),
-                string.Empty);
-
-            if (normalized != value)
-            {
-                field = normalized;
-                OnPropertyChanged();
-            }
-        }
+        // Runs inside the generated setter, after the field is set and before its PropertyChanged, so the
+        // cleaned value is what gets announced.
+        private static void NormalizeShortcut(ref string field, string value) => field = CleanShortcut(value);
 
         #endregion
 
