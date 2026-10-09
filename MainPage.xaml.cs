@@ -65,6 +65,8 @@ namespace TextTemplateManager
             // handledEventsToo: the TreeView marks Enter/Space handled, so a plain KeyDown handler
             // never sees them — attach here to still get folder expand/collapse on those keys.
             ItemTreeView.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ItemTreeView_KeyDown), true);
+            // Same for the search box: the AutoSuggestBox takes the arrow keys for its suggestion list.
+            SearchBox.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(SearchBox_KeyDown), true);
 
             // Keep the conflict panel anchored to the top-right as the window sizes/resizes, until
             // the user drags it. This also corrects the very first show, which can happen before
@@ -1221,6 +1223,48 @@ namespace TextTemplateManager
         }
 
         private void FocusSearchBox() => SearchBox.Focus(FocusState.Programmatic);
+
+        // Down in the search box works like in Quick Paste: the caret goes to the end first, the next
+        // Down (from the end of the text) moves into the tree.
+        private void SearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key != VirtualKey.Down || FindDescendant<TextBox>(SearchBox) is not TextBox box) return;
+            e.Handled = true;
+            if (PasteWindow.DecideSearchDown(box.SelectionStart, box.SelectionLength, box.Text.Length,
+                    ViewModel.RootNodes.Count) == PasteWindow.SearchDown.EnterTree)
+                FocusTree();
+            else
+            {
+                box.SelectionLength = 0;
+                box.SelectionStart = box.Text.Length;
+            }
+        }
+
+        // Focus the selected item, or select and focus the first one, so the arrow keys continue from there.
+        private void FocusTree()
+        {
+            if (ViewModel.SelectedItem is BaseItem selected
+                && ItemTreeView.ContainerFromItem(selected) is TreeViewItem selectedContainer)
+            {
+                selectedContainer.Focus(FocusState.Keyboard);
+                return;
+            }
+            if (ViewModel.RootNodes.FirstOrDefault() is not BaseItem first) return;
+            ViewModel.SelectedItem = first;
+            if (ItemTreeView.ContainerFromItem(first) is TreeViewItem firstContainer)
+                firstContainer.Focus(FocusState.Keyboard);
+        }
+
+        private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is T match) return match;
+                if (FindDescendant<T>(child) is T nested) return nested;
+            }
+            return null;
+        }
 
         private void ItemTreeView_DragOver(object sender, DragEventArgs e)
         {
