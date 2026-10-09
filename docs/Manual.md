@@ -48,8 +48,9 @@ item onto a template places it as a sibling directly below. Expansion and
 selection are preserved as you work.
 
 To move an item out to the top level, drag it there or right-click it and choose **Move to Root**.
-Click an empty area of the tree, or press **Esc**, to clear the selection — with nothing selected,
-new templates and folders are created at the root.
+Click an empty area of the tree to clear the selection — with nothing selected, new templates and folders are created at the root. From the keyboard, **Esc** steps back one level at a time: from the tree to the search box, then it clears the search text, and with the search box already empty it clears the selection.
+
+From the search box, **↓** moves into the tree, the same way as in Quick Paste: if the text cursor isn't at the end yet, the first **↓** moves it there.
 
 ### The template editor
 
@@ -415,7 +416,9 @@ Deployment Guide** (`TextTemplateManager-AdminManual.pdf`), attached to each rel
 | Main window | **Ctrl + F** | Focus the search box. |
 | Main window (Tree) | **Delete** | Delete the selected item (with confirmation). |
 | Main window (Tree) | **Ctrl + C** | Copy the selected template in its default paste mode. |
-| Main window (Tree) | **Esc** | Clear the current selection. |
+| Main window (search box) | **↓** | Move the text cursor to the end; **↓** again at the end steps into the tree. |
+| Main window (search box) | **Esc** | Clear the search text; when it is already empty, clear the tree selection. |
+| Main window (Tree) | **Esc** | Return to the search box (the search text is kept). |
 | Quick Paste | *key* | Paste by single-key shortcut (search box empty). |
 | Quick Paste | **Ctrl + F** | Focus the search box. |
 | Quick Paste (list) | **↑ / ↓** | Move the highlight through the current shortcut list (wraps at both ends). |

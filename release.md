@@ -18,22 +18,10 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### Safer data
-
-- **Changes are saved before the app closes.** Exiting from **File ▸ Exit** or the tray icon first saves everything still pending, including the last few keystrokes in the editor, and the app now also saves when you sign out of Windows or shut down. If a synced file is slow to respond, a "Saving changes…" message appears instead of closing early.
-- **A damaged data file is never overwritten.** If your templates or settings can't be read at startup, the file is kept as `….broken-<date-time>` next to the original, the app tells you, and it starts without it — instead of later replacing the file with an empty one.
-- **Settings are written safely.** Settings and sync settings are now saved the same crash-proof way as your templates, so an interrupted save can't leave a half-written file behind.
-- **Load Backup keeps your synced folders.** Loading a backup now asks first, replaces only your local templates and folders, and leaves synced folders alone. A file that can't be read is reported instead of silently ignored.
-- **Saving no longer pauses during shortcut conflicts.** Moving templates or exiting while two templates share a shortcut now saves as usual; the conflict stays visible in the warning panel.
-
 #### Fixes
 
-- **Digit shortcuts work in Quick Paste.** A single-key shortcut on a digit (top row or numpad) now pastes; before, only letters did.
-- **RTF pastes keep code and special characters.** Code blocks keep their line breaks and are set in a monospace font, characters such as `€`, `Ω`, Cyrillic or emoji arrive intact, and a paste no longer starts with an empty line.
-- **Shortcuts are letters and digits only.** The shortcut fields now accept exactly what is stored, so what you type is what you get. `-` and `.` remain the separator between a synced folder's prefix and its shortcuts.
-- **Read-only synced templates are read-only for the keyboard too.** Their title, shortcut, tag and paste-mode fields can no longer be changed by tabbing into them; text can still be selected and copied.
-- **Hotkey clashes are reported.** If another app already uses the Quick Paste shortcut, the app now says so at startup and in **Settings ▸ General**, instead of Quick Paste silently not opening.
-- **More robust update check.** Only the release's `TextTemplateManager-Setup` installer is ever run as an update, and the check looks further back through the release list when needed.
+- **↓ from the search box enters the tree.** In the main window, pressing **↓** in the search box now moves into the template tree, the same way as in Quick Paste: if the text cursor isn't at the end yet, the first **↓** moves it there, the next one into the tree.
+- **Esc in the tree returns to the search box.** **Esc** now steps back one level at a time: from the tree to the search box (your search text is kept), then it clears the search text, and with the search box already empty it clears the selection, as **Esc** in the tree did before.
 
 {{CHANGELOG}}
 
