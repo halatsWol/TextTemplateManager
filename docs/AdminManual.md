@@ -100,6 +100,8 @@ A client picks the delta whose `from` matches its installed version exactly; any
 release with no matching delta, falls back to the full installer, which always works. Each delta also
 refuses to run on the wrong base, so a mismatched download cannot be applied.
 
+Only an asset named `TextTemplateManager-Setup-<version>.exe` is ever treated as the full installer; other executables on a release (the deltas, the cleanup utility) are never run as one. A release without such an asset is not offered as an update.
+
 A release that bundles a refreshed .NET runtime rewrites nearly every file, which would make each
 delta almost as large as the full installer. Deltas that would save less than about 30% are dropped at
 build time, and those base versions take the full installer instead — expected, and not itemised in
@@ -193,4 +195,4 @@ File-system locations:
 | Path | Contents |
 | --- | --- |
 | `%LocalAppData%\Programs\Marflow Software\TextTemplateManager` | The application. Removed on uninstall. |
-| `%LocalAppData%\Marflow Software\TextTemplateManager` | User data: `data.ttmdata`, `settings.ttmsettings`, `sync.ttmsettings`, staged update installers, `crash.log`. Kept on uninstall. |
+| `%LocalAppData%\Marflow Software\TextTemplateManager` | User data: `data.ttmdata`, `settings.ttmsettings`, `sync.ttmsettings`, staged update installers, `crash.log`, and any `*.broken-<date-time>` copy of a file that couldn't be read at startup. Kept on uninstall. |

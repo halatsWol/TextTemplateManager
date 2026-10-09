@@ -18,16 +18,22 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### Tidier settings
+#### Safer data
 
-- **New Integrations tab.** The browser extension connector and the `.ttmdata` file association moved from **General** to their own **Settings ▸ Integrations** tab.
-- **General is reorganized.** Quick Paste settings (hotkey, default paste mode) now come first, followed by Startup, Updates and Other (shortcut warnings). **Show update notifications** moved into the Updates section, and the help texts are shorter.
+- **Changes are saved before the app closes.** Exiting from **File ▸ Exit** or the tray icon first saves everything still pending, including the last few keystrokes in the editor, and the app now also saves when you sign out of Windows or shut down. If a synced file is slow to respond, a "Saving changes…" message appears instead of closing early.
+- **A damaged data file is never overwritten.** If your templates or settings can't be read at startup, the file is kept as `….broken-<date-time>` next to the original, the app tells you, and it starts without it — instead of later replacing the file with an empty one.
+- **Settings are written safely.** Settings and sync settings are now saved the same crash-proof way as your templates, so an interrupted save can't leave a half-written file behind.
+- **Load Backup keeps your synced folders.** Loading a backup now asks first, replaces only your local templates and folders, and leaves synced folders alone. A file that can't be read is reported instead of silently ignored.
+- **Saving no longer pauses during shortcut conflicts.** Moving templates or exiting while two templates share a shortcut now saves as usual; the conflict stays visible in the warning panel.
 
 #### Fixes
 
-- **Ctrl + F in the editor focuses the search box.** Pressing **Ctrl + F** while typing in a template now jumps to the tree's search box, like everywhere else in the main window, instead of opening the browser's find bar inside the editor.
-- **No more stray "Ctrl+F" hint.** A small "Ctrl+F" tooltip no longer pops up when the mouse rests over the main window.
-- **Browser shortcuts no longer act on the editor.** Keys such as **F5** / **Ctrl + R** (reload) and **Ctrl + P** (print) no longer reach the embedded editor, so an accidental F5 can't reload it mid-edit.
+- **Digit shortcuts work in Quick Paste.** A single-key shortcut on a digit (top row or numpad) now pastes; before, only letters did.
+- **RTF pastes keep code and special characters.** Code blocks keep their line breaks and are set in a monospace font, characters such as `€`, `Ω`, Cyrillic or emoji arrive intact, and a paste no longer starts with an empty line.
+- **Shortcuts are letters and digits only.** The shortcut fields now accept exactly what is stored, so what you type is what you get. `-` and `.` remain the separator between a synced folder's prefix and its shortcuts.
+- **Read-only synced templates are read-only for the keyboard too.** Their title, shortcut, tag and paste-mode fields can no longer be changed by tabbing into them; text can still be selected and copied.
+- **Hotkey clashes are reported.** If another app already uses the Quick Paste shortcut, the app now says so at startup and in **Settings ▸ General**, instead of Quick Paste silently not opening.
+- **More robust update check.** Only the release's `TextTemplateManager-Setup` installer is ever run as an update, and the check looks further back through the release list when needed.
 
 {{CHANGELOG}}
 

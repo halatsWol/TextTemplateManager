@@ -99,8 +99,7 @@ Each template exposes the following properties:
 - **Title** — the display name, shown in the tree and searchable.
 - **Tags** — optional, comma-separated keywords that are also included in search.
 - **Default paste mode** — the format used when the template is pasted (see below).
-- **Single-key shortcut** and **Multi-key shortcut** — optional shortcuts for the Quick Paste 
-  window (see *Keyboard shortcuts and conflicts*).
+- **Single-key shortcut** and **Multi-key shortcut** — optional shortcuts for the Quick Paste window (see *Keyboard shortcuts and conflicts*). Shortcuts consist of letters and digits only; `-` and `.` are reserved as the separator between a synced folder's prefix and its shortcuts.
 
 ### Paste modes
 
@@ -223,7 +222,7 @@ Open settings from **File ▸ Settings**. It has a **General**, an **Integration
 
 **Quick Paste**
 
-- **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and press the combination.
+- **Global shortcut** — the hotkey that opens Quick Paste from any application; click the field and press the combination. If another application already uses that combination, a warning appears below the field (and once at startup); choose a different one.
 - **Default paste mode** — the mode applied to newly created templates (see *Paste modes*).
 
 **Startup**
@@ -347,8 +346,8 @@ is already running.)
 
 ## Backup and export
 
-- **File ▸ Save Backup** and **File ▸ Load Backup** export and import your entire template tree 
-  as a single file.
+- **File ▸ Save Backup** exports your entire template tree as a single file.
+- **File ▸ Load Backup** replaces your local templates and folders with the contents of a backup file, after asking you to confirm. Synced folders are not affected: they always come from their shared files, so any copies of them inside the backup are skipped.
 - Right-clicking a folder and choosing **Export** saves just that folder and its contents to a 
   standalone file, which is useful for creating a new shared source or sharing a subset of 
   templates.
@@ -442,6 +441,10 @@ Application data is stored per user under:
 This folder contains your template data, application settings, and synchronization configuration.
 Downloaded update installers are staged in an `installer` subfolder. Shared synchronization files 
 are stored wherever you place them, and are not kept in this folder.
+
+Changes are saved automatically. Exiting from **File ▸ Exit** or the tray icon, and signing out of or shutting down Windows, first save anything still pending; if a synced file is slow to respond, a "Saving changes…" message appears until it is done.
+
+If one of these files can't be read at startup (for example after a crash during a save), the app keeps it as `<file>.broken-<date-time>` in this folder, tells you which file was affected, and starts without it. The original is never overwritten.
 
 ---
 
