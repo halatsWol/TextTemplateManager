@@ -67,6 +67,8 @@ namespace TextTemplateManager
             ItemTreeView.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ItemTreeView_KeyDown), true);
             // Same for the search box: the AutoSuggestBox takes the arrow keys for its suggestion list.
             SearchBox.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(SearchBox_KeyDown), true);
+            // Esc is taken before the AutoSuggestBox sees it: its own Esc restores the last typed text.
+            SearchBox.PreviewKeyDown += SearchBox_PreviewKeyDown;
 
             // Keep the conflict panel anchored to the top-right as the window sizes/resizes, until
             // the user drags it. This also corrects the very first show, which can happen before
@@ -1180,11 +1182,16 @@ namespace TextTemplateManager
 
         private async void ItemTreeView_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            // ESC: clear the selection (so new items go to the root).
-            if (e.Key == VirtualKey.Escape && ViewModel.SelectedItem != null)
+            // ESC: back to the search box, search text kept (Esc there then steps back further).
+            if (e.Key == VirtualKey.Escape)
             {
                 e.Handled = true;
-                ViewModel.SelectedItem = null;
+                FocusSearchBox();
+                if (FindDescendant<TextBox>(SearchBox) is TextBox box)
+                {
+                    box.SelectionLength = 0;
+                    box.SelectionStart = box.Text.Length;
+                }
                 return;
             }
 
@@ -1238,6 +1245,16 @@ namespace TextTemplateManager
                 box.SelectionLength = 0;
                 box.SelectionStart = box.Text.Length;
             }
+        }
+
+        // Esc in the search box steps back one level at a time: it clears the search text, and with the
+        // box already empty it clears the tree selection (so new items go to the root).
+        private void SearchBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key != VirtualKey.Escape) return;
+            e.Handled = true;
+            if (!string.IsNullOrEmpty(ViewModel.SearchText)) ViewModel.SearchText = string.Empty;
+            else ViewModel.SelectedItem = null;
         }
 
         // Focus the selected item, or select and focus the first one, so the arrow keys continue from there.
