@@ -54,6 +54,13 @@ namespace TextTemplateManager
                 Environment.Exit(0);
                 return;
             }
+            StoreVersionInstalled = StoreVersion.IsInstalled();
+            if (StoreVersion.ExitAtStartup(StoreVersionInstalled, IsHiddenLaunch(), fileArg != null))
+            {
+                _singleInstance.Dispose();
+                Environment.Exit(0);
+                return;
+            }
             _singleInstance.MessageReceived += OnOtherInstanceMessage;
             _singleInstance.StartServer();
 
@@ -222,9 +229,13 @@ namespace TextTemplateManager
         /// <summary>False when the configured hotkey couldn't be registered (another app owns it).</summary>
         public bool HotkeyRegistered { get; private set; } = true;
 
+        /// <summary>True when TextTemplateManager 2 is installed: this version then leaves the Quick Paste
+        /// shortcut and the browser connector port to it.</summary>
+        public bool StoreVersionInstalled { get; private set; }
+
         public bool UpdateGlobalHotkey(string hotkey)
         {
-            HotkeyRegistered = _hotkeyListener?.Register(hotkey) ?? true;
+            HotkeyRegistered = _hotkeyListener?.Register(StoreVersionInstalled ? "None" : hotkey) ?? true;
             return HotkeyRegistered;
         }
 
@@ -243,7 +254,7 @@ namespace TextTemplateManager
         public void ApplyBrowserConnectorSettings()
         {
             var s = DataNode.Instance.CurrentSettings;
-            if (!s.BrowserConnectorEnabled) { _connector?.Stop(); return; }
+            if (!s.BrowserConnectorEnabled || StoreVersionInstalled) { _connector?.Stop(); return; }
 
             // Generate the shared token on first enable and persist it.
             if (string.IsNullOrEmpty(s.BrowserConnectorToken))
