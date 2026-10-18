@@ -117,6 +117,9 @@ namespace TextTemplateManager
             if (!HotkeyRegistered)
                 ReportHotkeyUnavailable(startHidden);
 
+            if (StoreVersionInstalled)
+                (MainWindow.Content as MainPage)?.OfferStoreVersionHandover();
+
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)
                 (MainWindow.Content as MainPage)?.HandleOpenTtmDataFile(fileArg);

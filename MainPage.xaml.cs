@@ -25,6 +25,8 @@ using Windows.UI.Core;
 using UpdatePolicy = TextTemplateManager.Services.System.UpdatePolicy;
 using UpdateService = TextTemplateManager.Services.System.UpdateService;
 using BrowserConnector = TextTemplateManager.Services.System.BrowserConnector;
+using SelfUninstall = TextTemplateManager.Services.System.SelfUninstall;
+using StoreVersion = TextTemplateManager.Services.System.StoreVersion;
 // Aliased rather than a plain using: the namespace ends in ".System", which would shadow System.* here.
 using UpdateCoordinator = TextTemplateManager.Services.System.UpdateCoordinator;
 using IUpdateHost = TextTemplateManager.Services.System.IUpdateHost;
@@ -867,9 +869,48 @@ namespace TextTemplateManager
         public async void ReportHotkeyUnavailable(string message) =>
             await ShowStartupMessageAsync("Quick Paste shortcut unavailable", message);
 
+        /// <summary>TextTemplateManager 2 is installed: offer to remove this version, or to switch to version 2.</summary>
+        public async void OfferStoreVersionHandover()
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "TextTemplateManager 2 is installed",
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = "You can remove this version now. Your templates, settings and sync folders stay on this PC, " +
+                           "and TextTemplateManager 2 takes them over: at its first start it backs them up and offers to import them.\n\n" +
+                           "While both are installed, this version leaves the Quick Paste shortcut and the browser connector to TextTemplateManager 2.",
+                },
+                PrimaryButtonText = "Remove this version",
+                SecondaryButtonText = "Open TextTemplateManager 2",
+                CloseButtonText = "Later",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+
+            var result = await ShowStartupDialogAsync(dialog);
+            if (Application.Current is not App app) return;
+            if (result == ContentDialogResult.Primary)
+            {
+                await app.PersistPendingAsync();
+                if (SelfUninstall.Start()) app.Shutdown();
+                else await ShowMessageAsync("Couldn't remove this version",
+                    "This copy wasn't set up by the installer, so it can't remove itself. " +
+                    "Remove TextTemplateManager in Windows Settings › Apps › Installed apps.");
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                StoreVersion.Open();
+                await app.ExitAsync();
+            }
+        }
+
+        private Task ShowStartupMessageAsync(string title, string message) =>
+            ShowStartupDialogAsync(new ContentDialog { Title = title, Content = message, CloseButtonText = "OK" });
+
         // Startup notices can arrive before the page is loaded and while another one is still open; only
-        // one ContentDialog may be open at a time, so wait for both instead of dropping the message.
-        private async Task ShowStartupMessageAsync(string title, string message)
+        // one ContentDialog may be open at a time, so wait for both instead of dropping the notice.
+        private async Task<ContentDialogResult> ShowStartupDialogAsync(ContentDialog dialog)
         {
             if (!IsLoaded)
             {
@@ -880,7 +921,7 @@ namespace TextTemplateManager
                 await loaded.Task;
             }
             while (_dialogOpen) await Task.Delay(200);
-            await ShowMessageAsync(title, message);
+            return await ShowDialogAsync(dialog);
         }
 
         private async Task ShowMessageAsync(string title, string message)
