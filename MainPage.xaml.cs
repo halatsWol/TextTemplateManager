@@ -816,6 +816,13 @@ namespace TextTemplateManager
             panel.Children.Add(emailLink);
             panel.Children.Add(copiedHint);
 
+            panel.Children.Add(new TextBlock { Text = "TextTemplateManager 2 is available in the Microsoft Store.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) });
+            var storeLink = new HyperlinkButton { Content = "Open in Store", Padding = new Thickness(0) };
+            storeLink.Click += (_, _) => StoreVersion.OpenInStore();
+            var webLink = new HyperlinkButton { Content = "Open in browser", Padding = new Thickness(0) };
+            webLink.Click += (_, _) => StoreVersion.OpenInBrowser();
+            panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16, Children = { storeLink, webLink } });
+
             var dialog = new ContentDialog
             {
                 Title = "About",
