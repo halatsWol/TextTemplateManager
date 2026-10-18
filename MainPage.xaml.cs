@@ -882,8 +882,8 @@ namespace TextTemplateManager
                            "and TextTemplateManager 2 takes them over: at its first start it backs them up and offers to import them.\n\n" +
                            "While both are installed, this version leaves the Quick Paste shortcut and the browser connector to TextTemplateManager 2.",
                 },
-                PrimaryButtonText = "Remove this version",
-                SecondaryButtonText = "Open TextTemplateManager 2",
+                PrimaryButtonText = "Remove",
+                SecondaryButtonText = "Open in TTM 2",
                 CloseButtonText = "Later",
                 DefaultButton = ContentDialogButton.Primary,
             };
@@ -902,6 +902,42 @@ namespace TextTemplateManager
             {
                 StoreVersion.Open();
                 await app.ExitAsync();
+            }
+        }
+
+        /// <summary>TextTemplateManager 2 is in the Microsoft Store: point the user there until they install it or
+        /// tick "Don't show this again".</summary>
+        public async void ShowStoreNotice()
+        {
+            var dontShowAgain = new CheckBox { Content = "Don't show this again", Margin = new Thickness(0, 12, 0, 0) };
+            var content = new StackPanel();
+            content.Children.Add(new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Text = "TextTemplateManager 2 is the new version of this app. It installs and updates through the Microsoft Store " +
+                       "and brings your templates, settings and sync folders along: at its first start it backs them up and offers to import them.\n\n" +
+                       "This version gets no new features any more, only important fixes.",
+            });
+            content.Children.Add(dontShowAgain);
+
+            var dialog = new ContentDialog
+            {
+                Title = "TextTemplateManager 2 is available in the Microsoft Store",
+                Content = content,
+                PrimaryButtonText = "Open in Store",
+                SecondaryButtonText = "Open in browser",
+                CloseButtonText = "Later",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+
+            var result = await ShowStartupDialogAsync(dialog);
+            if (result == ContentDialogResult.Primary) StoreVersion.OpenInStore();
+            else if (result == ContentDialogResult.Secondary) StoreVersion.OpenInBrowser();
+
+            if (dontShowAgain.IsChecked == true)
+            {
+                DataNode.Instance.CurrentSettings.HideStoreNotice = true;
+                await StorageService.SaveSettingsAsync(DataNode.Instance.CurrentSettings);
             }
         }
 

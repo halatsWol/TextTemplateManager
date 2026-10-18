@@ -18,6 +18,29 @@ public class StoreVersionTests
         Assert.Equal(exits, StoreVersion.ExitAtStartup(installed, hidden, openingFile));
     }
 
+    [Theory]
+    [InlineData(false, false, true)]    // not installed, not dismissed: show it
+    [InlineData(false, true, false)]    // "Don't show this again" ticked
+    [InlineData(true, false, false)]    // version 2 installed: the removal offer replaces it
+    [InlineData(true, true, false)]
+    public void The_store_notice_is_due_until_version_2_is_installed_or_it_is_dismissed(bool installed, bool hidden, bool due)
+    {
+        Assert.Equal(due, StoreVersion.StoreNoticeDue(installed, hidden));
+    }
+
+    [Theory]
+    [InlineData(true, false, false, false, true)]    // plain hidden autostart: stays in the tray
+    [InlineData(true, false, false, true, false)]    // notice due: the window opens at login so it is seen
+    [InlineData(true, true, false, false, false)]    // a file to open
+    [InlineData(true, false, true, false, false)]    // an unreadable data file to report
+    [InlineData(false, false, false, false, false)]  // normal start
+    [InlineData(false, false, false, true, false)]
+    public void A_hidden_autostart_opens_the_window_while_the_store_notice_is_due(
+        bool hiddenLaunch, bool openingFile, bool unreadable, bool noticeDue, bool staysHidden)
+    {
+        Assert.Equal(staysHidden, StoreVersion.StartHidden(hiddenLaunch, openingFile, unreadable, noticeDue));
+    }
+
     [Fact]
     public void An_installed_store_package_is_found_by_its_family_name()
     {

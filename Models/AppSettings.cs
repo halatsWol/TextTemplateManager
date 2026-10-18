@@ -31,5 +31,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _browserConnectorEnabled = false;
     [ObservableProperty] private int _browserConnectorPort = 47615;
     [ObservableProperty] private string _browserConnectorToken = "";
+
+    // "Don't show this again" on the notice that TextTemplateManager 2 is in the Microsoft Store.
+    [ObservableProperty] private bool _hideStoreNotice = false;
 }
 

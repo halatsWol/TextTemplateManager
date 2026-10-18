@@ -105,9 +105,10 @@ namespace TextTemplateManager
                 }
             };
 
-            // A hidden autostart (Windows login with --hidden) stays in the tray: skip Activate so the
-            // window is never shown. A .ttmdata to open, or a data file that couldn't be read, overrides this.
-            bool startHidden = IsHiddenLaunch() && fileArg == null && unreadableFiles.Count == 0;
+            // A hidden autostart (Windows login with --hidden) stays in the tray: skip Activate so the window
+            // is never shown, unless there is something to show (see StoreVersion.StartHidden).
+            bool storeNoticeDue = StoreVersion.StoreNoticeDue(StoreVersionInstalled, DataNode.Instance.CurrentSettings.HideStoreNotice);
+            bool startHidden = StoreVersion.StartHidden(IsHiddenLaunch(), fileArg != null, unreadableFiles.Count > 0, storeNoticeDue);
             if (!startHidden)
                 MainWindow.Activate();
 
@@ -119,6 +120,8 @@ namespace TextTemplateManager
 
             if (StoreVersionInstalled)
                 (MainWindow.Content as MainPage)?.OfferStoreVersionHandover();
+            else if (storeNoticeDue)
+                (MainWindow.Content as MainPage)?.ShowStoreNotice();
 
             // A .ttmdata passed to this (first) launch: add it as a sync source once the UI is up.
             if (fileArg != null)

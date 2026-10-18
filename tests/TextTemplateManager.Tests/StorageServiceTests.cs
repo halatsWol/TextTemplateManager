@@ -235,6 +235,15 @@ public class StorageServiceTests
     }
 
     [Fact]
+    public async Task Dismissing_the_store_notice_is_remembered()
+    {
+        await StorageService.SaveSettingsAsync(new AppSettings { HideStoreNotice = true });
+
+        Assert.True((await StorageService.LoadSettingsAsync()).HideStoreNotice);
+        Assert.False(new AppSettings().HideStoreNotice);
+    }
+
+    [Fact]
     public async Task A_failed_settings_write_keeps_the_previous_settings()
     {
         await StorageService.SaveSettingsAsync(new AppSettings { PasteWindowHotkey = "Ctrl+Alt+K" });

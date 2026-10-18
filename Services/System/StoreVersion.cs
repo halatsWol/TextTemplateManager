@@ -12,11 +12,29 @@ public static class StoreVersion
     public const string WebUri = "https://apps.microsoft.com/detail/9NMBSZLLLN6V";
 
     /// <summary>Starts TextTemplateManager 2.</summary>
-    public static void Open()
+    public static void Open() => Launch($@"shell:AppsFolder\{PackageFamilyName}!App");
+
+    public static void OpenInStore() => Launch(StoreUri);
+
+    /// <summary>Opens the Store page in the default browser.</summary>
+    public static void OpenInBrowser() => Launch(WebUri);
+
+    private static void Launch(string target)
     {
-        try { using var _ = Process.Start(new ProcessStartInfo($@"shell:AppsFolder\{PackageFamilyName}!App") { UseShellExecute = true }); }
+        try { using var _ = Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
         catch { }
     }
+
+    /// <summary>The notice about TextTemplateManager 2 is shown at every start until version 2 is installed
+    /// or the user ticks "Don't show this again".</summary>
+    internal static bool StoreNoticeDue(bool storeVersionInstalled, bool noticeHidden) =>
+        !storeVersionInstalled && !noticeHidden;
+
+    /// <summary>Whether a launch stays in the tray. A hidden autostart opens the window when there is
+    /// something to show: a file to open, an unreadable data file, or the notice about version 2 (users
+    /// starting hidden at login would never see it otherwise).</summary>
+    internal static bool StartHidden(bool hiddenLaunch, bool openingFile, bool unreadableFiles, bool storeNoticeDue) =>
+        hiddenLaunch && !openingFile && !unreadableFiles && !storeNoticeDue;
 
     /// <summary>True when TextTemplateManager 2 is installed for the current user.</summary>
     public static bool IsInstalled() => IsPackageInstalled(PackageFamilyName);
