@@ -13,6 +13,8 @@ The application is self-contained: the .NET runtime and the Windows App SDK are 
 separate installation is required. The bundled runtime is always the latest .NET 8 release
 available at the time that version was built.
 
+TextTemplateManager 2, the new version of this application, is available in the Microsoft Store. This version only gets important fixes from now on; see *Moving to TextTemplateManager 2*.
+
 ---
 
 ## The main window
@@ -448,6 +450,22 @@ are stored wherever you place them, and are not kept in this folder.
 Changes are saved automatically. Exiting from **File ▸ Exit** or the tray icon, and signing out of or shutting down Windows, first save anything still pending; if a synced file is slow to respond, a "Saving changes…" message appears until it is done.
 
 If one of these files can't be read at startup (for example after a crash during a save), the app keeps it as `<file>.broken-<date-time>` in this folder, tells you which file was affected, and starts without it. The original is never overwritten.
+
+---
+
+## Moving to TextTemplateManager 2
+
+TextTemplateManager 2 is the new version of this application. It installs and updates through the Microsoft Store ([Store page](https://apps.microsoft.com/detail/9NMBSZLLLN6V)) and brings your templates, settings and sync folders along: at its first start it backs them up and offers to import them. Both versions can use the same sync files.
+
+Until TextTemplateManager 2 is installed, a notice appears at every start, with **Open in Store** (opens the Microsoft Store app), **Open in browser** (opens the Store page in your default browser) and **Later**. Tick **Don't show this again** to stop it. As long as it is not ticked, a start hidden in the system tray at Windows sign-in opens the window, so you see the notice. **Help ▸ About** has the same two links.
+
+Once TextTemplateManager 2 is installed, this version steps aside:
+
+- It no longer registers the Quick Paste shortcut or starts the browser connector, so the two versions never compete for them.
+- When you open it, it offers to **Remove** this version, to **Open in TTM 2** (this version closes), or **Later**. **Remove** saves anything pending, uninstalls this version and closes it. Your data folder (see *Data and file locations*) stays in place, so version 2 can still import it.
+- Started hidden at Windows sign-in, it quietly exits.
+
+You can also remove this version yourself at any time in **Windows Settings ▸ Apps ▸ Installed apps**.
 
 ---
 

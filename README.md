@@ -5,6 +5,8 @@ give them shortcuts, and paste them into any application from a global Quick Pas
 
 > Made by **Marflow Software**. Built with WinUI 3 (Windows App SDK) and .NET 8.
 
+> **TextTemplateManager 2 is available in the [Microsoft Store](https://apps.microsoft.com/detail/9NMBSZLLLN6V).** It replaces this version and brings your templates, settings and sync folders along: at its first start it backs them up and offers to import them. Version 1.10.0 is the last feature release of version 1; it points its users to the Store and, once version 2 is installed, steps aside and offers to remove itself. Version 1 only gets important fixes from now on. TextTemplateManager 2 is developed in [TextTemplateManager-v2](https://github.com/halatsWol/TextTemplateManager-v2).
+
 ---
 
 ## Background

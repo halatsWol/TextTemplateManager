@@ -11,6 +11,19 @@ exception is the cleanup utility's `/user` option (below), which requires elevat
 
 ---
 
+## Moving to version 2
+
+TextTemplateManager 2 replaces this version. It is a Microsoft Store app (Store ID `9NMBSZLLLN6V`, package family name `MarflowSoftware.TextTemplateManager_eb1r5ey0kd4ny`) and can be deployed through the Store, winget or Intune; see the [TextTemplateManager 2 Administrator Guide](https://github.com/halatsWol/TextTemplateManager-v2/blob/main/docs/user/AdminManual.md). Version 2 closes a running version 1, backs up its data and offers the import; it only reads version 1's data folder. Version 1 only gets important fixes from now on.
+
+Version 1.10.0 (the last feature release of version 1) behaves as follows:
+
+- **Version 2 not installed:** a notice pointing to the Store appears at every start until the user ticks *Don't show this again* (saved as `"HideStoreNotice": true` in `settings.ttmsettings`). While it is not ticked, a `--hidden` start at sign-in opens the window, so the notice is seen.
+- **Version 2 installed (for the same user):** version 1 doesn't register the Quick Paste hotkey or start the browser connector. A normal start offers to remove it; **Remove** runs its own uninstaller silently, and the data folder is kept. A `--hidden` start at sign-in exits at once.
+
+To remove version 1 centrally after deploying version 2, run its uninstaller in the user's context: the `UninstallString` of the uninstall entry (see *Registry and file-system reference*) with `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`. The data folder is kept. For a damaged installation, use the cleanup utility below.
+
+---
+
 ## Installation
 
 The installer is an Inno Setup executable, `TextTemplateManager-Setup-<version>.exe`.

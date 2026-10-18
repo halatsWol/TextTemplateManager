@@ -18,10 +18,12 @@ Already have it installed? The app offers this update automatically, or you can 
 
 ### What's new in this release
 
-#### Fixes
+#### TextTemplateManager 2 is available in the Microsoft Store
 
-- **↓ from the search box enters the tree.** In the main window, pressing **↓** in the search box now moves into the template tree, the same way as in Quick Paste: if the text cursor isn't at the end yet, the first **↓** moves it there, the next one into the tree.
-- **Esc in the tree returns to the search box.** **Esc** now steps back one level at a time: from the tree to the search box (your search text is kept), then it clears the search text, and with the search box already empty it clears the selection, as **Esc** in the tree did before.
+TextTemplateManager 2 is the new version of this app. It installs and updates through the [Microsoft Store](https://apps.microsoft.com/detail/9NMBSZLLLN6V) and brings your templates, settings and sync folders along: at its first start it backs them up and offers to import them. This is the last feature release of version 1; from now on it only gets important fixes.
+
+- **Notice at every start.** A dialog points to TextTemplateManager 2, with **Open in Store** (the Microsoft Store app), **Open in browser** (the Store page in your default browser) and **Later**. Tick **Don't show this again** to stop it. Until then, a start hidden in the system tray at Windows sign-in opens the window, so the notice isn't missed. The same two links are under **Help ▸ About**.
+- **Steps aside once TextTemplateManager 2 is installed.** This version then no longer registers the Quick Paste shortcut or starts the browser connector, so it never competes with version 2. When you open it, it offers to **Remove** this version (your data stays in place for version 2), to **Open in TTM 2**, or **Later**. Started hidden at Windows sign-in, it quietly exits.
 
 {{CHANGELOG}}
 
